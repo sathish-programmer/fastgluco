@@ -417,6 +417,20 @@ export class PaymentAdminController {
 
       subscription.status = 'expired';
       subscription.cancelAtPeriodEnd = true;
+      subscription.autoPayEnabled = false;
+      subscription.mandateStatus = 'cancelled';
+      subscription.cancelledAt = new Date();
+      subscription.cancellationReason = 'Admin Force Cancel';
+
+      // Cancel Razorpay recurring mandate if active
+      if (subscription.razorpaySubscriptionId) {
+        const config = await PaymentGatewayConfig.findOne();
+        if (config) {
+          const { AutoPayService } = await import('../services/autoPayService');
+          await AutoPayService.cancelRazorpayMandate(subscription.razorpaySubscriptionId, config).catch(() => {});
+        }
+      }
+
       await subscription.save();
 
       await AuditLog.create({

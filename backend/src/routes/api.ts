@@ -297,6 +297,13 @@ router.post('/subscriptions/mock-verify', SubscriptionController.verifyMockPayme
 router.post('/subscriptions/cancel', SubscriptionController.cancelSubscription);
 router.post('/subscriptions/reactivate', SubscriptionController.reactivateSubscription);
 
+// AutoPay (Recurring Payments) Mandate Management
+router.get('/subscriptions/autopay/status', SubscriptionController.getAutoPayStatus);
+router.post('/subscriptions/autopay/setup', SubscriptionController.setupExistingAutoPay);
+router.post('/subscriptions/autopay/verify-mandate', SubscriptionController.verifyExistingMandate);
+router.post('/subscriptions/autopay/mock-verify-mandate', SubscriptionController.mockVerifyExistingMandate);
+router.post('/subscriptions/autopay/cancel', SubscriptionController.disableAutoPay);
+
 // ==========================================
 // 2. PATIENT PROTECTED ENDPOINTS (JWT required)
 // ==========================================
@@ -438,6 +445,10 @@ router.get('/admin/reports-analytics', AdminController.getReportsAnalytics);
 router.get('/admin/users', AdminController.getUsers);
 router.get('/admin/users/:id/activity', AdminController.getUserActivity);
 router.get('/admin/otp-logs', authenticateToken, requireRole(['SuperAdmin', 'Admin']), AdminController.getOtpLogs);
+router.get('/admin/sent-emails', authenticateToken, requireRole(['SuperAdmin', 'Admin']), AdminController.getSentEmails);
+router.get('/admin/sent-emails/:id', authenticateToken, requireRole(['SuperAdmin', 'Admin']), AdminController.getSentEmailById);
+router.post('/admin/sent-emails/:id/resend', authenticateToken, requireRole(['SuperAdmin', 'Admin']), AdminController.resendSentEmail);
+router.delete('/admin/sent-emails/:id', authenticateToken, requireRole(['SuperAdmin']), AdminController.deleteSentEmail);
 router.get('/admin/profile-edits', AdminController.getPendingProfileEdits);
 router.post('/admin/profile-edits/:id/approve', AdminController.approveProfileEdit);
 router.post('/admin/profile-edits/:id/reject', AdminController.rejectProfileEdit);

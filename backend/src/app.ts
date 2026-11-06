@@ -71,7 +71,12 @@ const limiter = rateLimit({
 app.use('/api', limiter);
 
 // 4. Request parsing (support large base64 medical reports and camera images)
-app.use(express.json({ limit: '50mb' }));
+app.use(express.json({
+  limit: '50mb',
+  verify: (req: any, _res: any, buf: Buffer) => {
+    req.rawBody = buf.toString();
+  }
+}));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // 5. Expose uploaded reports folder statically (for file access)

@@ -8,6 +8,8 @@ export interface ISubscriptionPlan extends Document {
   yearlyPrice: number;
   originalMonthlyPrice?: number; // Slashed MRP price for monthly (e.g. 350)
   originalYearlyPrice?: number; // Slashed MRP price for yearly (e.g. 3500)
+  razorpayMonthlyPlanId?: string;
+  razorpayYearlyPlanId?: string;
   monthlyFreeQuestions: number; // Free 48h Doctor queries per month (default 1)
   yearlyFreeQuestions: number; // Free 48h Doctor queries per year (default 10)
   trialDays: number;
@@ -40,6 +42,8 @@ export interface ISubscriptionPlan extends Document {
       yearlyPrice: { type: Number, required: true, default: 1000, min: 0 },
       originalMonthlyPrice: { type: Number, default: 0, min: 0 },
       originalYearlyPrice: { type: Number, default: 3600, min: 0 },
+      razorpayMonthlyPlanId: { type: String },
+      razorpayYearlyPlanId: { type: String },
       monthlyFreeQuestions: { type: Number, default: 1, min: 0 },
       yearlyFreeQuestions: { type: Number, default: 10, min: 0 },
       trialDays: { type: Number, required: true, default: 2, min: 0 },

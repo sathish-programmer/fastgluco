@@ -11,6 +11,24 @@ export interface IUserSubscription extends Document {
   trialEndDate?: Date;
   cancelAtPeriodEnd: boolean;
   razorpaySubscriptionId?: string;
+  razorpayPlanId?: string;
+  razorpayPaymentId?: string;
+  autoPayEnabled: boolean;
+  mandateStatus: 'none' | 'created' | 'authenticated' | 'active' | 'pending' | 'halted' | 'cancelled' | 'expired';
+  recurringAmount?: number;
+  nextBillingDate?: Date;
+  lastBillingDate?: Date;
+  mandateDetails?: {
+    method?: string;
+    authType?: string;
+    bank?: string;
+    last4?: string;
+    cardNetwork?: string;
+  };
+  lastPaymentStatus?: 'success' | 'failed' | 'pending';
+  lastFailureReason?: string;
+  cancellationReason?: string;
+  cancelledAt?: Date;
   couponCode?: string;
   isDeleted: boolean;
   createdAt: Date;
@@ -34,7 +52,30 @@ const userSubscriptionSchema = new Schema<IUserSubscription>(
     trialStartDate: { type: Date },
     trialEndDate: { type: Date, index: true },
     cancelAtPeriodEnd: { type: Boolean, default: false },
-    razorpaySubscriptionId: { type: String },
+    autoPayEnabled: { type: Boolean, default: false, index: true },
+    mandateStatus: { 
+      type: String, 
+      enum: ['none', 'created', 'authenticated', 'active', 'pending', 'halted', 'cancelled', 'expired'], 
+      default: 'none',
+      index: true 
+    },
+    razorpaySubscriptionId: { type: String, index: true },
+    razorpayPlanId: { type: String },
+    razorpayPaymentId: { type: String, index: true },
+    recurringAmount: { type: Number },
+    nextBillingDate: { type: Date, index: true },
+    lastBillingDate: { type: Date },
+    mandateDetails: {
+      method: { type: String },
+      authType: { type: String },
+      bank: { type: String },
+      last4: { type: String },
+      cardNetwork: { type: String }
+    },
+    lastPaymentStatus: { type: String, enum: ['success', 'failed', 'pending'] },
+    lastFailureReason: { type: String },
+    cancellationReason: { type: String },
+    cancelledAt: { type: Date },
     couponCode: { type: String },
     isDeleted: { type: Boolean, default: false }
   },

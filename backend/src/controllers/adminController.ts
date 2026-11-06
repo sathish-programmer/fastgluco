@@ -26,6 +26,9 @@ import { Appointment } from '../models/Appointment';
 import ShopOrder from '../models/ShopOrder';
 import ShopProduct from '../models/ShopProduct';
 import { AppOtpTelemetry } from '../models/AppOtpTelemetry';
+import { Otp } from '../models/Otp';
+import { decryptOtp } from './authController';
+import { SentEmailLog } from '../models/SentEmailLog';
 import { UserSubscription } from '../models/UserSubscription';
 import { SubscriptionPlan } from '../models/SubscriptionPlan';
 import { Coupon } from '../models/Coupon';
@@ -2088,6 +2091,287 @@ export class AdminController {
     } catch (err: any) {
       console.error('Error in getOtpLogs:', err);
       return res.status(500).json({ message: err.message || 'Error fetching OTP logs' });
+    }
+  }
+
+  /**
+   * Get Sent Emails with search, filters & pagination
+   */
+  public static async getSentEmails(req: Request, res: Response) {
+    try {
+      // Auto-backfill recent historical OTP emails from AppOtpTelemetry if SentEmailLog is empty
+      const existingLogsCount = await SentEmailLog.countDocuments();
+      if (existingLogsCount === 0) {
+        try {
+          const historicalTelemetries = await AppOtpTelemetry.find({
+            email: { $exists: true, $ne: '' }
+          })
+            .sort({ timestamp: -1 })
+            .limit(100)
+            .lean();
+
+          if (historicalTelemetries.length > 0) {
+            const seedLogs = historicalTelemetries.map((tele) => {
+              const msgIdMatch = typeof tele.emailGatewayResponse === 'string'
+                ? tele.emailGatewayResponse.match(/<([^>]+)>/)
+                : null;
+              const msgId = msgIdMatch ? `<${msgIdMatch[1]}>` : (tele.emailGatewayResponse ? String(tele.emailGatewayResponse).slice(0, 80) : undefined);
+
+              return {
+                recipient: tele.email || 'user@mitoreboot.in',
+                sender: process.env.MAIL_FROM_ADDRESS || 'support@mitoreboot.in',
+                subject: 'Mito Reboot - Verification Code',
+                htmlBody: `
+<div style="font-family:sans-serif;padding:32px;background:#f8fafc;border-radius:16px;max-width:540px;margin:0 auto;border:1px solid #e2e8f0;">
+  <div style="text-align:center;margin-bottom:24px;">
+    <h1 style="color:#0284c7;font-size:24px;margin:0;">Mito Reboot</h1>
+    <p style="color:#64748b;font-size:13px;margin:4px 0 0 0;">Preventive Lifestyle & Metabolic Health</p>
+  </div>
+  <div style="background:#ffffff;padding:24px;border-radius:12px;border:1px solid #e2e8f0;">
+    <p style="color:#334155;font-size:14px;margin-top:0;">Hello,</p>
+    <p style="color:#334155;font-size:14px;">Your one-time login verification code for Mito Reboot is:</p>
+    <div style="background:#f0f9ff;border:2px dashed #0284c7;padding:16px;text-align:center;border-radius:10px;margin:20px 0;">
+      <span style="font-size:32px;font-weight:bold;letter-spacing:8px;color:#0369a1;">••••••</span>
+    </div>
+    <p style="color:#64748b;font-size:12px;line-height:1.5;margin-bottom:0;">
+      This code is valid for 10 minutes. If you did not request this OTP, please disregard this email.
+    </p>
+  </div>
+  <div style="text-align:center;margin-top:20px;color:#94a3b8;font-size:11px;">
+    &copy; ${new Date().getFullYear()} Mito Reboot Health Solutions Pvt Ltd. All rights reserved.
+  </div>
+</div>`,
+                textBody: 'Your one-time login verification code for Mito Reboot.',
+                category: 'OTP',
+                status: tele.emailStatus === 'FAILED' ? 'FAILED' : 'SENT',
+                messageId: msgId,
+                gatewayResponse: typeof tele.emailGatewayResponse === 'object' ? JSON.stringify(tele.emailGatewayResponse) : String(tele.emailGatewayResponse || 'Delivered via SMTP relay'),
+                sentAt: tele.timestamp || tele.createdAt,
+                createdAt: tele.createdAt || tele.timestamp,
+                attempts: tele.attemptsCount || 1,
+                hasAttachments: false
+              };
+            });
+
+            await SentEmailLog.insertMany(seedLogs, { ordered: false }).catch(() => {});
+          }
+        } catch (seedErr) {
+          console.error('[AdminController] Error seeding historical emails:', seedErr);
+        }
+      }
+
+      // Automatically unmask placeholder dots in any existing OTP logs if plain OTP is decryptable
+      try {
+        const maskedLogs = await SentEmailLog.find({
+          category: 'OTP',
+          htmlBody: { $regex: '••••••|\\*{6}' }
+        }).limit(30);
+
+        for (const log of maskedLogs) {
+          const otpDoc = await Otp.findOne({ email: log.recipient.toLowerCase().trim() }).sort({ createdAt: -1 });
+          if (otpDoc?.encryptedOtp) {
+            const plain = decryptOtp(otpDoc.encryptedOtp);
+            if (plain) {
+              const updatedHtml = log.htmlBody.replace(/••••••|\*{6}/g, plain);
+              const updatedSubject = `${plain} is your Mito Reboot verification code`;
+              const updatedText = `Your one-time login verification code for Mito Reboot is: ${plain}`;
+              await SentEmailLog.updateOne(
+                { _id: log._id },
+                { $set: { subject: updatedSubject, htmlBody: updatedHtml, textBody: updatedText } }
+              );
+            }
+          }
+        }
+      } catch (unmaskErr) {
+        // Silently skip if decryption is not possible
+      }
+
+      const page = Math.max(1, parseInt(req.query.page as string) || 1);
+      const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 20));
+      const skip = (page - 1) * limit;
+
+      const { search, category, status, userId, startDate, endDate } = req.query;
+
+      const query: any = {};
+
+      if (search) {
+        const searchRegex = new RegExp((search as string).trim(), 'i');
+        query.$or = [
+          { recipient: searchRegex },
+          { recipientName: searchRegex },
+          { subject: searchRegex },
+          { messageId: searchRegex }
+        ];
+      }
+
+      if (category && category !== 'ALL') {
+        query.category = category;
+      }
+
+      if (status && status !== 'ALL') {
+        query.status = status;
+      }
+
+      if (userId && mongoose.Types.ObjectId.isValid(userId as string)) {
+        query.userId = new mongoose.Types.ObjectId(userId as string);
+      }
+
+      if (startDate || endDate) {
+        query.sentAt = {};
+        if (startDate) {
+          query.sentAt.$gte = new Date(startDate as string);
+        }
+        if (endDate) {
+          const end = new Date(endDate as string);
+          end.setHours(23, 59, 59, 999);
+          query.sentAt.$lte = end;
+        }
+      }
+
+      const [emails, total] = await Promise.all([
+        SentEmailLog.find(query)
+          .select('-htmlBody') // Exclude heavy full HTML from list view for high performance
+          .sort({ sentAt: -1 })
+          .skip(skip)
+          .limit(limit)
+          .lean(),
+        SentEmailLog.countDocuments(query)
+      ]);
+
+      // Calculate statistics
+      const startOfToday = new Date();
+      startOfToday.setHours(0, 0, 0, 0);
+
+      const startOfMonth = new Date(startOfToday.getFullYear(), startOfToday.getMonth(), 1);
+
+      const [todayCount, monthCount, failedCount, totalAll] = await Promise.all([
+        SentEmailLog.countDocuments({ sentAt: { $gte: startOfToday } }),
+        SentEmailLog.countDocuments({ sentAt: { $gte: startOfMonth } }),
+        SentEmailLog.countDocuments({ status: 'FAILED' }),
+        SentEmailLog.countDocuments()
+      ]);
+
+      const activeProvider = process.env.SMTP_HOST?.includes('brevo')
+        ? 'Brevo SMTP'
+        : (process.env.SMTP_HOST?.includes('titan') || process.env.SMTP_HOST?.includes('secureserver'))
+        ? 'Titan / GoDaddy SMTP'
+        : (process.env.SMTP_HOST || 'Custom SMTP');
+
+      return res.json({
+        success: true,
+        emails,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit)
+        },
+        stats: {
+          totalSent: totalAll,
+          sentToday: todayCount,
+          sentThisMonth: monthCount,
+          totalFailed: failedCount,
+          activeProvider,
+          smtpHost: process.env.SMTP_HOST || 'smtp-relay.brevo.com',
+          fromAddress: process.env.MAIL_FROM_ADDRESS || 'support@mitoreboot.in'
+        }
+      });
+    } catch (err: any) {
+      console.error('[AdminController] Error in getSentEmails:', err);
+      return res.status(500).json({ message: err.message || 'Error fetching sent emails' });
+    }
+  }
+
+  /**
+   * Get single email with full HTML content
+   */
+  public static async getSentEmailById(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ message: 'Invalid email log ID' });
+      }
+
+      const email = await SentEmailLog.findById(id).lean();
+      if (!email) {
+        return res.status(404).json({ message: 'Email log not found' });
+      }
+
+      let emailObj: any = email;
+      if (email.category === 'OTP' && (email.htmlBody?.includes('••••••') || email.htmlBody?.includes('******'))) {
+        try {
+          const otpDoc = await Otp.findOne({ email: email.recipient.toLowerCase().trim() }).sort({ createdAt: -1 });
+          if (otpDoc?.encryptedOtp) {
+            const plain = decryptOtp(otpDoc.encryptedOtp);
+            if (plain) {
+              const updatedHtml = email.htmlBody.replace(/••••••|\*{6}/g, plain);
+              const updatedSubject = `${plain} is your Mito Reboot verification code`;
+              const updatedText = `Your one-time login verification code for Mito Reboot is: ${plain}`;
+
+              emailObj = {
+                ...email,
+                subject: updatedSubject,
+                htmlBody: updatedHtml,
+                textBody: updatedText
+              };
+
+              // Persist the unmasked content back to SentEmailLog for future views
+              await SentEmailLog.updateOne(
+                { _id: email._id },
+                { $set: { subject: updatedSubject, htmlBody: updatedHtml, textBody: updatedText } }
+              ).catch(() => {});
+            }
+          }
+        } catch (decryptErr) {
+          console.error('[AdminController] Error decrypting OTP for preview:', decryptErr);
+        }
+      }
+
+      return res.json({
+        success: true,
+        email: emailObj
+      });
+    } catch (err: any) {
+      console.error('[AdminController] Error in getSentEmailById:', err);
+      return res.status(500).json({ message: err.message || 'Error fetching email details' });
+    }
+  }
+
+  /**
+   * Resend a logged email
+   */
+  public static async resendSentEmail(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const { overrideRecipient } = req.body;
+
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ message: 'Invalid email log ID' });
+      }
+
+      const result = await EmailService.resendLoggedEmail(id, overrideRecipient);
+      return res.json(result);
+    } catch (err: any) {
+      console.error('[AdminController] Error in resendSentEmail:', err);
+      return res.status(500).json({ message: err.message || 'Error resending email' });
+    }
+  }
+
+  /**
+   * Delete an email log (SuperAdmin only)
+   */
+  public static async deleteSentEmail(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ message: 'Invalid email log ID' });
+      }
+
+      await SentEmailLog.findByIdAndDelete(id);
+      return res.json({ success: true, message: 'Email log deleted successfully' });
+    } catch (err: any) {
+      console.error('[AdminController] Error in deleteSentEmail:', err);
+      return res.status(500).json({ message: err.message || 'Error deleting email log' });
     }
   }
 }

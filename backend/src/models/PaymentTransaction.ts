@@ -12,7 +12,9 @@ export interface IPaymentTransaction extends Document {
   gateway: 'razorpay' | 'mock';
   gatewayOrderId: string;
   gatewayPaymentId?: string;
+  gatewaySubscriptionId?: string;
   gatewaySignature?: string;
+  isRecurring?: boolean;
   status: 'pending' | 'success' | 'failed' | 'refunded';
   failureReason?: string;
   refundedAmount: number;
@@ -35,7 +37,9 @@ const paymentTransactionSchema = new Schema<IPaymentTransaction>(
     gateway: { type: String, enum: ['razorpay', 'mock'], default: 'razorpay', required: true },
     gatewayOrderId: { type: String, required: true, index: true },
     gatewayPaymentId: { type: String, index: true },
+    gatewaySubscriptionId: { type: String, index: true },
     gatewaySignature: { type: String },
+    isRecurring: { type: Boolean, default: false, index: true },
     status: { 
       type: String, 
       enum: ['pending', 'success', 'failed', 'refunded'], 

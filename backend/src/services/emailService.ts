@@ -2,6 +2,8 @@ import nodemailer from 'nodemailer';
 import fs from 'fs';
 import path from 'path';
 import { PaymentGatewayConfig } from '../models/PaymentGatewayConfig';
+import { SentEmailLog } from '../models/SentEmailLog';
+import { User } from '../models/User';
 
 // Configure transporter using SMTP environment variables
 const transporter = nodemailer.createTransport({
@@ -14,6 +16,71 @@ const transporter = nodemailer.createTransport({
 });
 
 const originalSendMail = transporter.sendMail.bind(transporter);
+
+function inferEmailCategory(subject: string, mailOptions: any): 'OTP' | 'SUBSCRIPTION' | 'AUTOPAY' | 'APPOINTMENT' | 'LAB' | 'SHOP_ORDER' | 'ACCOUNT_SECURITY' | 'WELCOME' | 'SYSTEM' | 'GENERAL' {
+  if (mailOptions?.category) return mailOptions.category;
+  const s = (subject || '').toLowerCase();
+  if (s.includes('otp') || s.includes('verification code') || s.includes('verify your email')) return 'OTP';
+  if (s.includes('autopay')) return 'AUTOPAY';
+  if (s.includes('invoice') || s.includes('subscription')) return 'SUBSCRIPTION';
+  if (s.includes('appointment') || s.includes('doctor') || s.includes('consultation')) return 'APPOINTMENT';
+  if (s.includes('lab') || s.includes('blood test') || s.includes('screening')) return 'LAB';
+  if (s.includes('order') || s.includes('shipment') || s.includes('delivery') || s.includes('receipt')) return 'SHOP_ORDER';
+  if (s.includes('quarantine') || s.includes('deletion') || s.includes('password') || s.includes('security')) return 'ACCOUNT_SECURITY';
+  if (s.includes('welcome')) return 'WELCOME';
+  return 'GENERAL';
+}
+
+async function logSentEmail(
+  mailOptions: any,
+  status: 'SENT' | 'FAILED',
+  info?: any,
+  errorMessage?: string,
+  attempts: number = 1
+) {
+  try {
+    const rawTo = mailOptions.to;
+    const recipient = Array.isArray(rawTo) ? rawTo.join(', ') : (typeof rawTo === 'string' ? rawTo : String(rawTo || ''));
+    const cleanEmail = recipient.split(',')[0].trim().replace(/^.*<([^>]+)>.*$/, '$1').toLowerCase();
+
+    let userId = mailOptions.userId;
+    let recipientName = mailOptions.recipientName;
+
+    if (!userId && cleanEmail) {
+      const user = await User.findOne({ email: cleanEmail }).select('_id name');
+      if (user) {
+        userId = user._id;
+        if (!recipientName) recipientName = user.name;
+      }
+    }
+
+    const attachmentNames = Array.isArray(mailOptions.attachments)
+      ? mailOptions.attachments.map((a: any) => a.filename || 'attachment')
+      : [];
+
+    await SentEmailLog.create({
+      recipient: cleanEmail || recipient,
+      recipientName: recipientName || undefined,
+      userId: userId || undefined,
+      sender: mailOptions.from || process.env.MAIL_FROM_ADDRESS || 'support@mitoreboot.in',
+      subject: mailOptions.subject || 'No Subject',
+      htmlBody: mailOptions.html || mailOptions.text || '',
+      textBody: mailOptions.text || undefined,
+      category: inferEmailCategory(mailOptions.subject, mailOptions),
+      status,
+      messageId: info?.messageId || undefined,
+      gatewayResponse: info?.response || undefined,
+      errorMessage: errorMessage || undefined,
+      attempts,
+      hasAttachments: attachmentNames.length > 0,
+      attachmentNames,
+      metadata: mailOptions.metadata || undefined,
+      sentAt: new Date()
+    });
+  } catch (logErr) {
+    console.error('[EmailService] Failed to record SentEmailLog:', logErr);
+  }
+}
 
 // Define retry/logger wrapper for centralized email sending
 transporter.sendMail = (async (mailOptions: any, callback?: any) => {
@@ -48,11 +115,14 @@ transporter.sendMail = (async (mailOptions: any, callback?: any) => {
       attempt++;
       const info = await originalSendMail(mailOptions);
       console.log(`[EmailService] Email sent successfully to ${mailOptions.to}. MessageId: ${info.messageId}`);
+      // Asynchronously log to SentEmailLog for administrative visibility
+      logSentEmail(mailOptions, 'SENT', info, undefined, attempt).catch(() => {});
       if (callback) callback(null, info);
       return info;
     } catch (err: any) {
       console.error(`[EmailService] SMTP send attempt ${attempt} failed to ${mailOptions.to}. Error: ${err.message || err}`);
       if (attempt >= maxRetries) {
+        logSentEmail(mailOptions, 'FAILED', undefined, err.message || String(err), attempt).catch(() => {});
         if (callback) callback(err);
         throw err;
       }
@@ -595,6 +665,164 @@ export class EmailService {
       <p>If you change your mind, you can always reactivate your subscription from your Profile.</p>
     `, appName, appTagline);
     try { await transporter.sendMail({ from: `"${appName} Billing" <support@mitoreboot.in>`, to: email, subject: `${appName} Subscription Cancellation`, html }); } catch (err) { console.error(err); }
+  }
+
+  /**
+   * Send AutoPay Enabled Confirmation Email
+   */
+  public static async sendAutoPayEnabledEmail(
+    email: string,
+    name: string,
+    planName: string,
+    recurringAmount: number,
+    billingCycle: string,
+    nextBillingDate: Date | string
+  ) {
+    const { appName, appTagline } = await EmailService.getBranding();
+    const formattedDate = new Date(nextBillingDate).toLocaleDateString('en-IN', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
+    const html = generateEmailTemplate('AutoPay Activated', `
+      <p>Hi ${name},</p>
+      <p>AutoPay (recurring payments) has been successfully activated for your <strong>${planName}</strong> subscription.</p>
+      <div style="background-color: #ecfdf5; border: 1px solid #a7f3d0; border-left: 4px solid #10b981; padding: 16px; border-radius: 8px; margin: 20px 0;">
+        <p style="margin: 0; color: #065f46; font-weight: 600;">AutoPay Mandate Details:</p>
+        <ul style="margin-top: 8px; margin-bottom: 0; color: #047857; padding-left: 20px;">
+          <li><strong>Plan:</strong> ${planName}</li>
+          <li><strong>Billing Cycle:</strong> ${billingCycle === 'yearly' ? 'Yearly' : 'Monthly'}</li>
+          <li><strong>Recurring Amount:</strong> ₹${recurringAmount.toFixed(2)}</li>
+          <li><strong>Next Scheduled Charge:</strong> ${formattedDate}</li>
+        </ul>
+      </div>
+      <p style="color: #64748b; font-size: 13px;">You will receive an invoice after each successful automatic deduction. You can manage or disable AutoPay anytime from your Subscription settings in the app.</p>
+    `, appName, appTagline);
+    try {
+      await transporter.sendMail({
+        from: `"${appName} Billing" <support@mitoreboot.in>`,
+        to: email,
+        subject: `AutoPay Enabled for your ${appName} Subscription`,
+        html
+      });
+    } catch (err) {
+      console.error('[EmailService] Error sending AutoPay enabled email:', err);
+    }
+  }
+
+  /**
+   * Send AutoPay Disabled Email
+   */
+  public static async sendAutoPayDisabledEmail(
+    email: string,
+    name: string,
+    planName: string,
+    expiryDate: Date | string
+  ) {
+    const { appName, appTagline } = await EmailService.getBranding();
+    const formattedExpiry = new Date(expiryDate).toLocaleDateString('en-IN', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
+    const html = generateEmailTemplate('AutoPay Cancelled', `
+      <p>Hi ${name},</p>
+      <p>AutoPay has been turned off for your <strong>${planName}</strong> subscription.</p>
+      <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #64748b; padding: 16px; border-radius: 8px; margin: 20px 0;">
+        <p style="margin: 0; color: #1e293b; font-weight: 600;">Your Subscription Remains Active</p>
+        <p style="margin: 6px 0 0 0; color: #475569; font-size: 13px;">
+          Your current paid subscription remains fully active until <strong>${formattedExpiry}</strong>. No future recurring deductions will be made to your payment method.
+        </p>
+      </div>
+      <p style="color: #64748b; font-size: 13px;">You can re-enable AutoPay anytime before or after your subscription ends from the Subscription page in the app.</p>
+    `, appName, appTagline);
+    try {
+      await transporter.sendMail({
+        from: `"${appName} Billing" <support@mitoreboot.in>`,
+        to: email,
+        subject: `AutoPay Cancelled for your ${appName} Subscription`,
+        html
+      });
+    } catch (err) {
+      console.error('[EmailService] Error sending AutoPay disabled email:', err);
+    }
+  }
+
+  /**
+   * Send AutoPay Renewal Success Email
+   */
+  public static async sendAutoPayRenewalSuccessEmail(
+    email: string,
+    name: string,
+    planName: string,
+    amount: number,
+    newExpiryDate: Date | string
+  ) {
+    const { appName, appTagline } = await EmailService.getBranding();
+    const formattedExpiry = new Date(newExpiryDate).toLocaleDateString('en-IN', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
+    const html = generateEmailTemplate('Subscription Auto-Renewed', `
+      <p>Hi ${name},</p>
+      <p>Great news! Your <strong>${planName}</strong> subscription has been successfully auto-renewed.</p>
+      <div style="background-color: #ecfdf5; border: 1px solid #a7f3d0; border-left: 4px solid #10b981; padding: 16px; border-radius: 8px; margin: 20px 0;">
+        <p style="margin: 0; color: #065f46; font-weight: 600;">Renewal Summary:</p>
+        <ul style="margin-top: 8px; margin-bottom: 0; color: #047857; padding-left: 20px;">
+          <li><strong>Plan:</strong> ${planName}</li>
+          <li><strong>Amount Paid:</strong> ₹${amount.toFixed(2)}</li>
+          <li><strong>New Validity Until:</strong> ${formattedExpiry}</li>
+        </ul>
+      </div>
+      <p style="color: #64748b; font-size: 13px;">Your invoice is available for download in the ${appName} app under Billing History.</p>
+    `, appName, appTagline);
+    try {
+      await transporter.sendMail({
+        from: `"${appName} Billing" <support@mitoreboot.in>`,
+        to: email,
+        subject: `Subscription Successfully Renewed - ${appName}`,
+        html
+      });
+    } catch (err) {
+      console.error('[EmailService] Error sending renewal success email:', err);
+    }
+  }
+
+  /**
+   * Send AutoPay Payment Failed Email
+   */
+  public static async sendAutoPayPaymentFailedEmail(
+    email: string,
+    name: string,
+    planName: string,
+    amount: number,
+    failureReason: string
+  ) {
+    const { appName, appTagline } = await EmailService.getBranding();
+    const html = generateEmailTemplate('⚠️ AutoPay Payment Failed', `
+      <p>Hi ${name},</p>
+      <p>We were unable to process the automatic recurring payment for your <strong>${planName}</strong> subscription.</p>
+      <div style="background-color: #fef2f2; border: 1px solid #fecaca; border-left: 4px solid #ef4444; padding: 16px; border-radius: 8px; margin: 20px 0;">
+        <p style="margin: 0; color: #991b1b; font-weight: 600;">Payment Attempt Details:</p>
+        <ul style="margin-top: 8px; margin-bottom: 0; color: #b91c1c; padding-left: 20px;">
+          <li><strong>Plan:</strong> ${planName}</li>
+          <li><strong>Attempted Amount:</strong> ₹${amount.toFixed(2)}</li>
+          <li><strong>Reason:</strong> ${failureReason || 'Card declined or insufficient balance'}</li>
+        </ul>
+      </div>
+      <p style="color: #475569;">Razorpay will attempt to retry the charge automatically. To avoid interruption to your health analysis and CGM reports, please verify your card details or balance in the app.</p>
+    `, appName, appTagline);
+    try {
+      await transporter.sendMail({
+        from: `"${appName} Billing" <support@mitoreboot.in>`,
+        to: email,
+        subject: `Urgent: AutoPay Payment Failed for ${appName}`,
+        html
+      });
+    } catch (err) {
+      console.error('[EmailService] Error sending payment failed email:', err);
+    }
   }
 
   /**
@@ -1633,5 +1861,28 @@ export class EmailService {
     } catch (err) {
       console.error('[EmailService] Account restored email error:', err);
     }
+  }
+
+  /**
+   * Resend a previously logged email
+   */
+  public static async resendLoggedEmail(logId: string, overrideRecipient?: string): Promise<{ success: boolean; message: string; messageId?: string }> {
+    const log = await SentEmailLog.findById(logId);
+    if (!log) {
+      throw new Error('Email log not found');
+    }
+    const to = (overrideRecipient || log.recipient).trim();
+    const mailOptions: any = {
+      to,
+      subject: `[Resend] ${log.subject.replace(/^\[Resend\]\s*/i, '')}`,
+      html: log.htmlBody,
+      text: log.textBody,
+      category: log.category,
+      userId: log.userId,
+      recipientName: log.recipientName,
+      metadata: { originalLogId: log._id, resent: true }
+    };
+    const info: any = await (transporter as any).sendMail(mailOptions);
+    return { success: true, message: `Email successfully resent to ${to}`, messageId: info?.messageId };
   }
 }

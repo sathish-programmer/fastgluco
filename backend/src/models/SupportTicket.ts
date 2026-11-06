@@ -19,7 +19,7 @@ export interface ISupportTicket extends Document {
   subject?: string;
   question: string;
   answer?: string;
-  category?: 'Order Status' | 'Payment Issue' | 'Refund' | 'Cancellation' | 'Return' | 'Delivery' | 'Product Issue' | 'Account/Login' | 'OTP Problem' | 'Technical Issue' | 'Other' | string;
+  category?: 'General' | 'Order Status' | 'Payment Issue' | 'Refund' | 'Cancellation' | 'Return' | 'Delivery' | 'Product Issue' | 'Account/Login' | 'OTP Problem' | 'Technical Issue' | 'Other' | string;
   priority?: 'Low' | 'Medium' | 'High' | 'Urgent';
   status: 'Open' | 'In Progress' | 'Waiting for Customer' | 'Waiting for Vendor' | 'Resolved' | 'Closed' | 'Answered' | string;
   assignedAdmin?: Types.ObjectId;
@@ -47,7 +47,7 @@ const supportTicketSchema = new Schema<ISupportTicket>(
     category: { 
       type: String, 
       enum: [
-        'Order Status', 'Payment Issue', 'Refund', 'Cancellation', 'Return', 
+        'General', 'Order Status', 'Payment Issue', 'Refund', 'Cancellation', 'Return', 
         'Delivery', 'Product Issue', 'Account/Login', 'OTP Problem', 'Technical Issue', 'Other'
       ], 
       default: 'General' 

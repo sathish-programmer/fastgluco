@@ -13,6 +13,8 @@ import { FCMService } from '../services/fcmService';
 import { Coupon } from '../models/Coupon';
 import { EmailService } from '../services/emailService';
 import { User } from '../models/User';
+import { AutoPayService } from '../services/autoPayService';
+import { AutoPayAuditLog } from '../models/AutoPayAuditLog';
 
 export class SubscriptionController {
   /**
@@ -316,7 +318,8 @@ export class SubscriptionController {
   public static async createOrder(req: AuthRequest, res: Response) {
     try {
       const userId = req.user?.id;
-      const { planId, billingCycle, couponCode } = req.body; // billingCycle = 'monthly' | 'yearly'
+      const { planId, billingCycle, couponCode, enableAutoPay } = req.body; // billingCycle = 'monthly' | 'yearly'
+      const isAutoPay = Boolean(enableAutoPay);
 
       if (!planId || !billingCycle) {
         return res.status(400).json({ message: 'Plan ID and billing cycle are required.' });
@@ -451,78 +454,185 @@ export class SubscriptionController {
         totalAmountCharged = parseFloat((baseAmount + gstAmount).toFixed(2));
       }
 
+      // Calculate next billing date
+      const nextBillingDate = new Date();
+      if (billingCycle === 'monthly') {
+        nextBillingDate.setDate(nextBillingDate.getDate() + 30);
+      } else {
+        nextBillingDate.setDate(nextBillingDate.getDate() + 365);
+      }
+
       if (useRazorpay) {
-        // 3. Initialize Razorpay Client
         const instance = new Razorpay({
           key_id: config.razorpayKeyId!,
           key_secret: config.razorpayKeySecret!
         });
 
-        // 4. Generate Razorpay checkout Order
-        const orderOptions = {
-          amount: Math.round(totalAmountCharged * 100), // paise
-          currency: 'INR',
-          receipt: `rcpt_${Date.now()}_${Math.floor(Math.random() * 1000)}`
-        };
+        if (isAutoPay) {
+          // --- Razorpay AutoPay Subscription Mode ---
+          const rzpPlanId = await AutoPayService.ensureRazorpayPlan(
+            instance,
+            plan,
+            billingCycle,
+            totalAmountCharged
+          );
 
-        const razorpayOrder = await instance.orders.create(orderOptions);
+          const rzpSub: any = await instance.subscriptions.create({
+            plan_id: rzpPlanId,
+            total_count: billingCycle === 'yearly' ? 10 : 120,
+            customer_notify: 1,
+            quantity: 1,
+            notes: {
+              userId: userId!.toString(),
+              planId: plan._id.toString(),
+              billingCycle,
+              couponCode: appliedCouponCode,
+              enableAutoPay: 'true'
+            }
+          });
 
-        // 5. Save pending transaction in database
-        const transaction = new PaymentTransaction({
-          userId,
-          planId: plan._id,
-          amount: totalAmountCharged,
-          originalAmount: price,
-          discountAmount: discountAmount,
-          couponCode: appliedCouponCode,
-          currency: 'INR',
-          gateway: 'razorpay',
-          gatewayOrderId: razorpayOrder.id,
-          status: 'pending'
-        });
+          // Save pending transaction linked to this subscription ID
+          const transaction = new PaymentTransaction({
+            userId,
+            planId: plan._id,
+            amount: totalAmountCharged,
+            originalAmount: price,
+            discountAmount: discountAmount,
+            couponCode: appliedCouponCode,
+            currency: 'INR',
+            gateway: 'razorpay',
+            gatewayOrderId: `sub_${rzpSub.id}`,
+            gatewaySubscriptionId: rzpSub.id,
+            isRecurring: false,
+            status: 'pending'
+          });
 
-        await transaction.save();
+          await transaction.save();
 
-        return res.status(201).json({
-          gateway: 'razorpay',
-          keyId: config.razorpayKeyId,
-          orderId: razorpayOrder.id,
-          amount: orderOptions.amount,
-          currency: orderOptions.currency,
-          planName: plan.name,
-          baseAmount,
-          gstAmount,
-          totalAmountCharged
-        });
+          return res.status(201).json({
+            gateway: 'razorpay',
+            subscriptionMode: true,
+            subscriptionId: rzpSub.id,
+            keyId: config.razorpayKeyId,
+            amount: Math.round(totalAmountCharged * 100),
+            currency: 'INR',
+            planName: plan.name,
+            billingCycle,
+            autoPayEnabled: true,
+            baseAmount,
+            gstAmount,
+            totalAmountCharged,
+            recurringAmount: totalAmountCharged,
+            nextBillingDate
+          });
+        } else {
+          // --- One-Time Razorpay Order Mode ---
+          const orderOptions = {
+            amount: Math.round(totalAmountCharged * 100), // paise
+            currency: 'INR',
+            receipt: `rcpt_${Date.now()}_${Math.floor(Math.random() * 1000)}`
+          };
+
+          const razorpayOrder = await instance.orders.create(orderOptions);
+
+          const transaction = new PaymentTransaction({
+            userId,
+            planId: plan._id,
+            amount: totalAmountCharged,
+            originalAmount: price,
+            discountAmount: discountAmount,
+            couponCode: appliedCouponCode,
+            currency: 'INR',
+            gateway: 'razorpay',
+            gatewayOrderId: razorpayOrder.id,
+            status: 'pending'
+          });
+
+          await transaction.save();
+
+          return res.status(201).json({
+            gateway: 'razorpay',
+            subscriptionMode: false,
+            keyId: config.razorpayKeyId,
+            orderId: razorpayOrder.id,
+            amount: orderOptions.amount,
+            currency: orderOptions.currency,
+            planName: plan.name,
+            billingCycle,
+            autoPayEnabled: false,
+            baseAmount,
+            gstAmount,
+            totalAmountCharged
+          });
+        }
       } else {
-        // 6. Local Mock checkout Mode
-        const mockOrderId = `mock_order_${Date.now()}_${Math.round(Math.random() * 1000)}`;
+        // --- Local Mock Checkout Mode ---
+        if (isAutoPay) {
+          const mockSubId = `mock_sub_${Date.now()}_${Math.round(Math.random() * 1000)}`;
 
-        const transaction = new PaymentTransaction({
-          userId,
-          planId: plan._id,
-          amount: totalAmountCharged,
-          originalAmount: price,
-          discountAmount: discountAmount,
-          couponCode: appliedCouponCode,
-          currency: 'INR',
-          gateway: 'mock',
-          gatewayOrderId: mockOrderId,
-          status: 'pending'
-        });
+          const transaction = new PaymentTransaction({
+            userId,
+            planId: plan._id,
+            amount: totalAmountCharged,
+            originalAmount: price,
+            discountAmount: discountAmount,
+            couponCode: appliedCouponCode,
+            currency: 'INR',
+            gateway: 'mock',
+            gatewayOrderId: `sub_${mockSubId}`,
+            gatewaySubscriptionId: mockSubId,
+            status: 'pending'
+          });
 
-        await transaction.save();
+          await transaction.save();
 
-        return res.status(201).json({
-          gateway: 'mock',
-          orderId: mockOrderId,
-          amount: Math.round(totalAmountCharged * 100),
-          currency: 'INR',
-          planName: plan.name,
-          baseAmount,
-          gstAmount,
-          totalAmountCharged
-        });
+          return res.status(201).json({
+            gateway: 'mock',
+            subscriptionMode: true,
+            subscriptionId: mockSubId,
+            amount: Math.round(totalAmountCharged * 100),
+            currency: 'INR',
+            planName: plan.name,
+            billingCycle,
+            autoPayEnabled: true,
+            baseAmount,
+            gstAmount,
+            totalAmountCharged,
+            recurringAmount: totalAmountCharged,
+            nextBillingDate
+          });
+        } else {
+          const mockOrderId = `mock_order_${Date.now()}_${Math.round(Math.random() * 1000)}`;
+
+          const transaction = new PaymentTransaction({
+            userId,
+            planId: plan._id,
+            amount: totalAmountCharged,
+            originalAmount: price,
+            discountAmount: discountAmount,
+            couponCode: appliedCouponCode,
+            currency: 'INR',
+            gateway: 'mock',
+            gatewayOrderId: mockOrderId,
+            status: 'pending'
+          });
+
+          await transaction.save();
+
+          return res.status(201).json({
+            gateway: 'mock',
+            subscriptionMode: false,
+            orderId: mockOrderId,
+            amount: Math.round(totalAmountCharged * 100),
+            currency: 'INR',
+            planName: plan.name,
+            billingCycle,
+            autoPayEnabled: false,
+            baseAmount,
+            gstAmount,
+            totalAmountCharged
+          });
+        }
       }
     } catch (error: any) {
       console.error('Checkout creation error:', error);
@@ -532,14 +642,19 @@ export class SubscriptionController {
   }
 
   /**
-   * Verify Razorpay Payment Signature
+   * Verify Razorpay Payment Signature (Supports both One-time orders and AutoPay recurring subscriptions)
    */
   public static async verifyPayment(req: AuthRequest, res: Response) {
     try {
       const userId = req.user?.id;
-      const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+      const { 
+        razorpay_order_id, 
+        razorpay_payment_id, 
+        razorpay_signature,
+        razorpay_subscription_id 
+      } = req.body;
 
-      if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+      if (!razorpay_payment_id || !razorpay_signature || (!razorpay_order_id && !razorpay_subscription_id)) {
         return res.status(400).json({ message: 'Missing payment signature verification components.' });
       }
 
@@ -555,66 +670,183 @@ export class SubscriptionController {
         return res.status(500).json({ message: 'Razorpay keys not configured.' });
       }
 
-      // Verify HMAC-SHA256 signature
-      const hash = crypto
-        .createHmac('sha256', config.razorpayKeySecret)
-        .update(razorpay_order_id + '|' + razorpay_payment_id)
-        .digest('hex');
+      const isAutoPay = Boolean(razorpay_subscription_id);
 
-      if (hash !== razorpay_signature) {
-        return res.status(400).json({ message: 'Invalid cryptographic signature verification failed.' });
-      }
-
-      // Update Transaction status
-      const transaction = await PaymentTransaction.findOne({ gatewayOrderId: razorpay_order_id, userId });
-      if (!transaction) {
-        return res.status(404).json({ message: 'Payment transaction record not found.' });
-      }
-
-      transaction.status = 'success';
-      transaction.gatewayPaymentId = razorpay_payment_id;
-      transaction.gatewaySignature = razorpay_signature;
-      await transaction.save();
-
-      // Retrieve plan specifications
-      const plan = await SubscriptionPlan.findById(transaction.planId);
-      if (!plan) return res.status(404).json({ message: 'Plan details not found.' });
-
-      // Increment coupon redemptions count
-      if (transaction.couponCode) {
-        await Coupon.updateOne(
-          { code: transaction.couponCode },
-          { $inc: { redemptionsCount: 1 } }
+      if (isAutoPay) {
+        // --- 1. AutoPay Subscription Verification ---
+        const isValid = AutoPayService.verifySubscriptionSignature(
+          razorpay_payment_id,
+          razorpay_subscription_id,
+          razorpay_signature,
+          config.razorpayKeySecret
         );
+
+        if (!isValid) {
+          return res.status(400).json({ message: 'Invalid AutoPay cryptographic signature verification failed.' });
+        }
+
+        // Find transaction by gatewaySubscriptionId or gatewayOrderId
+        let transaction = await PaymentTransaction.findOne({
+          gatewaySubscriptionId: razorpay_subscription_id,
+          userId
+        });
+
+        if (!transaction) {
+          transaction = await PaymentTransaction.findOne({
+            gatewayOrderId: `sub_${razorpay_subscription_id}`,
+            userId
+          });
+        }
+
+        if (!transaction) {
+          return res.status(404).json({ message: 'AutoPay transaction record not found.' });
+        }
+
+        transaction.status = 'success';
+        transaction.gatewayPaymentId = razorpay_payment_id;
+        transaction.gatewaySubscriptionId = razorpay_subscription_id;
+        transaction.gatewaySignature = razorpay_signature;
+        await transaction.save();
+
+        const plan = await SubscriptionPlan.findById(transaction.planId);
+        if (!plan) return res.status(404).json({ message: 'Plan details not found.' });
+
+        if (transaction.couponCode) {
+          await Coupon.updateOne(
+            { code: transaction.couponCode },
+            { $inc: { redemptionsCount: 1 } }
+          );
+        }
+
+        // Fetch mandate details (card, upi, bank) from Razorpay
+        let mandateDetails: any = undefined;
+        if (config.razorpayKeyId) {
+          const rzpInstance = AutoPayService.getRazorpayClient(config);
+          if (rzpInstance) {
+            mandateDetails = await AutoPayService.fetchMandateDetails(rzpInstance, razorpay_payment_id);
+          }
+        }
+
+        const billingCycle = transaction.amount >= plan.yearlyPrice ? 'yearly' : 'monthly';
+        const subscription = await SubscriptionController.activateSubscriptionForUser(
+          userId!,
+          plan,
+          billingCycle,
+          transaction.couponCode,
+          {
+            autoPayEnabled: true,
+            mandateStatus: 'active',
+            razorpaySubscriptionId: razorpay_subscription_id,
+            razorpayPaymentId: razorpay_payment_id,
+            recurringAmount: transaction.amount,
+            mandateDetails
+          }
+        );
+
+        transaction.subscriptionId = subscription._id as any;
+        await transaction.save();
+
+        // Write Invoice
+        await SubscriptionController.generateInvoice(userId!, transaction, plan, subscription);
+
+        // Audit Log
+        await AutoPayAuditLog.create({
+          userId: subscription.userId,
+          subscriptionId: subscription._id,
+          razorpaySubscriptionId: razorpay_subscription_id,
+          razorpayPaymentId: razorpay_payment_id,
+          event: 'AUTOPAY_ACTIVATED',
+          status: 'active',
+          amount: transaction.amount,
+          billingCycle,
+          details: `AutoPay enabled during checkout for ${plan.name} (${billingCycle}). Recurring ₹${transaction.amount}.`,
+          metadata: { mandateDetails }
+        });
+
+        // Notifications
+        await FCMService.sendPushNotification(
+          userId!,
+          'Subscription & AutoPay Activated!',
+          `Your subscription to ${plan.name} with AutoPay is active! Recurring ₹${transaction.amount} / ${billingCycle}.`,
+          'SubscriptionActivated' as any
+        );
+
+        const user = await User.findById(userId);
+        if (user && user.email) {
+          EmailService.sendAutoPayEnabledEmail(
+            user.email,
+            user.name || 'Valued Patient',
+            plan.name,
+            transaction.amount,
+            billingCycle,
+            subscription.endDate
+          ).catch(() => {});
+        }
+
+        return res.status(200).json({
+          message: 'AutoPay payment verified and subscription activated.',
+          subscription
+        });
+      } else {
+        // --- 2. Standard One-Time Order Verification ---
+        const hash = crypto
+          .createHmac('sha256', config.razorpayKeySecret)
+          .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+          .digest('hex');
+
+        if (hash !== razorpay_signature) {
+          return res.status(400).json({ message: 'Invalid cryptographic signature verification failed.' });
+        }
+
+        const transaction = await PaymentTransaction.findOne({ gatewayOrderId: razorpay_order_id, userId });
+        if (!transaction) {
+          return res.status(404).json({ message: 'Payment transaction record not found.' });
+        }
+
+        transaction.status = 'success';
+        transaction.gatewayPaymentId = razorpay_payment_id;
+        transaction.gatewaySignature = razorpay_signature;
+        await transaction.save();
+
+        const plan = await SubscriptionPlan.findById(transaction.planId);
+        if (!plan) return res.status(404).json({ message: 'Plan details not found.' });
+
+        if (transaction.couponCode) {
+          await Coupon.updateOne(
+            { code: transaction.couponCode },
+            { $inc: { redemptionsCount: 1 } }
+          );
+        }
+
+        const subscription = await SubscriptionController.activateSubscriptionForUser(
+          userId!,
+          plan,
+          transaction.amount >= plan.yearlyPrice ? 'yearly' : 'monthly',
+          transaction.couponCode,
+          {
+            autoPayEnabled: false,
+            mandateStatus: 'none',
+            razorpayPaymentId: razorpay_payment_id
+          }
+        );
+
+        transaction.subscriptionId = subscription._id as any;
+        await transaction.save();
+
+        await SubscriptionController.generateInvoice(userId!, transaction, plan, subscription);
+
+        await FCMService.sendPushNotification(
+          userId!,
+          'Subscription Activated!',
+          `Your subscription to ${plan.name} is now active. Enjoy premium features!`,
+          'SubscriptionActivated' as any
+        );
+
+        return res.status(200).json({
+          message: 'Payment verified and subscription activated.',
+          subscription
+        });
       }
-
-      // Build subscription record
-      const subscription = await SubscriptionController.activateSubscriptionForUser(
-        userId!,
-        plan,
-        transaction.amount >= plan.yearlyPrice ? 'yearly' : 'monthly',
-        transaction.couponCode
-      );
-
-      // Link subscription ID back to transaction
-      transaction.subscriptionId = subscription._id as any;
-      await transaction.save();
-
-      // Write Invoice
-      await SubscriptionController.generateInvoice(userId!, transaction, plan, subscription);
-
-      // Dispatch alert
-      await FCMService.sendPushNotification(
-        userId!,
-        'Subscription Activated!',
-        `Your subscription to ${plan.name} is now active. Enjoy premium features!`,
-        'SubscriptionActivated' as any
-      );
-
-      return res.status(200).json({
-        message: 'Payment verified and subscription activated.',
-        subscription
-      });
     } catch (error: any) {
       console.error('Payment verification error:', error);
       return res.status(500).json({ message: error.message || 'Error verifying payment.' });
@@ -627,10 +859,10 @@ export class SubscriptionController {
   public static async verifyMockPayment(req: AuthRequest, res: Response) {
     try {
       const userId = req.user?.id;
-      const { orderId } = req.body;
+      const { orderId, subscriptionId } = req.body;
 
-      if (!orderId) {
-        return res.status(400).json({ message: 'Order ID is required.' });
+      if (!orderId && !subscriptionId) {
+        return res.status(400).json({ message: 'Order ID or Subscription ID is required.' });
       }
 
       const config = await PaymentGatewayConfig.findOne();
@@ -639,7 +871,18 @@ export class SubscriptionController {
         return res.status(403).json({ message: 'Mock payment verification is disabled on iOS.' });
       }
 
-      const transaction = await PaymentTransaction.findOne({ gatewayOrderId: orderId, userId });
+      let transaction = null;
+      if (subscriptionId) {
+        transaction = await PaymentTransaction.findOne({
+          $or: [
+            { gatewaySubscriptionId: subscriptionId, userId },
+            { gatewayOrderId: `sub_${subscriptionId}`, userId }
+          ]
+        });
+      } else {
+        transaction = await PaymentTransaction.findOne({ gatewayOrderId: orderId, userId });
+      }
+
       if (!transaction) {
         return res.status(404).json({ message: 'Transaction record not found.' });
       }
@@ -648,6 +891,7 @@ export class SubscriptionController {
         return res.status(400).json({ message: 'Transaction is already processed.' });
       }
 
+      const isAutoPay = Boolean(subscriptionId || transaction.gatewaySubscriptionId);
       transaction.status = 'success';
       transaction.gatewayPaymentId = `mock_pay_${Date.now()}`;
       await transaction.save();
@@ -655,7 +899,6 @@ export class SubscriptionController {
       const plan = await SubscriptionPlan.findById(transaction.planId);
       if (!plan) return res.status(404).json({ message: 'Associated plan details not found.' });
 
-      // Increment coupon redemptions count
       if (transaction.couponCode) {
         await Coupon.updateOne(
           { code: transaction.couponCode },
@@ -668,7 +911,15 @@ export class SubscriptionController {
         userId!, 
         plan, 
         cycle,
-        transaction.couponCode
+        transaction.couponCode,
+        {
+          autoPayEnabled: isAutoPay,
+          mandateStatus: isAutoPay ? 'active' : 'none',
+          razorpaySubscriptionId: isAutoPay ? (subscriptionId || transaction.gatewaySubscriptionId) : undefined,
+          razorpayPaymentId: transaction.gatewayPaymentId,
+          recurringAmount: transaction.amount,
+          mandateDetails: isAutoPay ? { method: 'upi', authType: 'Mock UPI AutoPay', bank: 'HDFC' } : undefined
+        }
       );
 
       transaction.subscriptionId = subscription._id as any;
@@ -676,9 +927,22 @@ export class SubscriptionController {
 
       await SubscriptionController.generateInvoice(userId!, transaction, plan, subscription);
 
+      if (isAutoPay) {
+        await AutoPayAuditLog.create({
+          userId: subscription.userId,
+          subscriptionId: subscription._id,
+          razorpaySubscriptionId: subscriptionId || transaction.gatewaySubscriptionId,
+          event: 'AUTOPAY_ACTIVATED_MOCK',
+          status: 'active',
+          amount: transaction.amount,
+          billingCycle: cycle,
+          details: `Mock AutoPay activated for ${plan.name} (${cycle}).`
+        });
+      }
+
       await FCMService.sendPushNotification(
         userId!,
-        'Subscription Activated (Mock)!',
+        isAutoPay ? 'Subscription & AutoPay Activated (Mock)!' : 'Subscription Activated (Mock)!',
         `Your ${plan.name} subscription has been created. Enjoy premium features!`,
         'SubscriptionActivated' as any
       );
@@ -774,13 +1038,475 @@ export class SubscriptionController {
     }
   }
 
+  /**
+   * GET /api/subscriptions/autopay/status
+   * Get AutoPay status, mandate details, next scheduled deduction, and billing history for the current user.
+   */
+  public static async getAutoPayStatus(req: AuthRequest, res: Response) {
+    try {
+      const userId = req.user?.id;
+      const now = new Date();
+
+      const subscription = await UserSubscription.findOne({
+        userId,
+        status: { $in: ['active', 'trialing'] },
+        $or: [
+          { status: 'trialing', trialEndDate: { $gte: now } },
+          { status: 'active', endDate: { $gte: now } }
+        ]
+      }).sort({ createdAt: -1 });
+
+      if (!subscription) {
+        return res.status(200).json({
+          hasSubscription: false,
+          autoPayEnabled: false,
+          mandateStatus: 'none',
+          message: 'No active subscription found.'
+        });
+      }
+
+      const plan = await SubscriptionPlan.findById(subscription.planId);
+
+      // Fetch transaction history
+      const transactions = await PaymentTransaction.find({
+        userId,
+        $or: [
+          { subscriptionId: subscription._id },
+          { gatewaySubscriptionId: subscription.razorpaySubscriptionId }
+        ]
+      }).sort({ createdAt: -1 });
+
+      // Fetch audit logs
+      const auditLogs = await AutoPayAuditLog.find({
+        subscriptionId: subscription._id
+      }).sort({ createdAt: -1 }).limit(10);
+
+      const config = await PaymentGatewayConfig.findOne();
+      const gstPercentage = config ? config.gstPercentage : 18;
+      const isInclusive = config ? (config.subscriptionGstInclusive ?? true) : true;
+      const basePrice = subscription.billingCycle === 'yearly' ? (plan?.yearlyPrice || 999) : (plan?.monthlyPrice || 99);
+      let recurringAmount = subscription.recurringAmount;
+      if (!recurringAmount) {
+        if (isInclusive) {
+          recurringAmount = basePrice;
+        } else {
+          recurringAmount = parseFloat((basePrice * (1 + gstPercentage / 100)).toFixed(2));
+        }
+      }
+
+      return res.status(200).json({
+        hasSubscription: true,
+        autoPayEnabled: Boolean(subscription.autoPayEnabled),
+        mandateStatus: subscription.mandateStatus || 'none',
+        billingCycle: subscription.billingCycle,
+        recurringAmount,
+        nextBillingDate: subscription.nextBillingDate || subscription.endDate,
+        lastBillingDate: subscription.lastBillingDate,
+        mandateDetails: subscription.mandateDetails,
+        lastPaymentStatus: subscription.lastPaymentStatus,
+        lastFailureReason: subscription.lastFailureReason,
+        subscriptionEndDate: subscription.endDate,
+        plan: plan ? {
+          name: plan.name,
+          monthlyPrice: plan.monthlyPrice,
+          yearlyPrice: plan.yearlyPrice
+        } : null,
+        history: transactions,
+        auditLogs
+      });
+    } catch (error: any) {
+      console.error('Error fetching AutoPay status:', error);
+      return res.status(500).json({ message: error.message || 'Error fetching AutoPay status.' });
+    }
+  }
+
+  /**
+   * POST /api/subscriptions/autopay/setup
+   * Initialize mandate authorization for existing subscribers.
+   */
+  public static async setupExistingAutoPay(req: AuthRequest, res: Response) {
+    try {
+      const userId = req.user?.id;
+      const now = new Date();
+
+      const subscription = await UserSubscription.findOne({
+        userId,
+        status: { $in: ['active', 'trialing'] },
+        $or: [
+          { status: 'trialing', trialEndDate: { $gte: now } },
+          { status: 'active', endDate: { $gte: now } }
+        ]
+      }).sort({ createdAt: -1 });
+
+      if (!subscription) {
+        return res.status(404).json({ message: 'No active subscription found to enable AutoPay.' });
+      }
+
+      if (subscription.autoPayEnabled && subscription.mandateStatus === 'active') {
+        return res.status(400).json({ message: 'AutoPay is already active for your subscription.' });
+      }
+
+      const plan = await SubscriptionPlan.findById(subscription.planId);
+      if (!plan || !plan.isActive) {
+        return res.status(404).json({ message: 'Subscription plan not found or inactive.' });
+      }
+
+      const config = await PaymentGatewayConfig.findOne();
+      const isIOS = SubscriptionController.isIOSNativeApp(req);
+      if (isIOS && config && !config.enableIOSExternalPayments) {
+        return res.status(403).json({ message: 'External subscription payments disabled on iOS.' });
+      }
+
+      const useRazorpay = !!(config && config.enablePayments && config.razorpayKeyId && config.razorpayKeySecret);
+      const gstPercentage = config ? config.gstPercentage : 18;
+      const isInclusive = config ? (config.subscriptionGstInclusive ?? true) : true;
+      const basePrice = subscription.billingCycle === 'yearly' ? plan.yearlyPrice : plan.monthlyPrice;
+
+      let recurringAmount = basePrice;
+      if (!isInclusive) {
+        recurringAmount = parseFloat((basePrice * (1 + gstPercentage / 100)).toFixed(2));
+      }
+
+      // First recurring charge is scheduled for when the current subscription expires!
+      const startAtTimestamp = Math.floor(new Date(subscription.endDate).getTime() / 1000);
+      const nowTimestamp = Math.floor(Date.now() / 1000);
+      const validStartAt = startAtTimestamp > nowTimestamp + 300 ? startAtTimestamp : undefined;
+
+      if (useRazorpay) {
+        const instance = new Razorpay({
+          key_id: config.razorpayKeyId!,
+          key_secret: config.razorpayKeySecret!
+        });
+
+        const rzpPlanId = await AutoPayService.ensureRazorpayPlan(
+          instance,
+          plan,
+          subscription.billingCycle,
+          recurringAmount
+        );
+
+        const subOptions: any = {
+          plan_id: rzpPlanId,
+          total_count: subscription.billingCycle === 'yearly' ? 10 : 120,
+          customer_notify: 1,
+          quantity: 1,
+          notes: {
+            userId: userId!.toString(),
+            planId: plan._id.toString(),
+            userSubscriptionId: subscription._id.toString(),
+            flow: 'enable_autopay_existing'
+          }
+        };
+
+        if (validStartAt) {
+          subOptions.start_at = validStartAt;
+        }
+
+        const rzpSub: any = await instance.subscriptions.create(subOptions);
+
+        return res.status(200).json({
+          gateway: 'razorpay',
+          subscriptionId: rzpSub.id,
+          keyId: config.razorpayKeyId,
+          amount: Math.round(recurringAmount * 100),
+          currency: 'INR',
+          planName: plan.name,
+          billingCycle: subscription.billingCycle,
+          recurringAmount,
+          nextBillingDate: subscription.endDate
+        });
+      } else {
+        // Local Mock Mode
+        const mockSubId = `mock_mandate_${Date.now()}_${Math.round(Math.random() * 1000)}`;
+
+        return res.status(200).json({
+          gateway: 'mock',
+          subscriptionId: mockSubId,
+          amount: Math.round(recurringAmount * 100),
+          currency: 'INR',
+          planName: plan.name,
+          billingCycle: subscription.billingCycle,
+          recurringAmount,
+          nextBillingDate: subscription.endDate
+        });
+      }
+    } catch (error: any) {
+      console.error('Error setting up existing AutoPay mandate:', error);
+      const errMsg = error.error?.description || error.message || 'Error setting up AutoPay mandate.';
+      return res.status(500).json({ message: errMsg });
+    }
+  }
+
+  /**
+   * POST /api/subscriptions/autopay/verify-mandate
+   * Verify mandate authorization signature for existing subscribers.
+   */
+  public static async verifyExistingMandate(req: AuthRequest, res: Response) {
+    try {
+      const userId = req.user?.id;
+      const { razorpay_payment_id, razorpay_subscription_id, razorpay_signature } = req.body;
+
+      if (!razorpay_payment_id || !razorpay_subscription_id || !razorpay_signature) {
+        return res.status(400).json({ message: 'Missing mandate verification components.' });
+      }
+
+      const config = await PaymentGatewayConfig.findOne();
+      if (!config || !config.razorpayKeySecret) {
+        return res.status(500).json({ message: 'Razorpay keys not configured.' });
+      }
+
+      const isValid = AutoPayService.verifySubscriptionSignature(
+        razorpay_payment_id,
+        razorpay_subscription_id,
+        razorpay_signature,
+        config.razorpayKeySecret
+      );
+
+      if (!isValid) {
+        return res.status(400).json({ message: 'Invalid AutoPay mandate cryptographic signature.' });
+      }
+
+      const subscription = await UserSubscription.findOne({
+        userId,
+        status: { $in: ['active', 'trialing'] }
+      }).sort({ createdAt: -1 });
+
+      if (!subscription) {
+        return res.status(404).json({ message: 'Active subscription record not found.' });
+      }
+
+      const plan = await SubscriptionPlan.findById(subscription.planId);
+      const gstPercentage = config.gstPercentage || 18;
+      const isInclusive = config.subscriptionGstInclusive ?? true;
+      const basePrice = subscription.billingCycle === 'yearly' ? (plan?.yearlyPrice || 999) : (plan?.monthlyPrice || 99);
+      let recurringAmount = basePrice;
+      if (!isInclusive) {
+        recurringAmount = parseFloat((basePrice * (1 + gstPercentage / 100)).toFixed(2));
+      }
+
+      // Fetch payment details
+      let mandateDetails: any = undefined;
+      const rzpInstance = AutoPayService.getRazorpayClient(config);
+      if (rzpInstance) {
+        mandateDetails = await AutoPayService.fetchMandateDetails(rzpInstance, razorpay_payment_id);
+      }
+
+      subscription.autoPayEnabled = true;
+      subscription.mandateStatus = 'active';
+      subscription.razorpaySubscriptionId = razorpay_subscription_id;
+      subscription.razorpayPaymentId = razorpay_payment_id;
+      subscription.recurringAmount = recurringAmount;
+      subscription.nextBillingDate = subscription.endDate;
+      if (mandateDetails) {
+        subscription.mandateDetails = mandateDetails;
+      }
+      await subscription.save();
+
+      // Audit Log
+      await AutoPayAuditLog.create({
+        userId: subscription.userId,
+        subscriptionId: subscription._id,
+        razorpaySubscriptionId: razorpay_subscription_id,
+        razorpayPaymentId: razorpay_payment_id,
+        event: 'AUTOPAY_ENABLED_EXISTING',
+        status: 'active',
+        amount: recurringAmount,
+        billingCycle: subscription.billingCycle,
+        details: `AutoPay mandate authorized for existing subscription (${subscription.billingCycle}). Next deduction scheduled for ${subscription.endDate.toLocaleDateString()}.`,
+        metadata: { mandateDetails }
+      });
+
+      // Alerts
+      await FCMService.sendPushNotification(
+        userId!,
+        'AutoPay Enabled!',
+        `AutoPay has been activated! Your next deduction of ₹${recurringAmount} is scheduled for ${subscription.endDate.toLocaleDateString()}.`,
+        'SubscriptionActivated' as any
+      );
+
+      const user = await User.findById(userId);
+      if (user && user.email && plan) {
+        EmailService.sendAutoPayEnabledEmail(
+          user.email,
+          user.name || 'Valued Patient',
+          plan.name,
+          recurringAmount,
+          subscription.billingCycle,
+          subscription.endDate
+        ).catch(() => {});
+      }
+
+      return res.status(200).json({
+        message: 'AutoPay mandate successfully verified and activated!',
+        subscription
+      });
+    } catch (error: any) {
+      console.error('Error verifying mandate authorization:', error);
+      return res.status(500).json({ message: error.message || 'Error verifying mandate authorization.' });
+    }
+  }
+
+  /**
+   * POST /api/subscriptions/autopay/mock-verify-mandate
+   * Mock verify mandate authorization in sandbox/test mode.
+   */
+  public static async mockVerifyExistingMandate(req: AuthRequest, res: Response) {
+    try {
+      const userId = req.user?.id;
+      const { subscriptionId } = req.body;
+
+      const subscription = await UserSubscription.findOne({
+        userId,
+        status: { $in: ['active', 'trialing'] }
+      }).sort({ createdAt: -1 });
+
+      if (!subscription) {
+        return res.status(404).json({ message: 'Active subscription record not found.' });
+      }
+
+      const plan = await SubscriptionPlan.findById(subscription.planId);
+      const recurringAmount = subscription.billingCycle === 'yearly'
+        ? (plan?.yearlyPrice || 999)
+        : (plan?.monthlyPrice || 99);
+
+      subscription.autoPayEnabled = true;
+      subscription.mandateStatus = 'active';
+      subscription.razorpaySubscriptionId = subscriptionId || `mock_sub_${Date.now()}`;
+      subscription.razorpayPaymentId = `mock_mandate_pay_${Date.now()}`;
+      subscription.recurringAmount = recurringAmount;
+      subscription.nextBillingDate = subscription.endDate;
+      subscription.mandateDetails = {
+        method: 'upi',
+        authType: 'Mock UPI AutoPay',
+        bank: 'HDFC'
+      };
+      await subscription.save();
+
+      await AutoPayAuditLog.create({
+        userId: subscription.userId,
+        subscriptionId: subscription._id,
+        razorpaySubscriptionId: subscription.razorpaySubscriptionId,
+        event: 'AUTOPAY_ENABLED_MOCK',
+        status: 'active',
+        amount: recurringAmount,
+        billingCycle: subscription.billingCycle,
+        details: 'Mock AutoPay mandate enabled for existing subscription.'
+      });
+
+      await FCMService.sendPushNotification(
+        userId!,
+        'AutoPay Enabled (Mock)!',
+        `AutoPay has been activated! Your next deduction of ₹${recurringAmount} is scheduled for ${subscription.endDate.toLocaleDateString()}.`,
+        'SubscriptionActivated' as any
+      );
+
+      return res.status(200).json({
+        message: 'Mock AutoPay mandate enabled successfully!',
+        subscription
+      });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message || 'Error processing mock mandate.' });
+    }
+  }
+
+  /**
+   * POST /api/subscriptions/autopay/cancel
+   * Disable AutoPay mandate. The user's paid subscription remains active until its existing expiry date!
+   */
+  public static async disableAutoPay(req: AuthRequest, res: Response) {
+    try {
+      const userId = req.user?.id;
+      const now = new Date();
+
+      const subscription = await UserSubscription.findOne({
+        userId,
+        status: { $in: ['active', 'trialing'] },
+        $or: [
+          { status: 'trialing', trialEndDate: { $gte: now } },
+          { status: 'active', endDate: { $gte: now } }
+        ]
+      }).sort({ createdAt: -1 });
+
+      if (!subscription) {
+        return res.status(404).json({ message: 'No active subscription found to disable AutoPay.' });
+      }
+
+      if (!subscription.autoPayEnabled && subscription.mandateStatus !== 'active') {
+        return res.status(400).json({ message: 'AutoPay is not currently enabled for your subscription.' });
+      }
+
+      const config = await PaymentGatewayConfig.findOne();
+
+      // Cancel recurring mandate on Razorpay if configured
+      if (subscription.razorpaySubscriptionId && config) {
+        await AutoPayService.cancelRazorpayMandate(subscription.razorpaySubscriptionId, config);
+      }
+
+      const previousMandateId = subscription.razorpaySubscriptionId;
+      subscription.autoPayEnabled = false;
+      subscription.mandateStatus = 'cancelled';
+      subscription.cancelledAt = new Date();
+      subscription.cancellationReason = req.body.reason || 'User disabled AutoPay';
+      // CRITICAL: Paid subscription status and endDate are NOT shortened or cancelled!
+      await subscription.save();
+
+      // Audit Log
+      await AutoPayAuditLog.create({
+        userId: subscription.userId,
+        subscriptionId: subscription._id,
+        razorpaySubscriptionId: previousMandateId,
+        event: 'AUTOPAY_DISABLED',
+        status: 'cancelled',
+        details: `AutoPay disabled by user. Paid subscription remains valid until ${subscription.endDate.toLocaleDateString()}.`
+      });
+
+      const plan = await SubscriptionPlan.findById(subscription.planId);
+      const user = await User.findById(userId);
+
+      // Push notification
+      await FCMService.sendPushNotification(
+        userId!,
+        'AutoPay Cancelled',
+        `AutoPay has been disabled. Your premium access remains active until ${subscription.endDate.toLocaleDateString()}.`,
+        'General' as any
+      );
+
+      // Email notification
+      if (user && user.email && plan) {
+        EmailService.sendAutoPayDisabledEmail(
+          user.email,
+          user.name || 'Valued Patient',
+          plan.name,
+          subscription.endDate
+        ).catch(() => {});
+      }
+
+      return res.status(200).json({
+        message: `AutoPay has been disabled. Your premium features remain active until ${new Date(subscription.endDate).toLocaleDateString('en-IN')}.`,
+        subscription
+      });
+    } catch (error: any) {
+      console.error('Error disabling AutoPay:', error);
+      return res.status(500).json({ message: error.message || 'Error disabling AutoPay.' });
+    }
+  }
+
   // --- INTERNAL UTILITIES ---
 
   public static async activateSubscriptionForUser(
     userId: string,
     plan: any,
     cycle: 'monthly' | 'yearly',
-    couponCode?: string
+    couponCode?: string,
+    autoPayOptions?: {
+      autoPayEnabled?: boolean;
+      mandateStatus?: 'none' | 'created' | 'authenticated' | 'active' | 'pending' | 'halted' | 'cancelled' | 'expired';
+      razorpaySubscriptionId?: string;
+      razorpayPaymentId?: string;
+      recurringAmount?: number;
+      nextBillingDate?: Date;
+      mandateDetails?: any;
+    }
   ): Promise<any> {
     // Disable any existing active, trialing, OR cancelled subscriptions to prevent overlap conflicts
     await UserSubscription.updateMany(
@@ -808,6 +1534,7 @@ export class SubscriptionController {
       trialEndDate.setDate(now.getDate() + plan.trialDays);
     }
 
+    const isAutoPay = autoPayOptions?.autoPayEnabled ?? false;
     const subscription = new UserSubscription({
       userId,
       planId: plan._id,
@@ -816,7 +1543,16 @@ export class SubscriptionController {
       startDate: now,
       endDate,
       cancelAtPeriodEnd: false,
-      couponCode
+      couponCode,
+      autoPayEnabled: isAutoPay,
+      mandateStatus: autoPayOptions?.mandateStatus || (isAutoPay ? 'active' : 'none'),
+      razorpaySubscriptionId: autoPayOptions?.razorpaySubscriptionId,
+      razorpayPaymentId: autoPayOptions?.razorpayPaymentId,
+      recurringAmount: autoPayOptions?.recurringAmount,
+      nextBillingDate: autoPayOptions?.nextBillingDate || endDate,
+      mandateDetails: autoPayOptions?.mandateDetails,
+      lastBillingDate: now,
+      lastPaymentStatus: 'success'
     });
 
     await subscription.save();

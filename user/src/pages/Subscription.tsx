@@ -20,7 +20,13 @@ import {
   Loader2,
   CheckCircle2,
   AlertCircle,
-  Clock
+  Clock,
+  RefreshCw,
+  Zap,
+  Filter,
+  RotateCcw,
+  Receipt,
+  ChevronDown
 } from 'lucide-react';
 
 import { Capacitor } from '@capacitor/core';
@@ -64,6 +70,7 @@ interface Invoice {
   billingEmail: string;
   createdAt: string;
   paymentTransactionId?: string;
+  isRecurring?: boolean;
 }
 
 interface SubscriptionDetails {
@@ -75,6 +82,21 @@ interface SubscriptionDetails {
   endDate: string;
   trialEndDate?: string;
   cancelAtPeriodEnd: boolean;
+  autoPayEnabled?: boolean;
+  mandateStatus?: 'none' | 'created' | 'authenticated' | 'active' | 'pending' | 'halted' | 'cancelled' | 'expired';
+  razorpaySubscriptionId?: string;
+  recurringAmount?: number;
+  nextBillingDate?: string;
+  lastBillingDate?: string;
+  mandateDetails?: {
+    method?: string;
+    authType?: string;
+    bank?: string;
+    last4?: string;
+    cardNetwork?: string;
+  };
+  lastPaymentStatus?: 'success' | 'failed' | 'pending';
+  lastFailureReason?: string;
 }
 
 interface SubscriptionPageProps {
@@ -101,7 +123,12 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
   const [activeSub, setActiveSub] = useState<SubscriptionDetails | null>(null);
   const [activePlanDetails, setActivePlanDetails] = useState<Plan | null>(null);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const billingCycle = 'yearly';
+  const [transactions, setTransactions] = useState<any[]>([]);
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('yearly');
+  const [enableAutoPay, setEnableAutoPay] = useState<boolean>(true);
+  const [showEnableAutoPayModal, setShowEnableAutoPayModal] = useState<boolean>(false);
+  const [showDisableAutoPayModal, setShowDisableAutoPayModal] = useState<boolean>(false);
+  const [autoPayActionLoading, setAutoPayActionLoading] = useState<boolean>(false);
   const [gstPercentage, setGstPercentage] = useState<number>(18);
   const [subscriptionGstInclusive, setSubscriptionGstInclusive] = useState<boolean>(true);
 
@@ -128,6 +155,13 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
   const [couponSuccess, setCouponSuccess] = useState<string | null>(null);
   const [showTrialPopup, setShowTrialPopup] = useState<boolean>(false);
   const [liveTrialText, setLiveTrialText] = useState<string>('');
+
+  // Billing history filter & pagination state
+  const [billingDateFilter, setBillingDateFilter] = useState<'ALL' | '30D' | '90D' | 'CUSTOM'>('ALL');
+  const [billingStartDate, setBillingStartDate] = useState<string>('');
+  const [billingEndDate, setBillingEndDate] = useState<string>('');
+  const [invoiceDisplayLimit, setInvoiceDisplayLimit] = useState<number>(5);
+  const [transactionDisplayLimit, setTransactionDisplayLimit] = useState<number>(5);
 
   const isTrialActive = Boolean(
     activeSub &&
@@ -176,8 +210,8 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
       hour: '2-digit',
       minute: '2-digit',
       hour12: true
-    });
-    return `${dateStr} at ${timeStr}`;
+    }).replace(/\s+/g, '\u00A0');
+    return `${dateStr}\u00A0at\u00A0${timeStr}`;
   };
 
   const getRemainingTimeBadge = (dateVal: string | Date | undefined) => {
@@ -221,9 +255,6 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
   const primaryOrigPrice = primaryPlan?.originalYearlyPrice && primaryPlan.originalYearlyPrice > primaryPlanPrice
     ? primaryPlan.originalYearlyPrice
     : (primaryPlanPrice > 0 ? Math.round(primaryPlanPrice * 3.5) : 3500);
-  const primaryDiscountPct = primaryOrigPrice > primaryPlanPrice
-    ? Math.round(((primaryOrigPrice - primaryPlanPrice) / primaryOrigPrice) * 100)
-    : 71;
   const primaryTrialHours = primaryPlan?.trialHours || (primaryPlan?.trialDays ? primaryPlan.trialDays * 24 : 48);
 
   const handleApplyCoupon = async () => {
@@ -281,6 +312,7 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
           setActivePlanDetails(subData.plan);
           setCancelledSub(subData.cancelledSubscription || null);
           setInvoices(subData.invoices || []);
+          setTransactions(subData.transactions || []);
           if (subData.gstPercentage !== undefined) {
             setGstPercentage(subData.gstPercentage);
           }
@@ -315,6 +347,53 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
       setLoading(false);
     }
   };
+
+  // Filtered invoices and transactions based on date range
+  const filteredInvoices = React.useMemo(() => {
+    let list = invoices;
+    const now = new Date();
+    if (billingDateFilter === '30D') {
+      const past30 = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      list = list.filter((inv) => new Date(inv.createdAt) >= past30);
+    } else if (billingDateFilter === '90D') {
+      const past90 = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+      list = list.filter((inv) => new Date(inv.createdAt) >= past90);
+    } else if (billingDateFilter === 'CUSTOM') {
+      if (billingStartDate) {
+        const start = new Date(billingStartDate);
+        list = list.filter((inv) => new Date(inv.createdAt) >= start);
+      }
+      if (billingEndDate) {
+        const end = new Date(billingEndDate);
+        end.setHours(23, 59, 59, 999);
+        list = list.filter((inv) => new Date(inv.createdAt) <= end);
+      }
+    }
+    return list;
+  }, [invoices, billingDateFilter, billingStartDate, billingEndDate]);
+
+  const filteredTransactions = React.useMemo(() => {
+    let list = transactions;
+    const now = new Date();
+    if (billingDateFilter === '30D') {
+      const past30 = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      list = list.filter((tx) => new Date(tx.createdAt) >= past30);
+    } else if (billingDateFilter === '90D') {
+      const past90 = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+      list = list.filter((tx) => new Date(tx.createdAt) >= past90);
+    } else if (billingDateFilter === 'CUSTOM') {
+      if (billingStartDate) {
+        const start = new Date(billingStartDate);
+        list = list.filter((tx) => new Date(tx.createdAt) >= start);
+      }
+      if (billingEndDate) {
+        const end = new Date(billingEndDate);
+        end.setHours(23, 59, 59, 999);
+        list = list.filter((tx) => new Date(tx.createdAt) <= end);
+      }
+    }
+    return list;
+  }, [transactions, billingDateFilter, billingStartDate, billingEndDate]);
 
   const handleStartTrial = async () => {
     setTrialLoading(true);
@@ -444,6 +523,7 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
         body: JSON.stringify({
           planId,
           billingCycle,
+          enableAutoPay,
           couponCode: appliedCoupon ? appliedCoupon.code : undefined
         })
       });
@@ -470,7 +550,10 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
             'Authorization': `Bearer ${token}`,
             'X-Platform': Capacitor.getPlatform()
           },
-          body: JSON.stringify({ orderId: orderData.orderId })
+          body: JSON.stringify({ 
+            orderId: orderData.orderId,
+            subscriptionId: orderData.subscriptionId
+          })
         });
         const verifyData = await verifyRes.json();
         if (!verifyRes.ok) throw new Error(verifyData.message || 'Mock payment verification failed.');
@@ -483,13 +566,12 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
         return;
       } else if (orderData.gateway === 'razorpay') {
         // Handle real Razorpay Checkout modal
-        const options = {
+        const options: any = {
           key: orderData.keyId,
-          amount: orderData.amount,
-          currency: orderData.currency,
           name: branding.appName,
-          description: `Subscription to ${orderData.planName}`,
-          order_id: orderData.orderId,
+          description: orderData.subscriptionMode
+            ? `AutoPay Subscription to ${orderData.planName}`
+            : `Subscription to ${orderData.planName}`,
           handler: async (response: any) => {
             setActionLoading(true);
             try {
@@ -503,6 +585,7 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
                 body: JSON.stringify({
                   razorpay_order_id: response.razorpay_order_id,
                   razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_subscription_id: response.razorpay_subscription_id,
                   razorpay_signature: response.razorpay_signature
                 })
               });
@@ -540,6 +623,14 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
           }
         };
 
+        if (orderData.subscriptionMode && orderData.subscriptionId) {
+          options.subscription_id = orderData.subscriptionId;
+        } else {
+          options.amount = orderData.amount;
+          options.currency = orderData.currency;
+          options.order_id = orderData.orderId;
+        }
+
         const rzp = new (window as any).Razorpay(options);
         rzp.on('payment.failed', (resp: any) => {
           console.warn('[Razorpay] Payment failed event:', resp?.error);
@@ -551,6 +642,127 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
     } catch (err: any) {
       setError(err.message || 'An error occurred during payment checkout.');
       setActionLoading(false);
+    }
+  };
+
+  const handleEnableAutoPay = async () => {
+    setAutoPayActionLoading(true);
+    setError(null);
+    setSuccessMsg(null);
+    setShowEnableAutoPayModal(false);
+
+    try {
+      const res = await fetch(`${apiUrl}/subscriptions/autopay/setup`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'X-Platform': Capacitor.getPlatform()
+        }
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed to setup AutoPay mandate.');
+
+      if (data.gateway === 'mock') {
+        const verifyRes = await fetch(`${apiUrl}/subscriptions/autopay/mock-verify-mandate`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ subscriptionId: data.subscriptionId })
+        });
+        const verifyData = await verifyRes.json();
+        if (!verifyRes.ok) throw new Error(verifyData.message || 'Failed to verify mock mandate.');
+        setSuccessMsg(verifyData.message || 'AutoPay has been successfully enabled!');
+        await fetchData();
+        window.dispatchEvent(new CustomEvent('subscription-updated'));
+        return;
+      }
+
+      if (data.gateway === 'razorpay') {
+        const options = {
+          key: data.keyId,
+          subscription_id: data.subscriptionId,
+          name: branding.appName,
+          description: `AutoPay Mandate Authorization - ${data.planName}`,
+          handler: async (response: any) => {
+            setAutoPayActionLoading(true);
+            try {
+              const verifyRes = await fetch(`${apiUrl}/subscriptions/autopay/verify-mandate`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`,
+                  'X-Platform': Capacitor.getPlatform()
+                },
+                body: JSON.stringify({
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_subscription_id: response.razorpay_subscription_id,
+                  razorpay_signature: response.razorpay_signature
+                })
+              });
+              const verifyData = await verifyRes.json();
+              if (!verifyRes.ok) throw new Error(verifyData.message || 'Mandate verification failed.');
+              setSuccessMsg(verifyData.message || 'AutoPay mandate successfully authorized and active!');
+              await fetchData();
+              window.dispatchEvent(new CustomEvent('subscription-updated'));
+            } catch (vErr: any) {
+              setError(vErr.message || 'Error verifying AutoPay mandate.');
+            } finally {
+              setAutoPayActionLoading(false);
+            }
+          },
+          prefill: {
+            name: user?.name || '',
+            email: user?.email || ''
+          },
+          theme: { color: '#2563EB' },
+          modal: {
+            ondismiss: () => {
+              setAutoPayActionLoading(false);
+            }
+          }
+        };
+
+        const rzp = new (window as any).Razorpay(options);
+        rzp.on('payment.failed', (resp: any) => {
+          setError(resp?.error?.description || 'Mandate authorization failed.');
+          setAutoPayActionLoading(false);
+        });
+        rzp.open();
+      }
+    } catch (err: any) {
+      setError(err.message || 'Error setting up AutoPay.');
+    } finally {
+      setAutoPayActionLoading(false);
+    }
+  };
+
+  const handleDisableAutoPay = async () => {
+    setAutoPayActionLoading(true);
+    setError(null);
+    setSuccessMsg(null);
+    setShowDisableAutoPayModal(false);
+
+    try {
+      const res = await fetch(`${apiUrl}/subscriptions/autopay/cancel`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ reason: 'User disabled AutoPay from subscription page' })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed to disable AutoPay.');
+      setSuccessMsg(data.message || 'AutoPay has been disabled. Your active subscription remains valid until its expiry date.');
+      await fetchData();
+      window.dispatchEvent(new CustomEvent('subscription-updated'));
+    } catch (err: any) {
+      setError(err.message || 'Error disabling AutoPay.');
+    } finally {
+      setAutoPayActionLoading(false);
     }
   };
 
@@ -576,34 +788,33 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
     ];
 
     return (
-      <ul className="space-y-2.5 my-4 text-xs font-semibold text-slate-600">
+      <ul className="space-y-2 my-4 text-xs font-semibold text-slate-600 dark:text-slate-300">
         {featureLabels.map((f) => {
           const hasFeature = f.alwaysIncluded ? true : !!(features as any)[f.key];
           const isHighlighted = f.highlight;
           return (
-            <li key={f.key} className="flex items-start space-x-2">
+            <li key={f.key} className="flex items-start gap-2.5 py-0.5">
               {hasFeature ? (
-                <Check className="h-4.5 w-4.5 text-green-500 shrink-0 mt-0.5" />
+                <Check className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
               ) : (
-                <X className="h-4.5 w-4.5 text-slate-300 shrink-0 mt-0.5" />
+                <X className="h-4 w-4 text-slate-300 dark:text-slate-600 shrink-0 mt-0.5" />
               )}
-              {isHighlighted ? (
-                <span className={`inline-flex items-center space-x-1.5 px-2 py-0.5 rounded text-[10px] font-bold ${hasFeature
-                    ? 'text-indigo-700 bg-indigo-50 border border-indigo-100'
-                    : 'text-slate-400 bg-slate-50 border border-slate-100 line-through'
-                  }`}>
-                  <span>{f.label}</span>
-                  {hasFeature && (
-                    <span className="text-[7px] bg-indigo-600 text-white px-1.5 py-0.5 rounded-full uppercase tracking-wider font-extrabold animate-pulse">
-                      {t('sub.included', 'Included')}
-                    </span>
-                  )}
-                </span>
-              ) : (
-                <span className={hasFeature ? 'text-slate-700' : 'text-slate-400 line-through'}>
+              <div className="flex-1 flex flex-wrap items-center justify-between gap-1.5 min-w-0">
+                <span className={`text-xs leading-snug ${
+                  hasFeature
+                    ? isHighlighted
+                      ? 'font-bold text-indigo-700 dark:text-indigo-300'
+                      : 'text-slate-700 dark:text-slate-200 font-medium'
+                    : 'text-slate-400 dark:text-slate-500 line-through'
+                }`}>
                   {f.label}
                 </span>
-              )}
+                {isHighlighted && hasFeature && (
+                  <span className="text-[8px] bg-indigo-600 text-white px-2 py-0.5 rounded-full uppercase tracking-wider font-black shrink-0 shadow-2xs">
+                    {t('sub.included', 'Included')}
+                  </span>
+                )}
+              </div>
             </li>
           );
         })}
@@ -817,28 +1028,110 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
           </p>
 
           <div className="border-t border-slate-100 dark:border-slate-800 pt-4 space-y-2.5">
-            <div className="flex justify-between items-center text-xs font-semibold text-slate-600 dark:text-slate-400">
-              <span className="flex items-center space-x-1.5">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 text-xs font-semibold text-slate-600 dark:text-slate-400">
+              <span className="flex items-center space-x-1.5 shrink-0">
                 <Calendar className="h-4 w-4 text-slate-400 dark:text-slate-500" />
                 <span>{t('startDateLabel', 'Start Date')}</span>
               </span>
-              <span className="text-slate-800 dark:text-slate-100 font-bold">
+              <span className="text-slate-800 dark:text-slate-100 font-bold whitespace-nowrap">
                 {formatSubscriptionDateTime(activeSub.startDate)}
               </span>
             </div>
 
-            <div className="flex justify-between items-center text-xs font-semibold text-slate-600 dark:text-slate-400">
-              <span className="flex items-center space-x-1.5">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400">
+              <span className="flex items-center space-x-1.5 shrink-0">
                 <Clock className="h-4 w-4 text-slate-400 dark:text-slate-500" />
-                <span>{activeSub.status === 'trialing' ? t('sub.trialExpiry', 'Trial Expiry') : activeSub.cancelAtPeriodEnd ? t('sub.expiryDate', 'Expiry Date') : t('sub.renewalDate', 'Renewal Timing')}</span>
+                <span>{activeSub.status === 'trialing' ? t('sub.trialExpiry', 'Trial Expiry') : activeSub.cancelAtPeriodEnd ? t('sub.expiryDate', 'Expiry Date') : t('sub.renewalDate', 'Renewal Date')}</span>
               </span>
-              <div className="flex items-center space-x-2 text-right">
-                <span className="text-slate-800 dark:text-slate-100 font-bold">
+              <div className="flex flex-wrap items-center sm:justify-end gap-1.5">
+                <span className="text-slate-800 dark:text-slate-100 font-bold whitespace-nowrap">
                   {formatSubscriptionDateTime(activeSub.status === 'trialing' && activeSub.trialEndDate ? activeSub.trialEndDate : activeSub.endDate)}
                 </span>
                 {getRemainingTimeBadge(activeSub.status === 'trialing' && activeSub.trialEndDate ? activeSub.trialEndDate : activeSub.endDate)}
               </div>
             </div>
+
+            {/* Existing Subscriber AutoPay Management Card */}
+            {activeSub.status !== 'trialing' && (
+              <div className="mt-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-750">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <RefreshCw className="w-4 h-4 text-primary" />
+                    <span className="text-xs font-black text-slate-800 dark:text-slate-100">
+                      AutoPay & Recurring Renewal
+                    </span>
+                  </div>
+                  <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-full flex items-center gap-1.5 ${
+                    activeSub.autoPayEnabled
+                      ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300/60 dark:border-emerald-800'
+                      : 'bg-slate-200/80 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+                  }`}>
+                    {activeSub.autoPayEnabled && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />}
+                    <span>{activeSub.autoPayEnabled ? 'AutoPay ON' : 'AutoPay OFF'}</span>
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] mb-3">
+                  <div className="p-2.5 bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 flex items-center justify-between sm:block">
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold block">Recurring Amount</span>
+                    <span className="font-extrabold text-slate-800 dark:text-slate-200 text-xs whitespace-nowrap">
+                      ₹{(activeSub.recurringAmount || (activeSub.billingCycle === 'yearly' ? activePlanDetails.yearlyPrice : activePlanDetails.monthlyPrice)).toFixed(2)}
+                      <span className="text-[10px] font-normal text-slate-400 ml-1">/ {activeSub.billingCycle}</span>
+                    </span>
+                  </div>
+
+                  <div className="p-2.5 bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 flex items-center justify-between sm:block">
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold block">Next Deduction</span>
+                    <span className="font-extrabold text-slate-800 dark:text-slate-200 text-xs whitespace-nowrap">
+                      {activeSub.autoPayEnabled
+                        ? new Date(activeSub.nextBillingDate || activeSub.endDate).toLocaleDateString(activeLocale)
+                        : 'None (Manual)'}
+                    </span>
+                  </div>
+                </div>
+
+                {activeSub.mandateDetails && (
+                  <div className="mb-3 text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between px-1">
+                    <span>Payment Method:</span>
+                    <span className="font-bold text-slate-700 dark:text-slate-200">
+                      {activeSub.mandateDetails.authType || activeSub.mandateDetails.method || 'Card / UPI'} {activeSub.mandateDetails.last4 ? `(ending ${activeSub.mandateDetails.last4})` : ''}
+                    </span>
+                  </div>
+                )}
+
+                {activeSub.lastPaymentStatus === 'failed' && (
+                  <div className="mb-3 p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 text-rose-700 dark:text-rose-300 text-xs flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <span className="font-bold block">Last AutoPay charge failed</span>
+                      <span className="text-[10px] text-rose-600/90 dark:text-rose-400 truncate block">
+                        {activeSub.lastFailureReason || 'Card declined or mandate expired.'}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {activeSub.autoPayEnabled ? (
+                  <button
+                    onClick={() => setShowDisableAutoPayModal(true)}
+                    disabled={autoPayActionLoading}
+                    className="w-full py-2.5 px-3 bg-white dark:bg-slate-900 hover:bg-rose-50 dark:hover:bg-rose-950/20 text-rose-600 dark:text-rose-400 border border-slate-200 dark:border-slate-700 hover:border-rose-300 dark:hover:border-rose-800 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                  >
+                    {autoPayActionLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <X className="w-3.5 h-3.5" />}
+                    <span>Turn Off AutoPay</span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setShowEnableAutoPayModal(true)}
+                    disabled={autoPayActionLoading}
+                    className="w-full py-2.5 px-3 bg-primary hover:bg-primary-dark text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm flex items-center justify-center gap-1.5"
+                  >
+                    {autoPayActionLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />}
+                    <span>Enable AutoPay (Recurring Renewal)</span>
+                  </button>
+                )}
+              </div>
+            )}
 
             {activeSub.cancelAtPeriodEnd ? (
               <div className="space-y-2.5 pt-2">
@@ -959,24 +1252,55 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
 
       {/* Pricing Cards Listing */}
       <div className="mb-8">
-        {/* Modern Section Header for Single Annual Plan */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+        {/* Modern Section Header for Subscription Plans */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
           <div>
             <h4 className="text-xs sm:text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider flex items-center gap-2">
               <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-              <span>{t('sub.annualMembership', 'Mito_Reboot Annual Membership')}</span>
+              <span>{t('sub.membershipPlans', 'Mito_Reboot Membership Plans')}</span>
             </h4>
             <p className="text-[11px] text-slate-400 dark:text-slate-500 font-medium mt-0.5">
-              {primaryTrialHours} Hours Free Trial • ₹{primaryPlanPrice.toLocaleString('en-IN')} / year thereafter{primaryOrigPrice > primaryPlanPrice ? ` (slashed from ₹${primaryOrigPrice.toLocaleString('en-IN')})` : ''}
+              Choose your plan and select AutoPay for uninterrupted health tracking
             </p>
           </div>
 
           <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-800/60 self-start sm:self-auto shadow-2xs">
             <Sparkles className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
             <span className="text-[11px] font-black text-indigo-700 dark:text-indigo-300">
-              {primaryDiscountPct}% OFF Special Launch Offer
+              Save up to 71% with Annual Billing
             </span>
           </div>
+        </div>
+
+        {/* Billing Cycle Switcher Tabs */}
+        <div className="flex bg-slate-100 dark:bg-slate-850 p-1 rounded-2xl mb-5 max-w-xs border border-slate-200/80 dark:border-slate-800">
+          <button
+            type="button"
+            onClick={() => setBillingCycle('monthly')}
+            className={`flex-1 py-2 text-xs font-black rounded-xl transition-all ${
+              billingCycle === 'monthly'
+                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs'
+                : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+            }`}
+          >
+            Monthly
+          </button>
+          <button
+            type="button"
+            onClick={() => setBillingCycle('yearly')}
+            className={`flex-1 py-2 text-xs font-black rounded-xl transition-all flex items-center justify-center gap-1.5 ${
+              billingCycle === 'yearly'
+                ? 'bg-primary text-white shadow-xs'
+                : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+            }`}
+          >
+            <span>Annual</span>
+            <span className={`text-[9px] px-1.5 py-0.2 rounded-full font-bold ${
+              billingCycle === 'yearly' ? 'bg-white/20 text-white' : 'bg-indigo-100 text-indigo-700'
+            }`}>
+              Best Value
+            </span>
+          </button>
         </div>
 
         {/* Coupon Input Area */}
@@ -1050,9 +1374,11 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
             const isTrialActive = activeSub && activeSub.status === 'trialing' && activeSub.trialEndDate && new Date(activeSub.trialEndDate) > new Date();
             const isPaidActive = activeSub && activeSub.status === 'active' && new Date(activeSub.endDate) > new Date();
             const isActivePlan = isPaidActive;
-            const price = plan.yearlyPrice;
+            const price = billingCycle === 'yearly' ? plan.yearlyPrice : plan.monthlyPrice;
             const color = plan.color || '#4F46E5';
             const currencySymbol = '₹';
+            const cycleText = billingCycle === 'yearly' ? 'year' : 'month';
+            const cycleShort = billingCycle === 'yearly' ? 'yr' : 'mo';
 
             // Calculate coupon discount
             let discount = 0;
@@ -1067,7 +1393,9 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
               }
             }
             const finalPrice = parseFloat((price - discount).toFixed(2));
-            const origPrice = plan.originalYearlyPrice || (price > 0 ? Math.round(price * 3.5) : 3500);
+            const origPrice = billingCycle === 'yearly'
+              ? (plan.originalYearlyPrice || (price > 0 ? Math.round(price * 3.5) : 3500))
+              : (plan.originalMonthlyPrice || (price > 0 ? Math.round(price * 1.5) : 350));
             const hasOriginalPrice = origPrice > price;
             const discountPct = hasOriginalPrice ? Math.round(((origPrice - price) / origPrice) * 100) : 0;
             const planTrialHours = plan.trialHours || (plan.trialDays ? plan.trialDays * 24 : 48);
@@ -1105,7 +1433,7 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
                     </h4>
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full text-white bg-indigo-600 shadow-xs">
-                        {plan.badge || 'Best Value'}
+                        {plan.badge || (billingCycle === 'yearly' ? 'Best Value' : 'Flexible')}
                       </span>
                       <span className="text-[10px] font-black px-2.5 py-0.5 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 rounded-full flex items-center gap-1">
                         <Sparkles className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
@@ -1114,7 +1442,7 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
                       {hasOriginalPrice && (
                         <span className="text-[10px] font-black px-2.5 py-0.5 bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800/60 rounded-full flex items-center gap-1">
                           <Percent className="h-3 w-3" />
-                          <span>{discountPct}% INTRO OFFER</span>
+                          <span>{discountPct}% OFF</span>
                         </span>
                       )}
                     </div>
@@ -1125,21 +1453,25 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
 
                   {/* Price breakdown: Base, GST, Total */}
                   <div className="mb-4 text-xs font-semibold text-slate-600 dark:text-slate-400 space-y-1.5 bg-slate-50/80 dark:bg-slate-800/50 p-3.5 rounded-2xl border border-slate-200/60 dark:border-slate-800">
-                    <div className="flex items-center justify-between bg-gradient-to-r from-amber-500/10 via-amber-400/10 to-orange-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 p-2.5 rounded-xl text-xs font-bold mb-2">
-                      <span className="flex items-center gap-1.5">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 bg-gradient-to-r from-amber-500/10 via-amber-400/10 to-orange-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 p-2.5 rounded-xl text-xs font-bold mb-2">
+                      <span className="flex items-center gap-1.5 shrink-0">
                         <Sparkles className="h-3.5 w-3.5 text-amber-500 shrink-0" />
-                        <span>Special Launch Deal (Save {discountPct}%)</span>
+                        <span>{billingCycle === 'yearly' ? `Annual Deal (Save ${discountPct}%)` : 'Monthly Flexible Billing'}</span>
                       </span>
-                      <div className="flex items-center gap-1.5">
-                        <span className="line-through text-slate-400 text-xs font-medium">{currencySymbol}{origPrice}</span>
-                        <span className="text-amber-600 dark:text-amber-400 font-black text-sm">{currencySymbol}{price} / year</span>
+                      <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+                        {hasOriginalPrice && (
+                          <span className="line-through text-slate-400 text-xs font-medium whitespace-nowrap">{currencySymbol}{origPrice}</span>
+                        )}
+                        <span className="text-amber-600 dark:text-amber-400 font-black text-sm whitespace-nowrap">
+                          {currencySymbol}{price} <span className="text-xs font-semibold text-amber-500">/ {cycleText}</span>
+                        </span>
                       </div>
                     </div>
 
                     <div className="flex justify-between">
                       <span>{subscriptionGstInclusive ? t('basePlanPriceExclLabel', 'Base Plan Price (Excl. Tax)') : t('basePlanPriceLabel', 'Base Plan Price')}</span>
                       <span className="text-slate-800 dark:text-slate-200 font-extrabold flex items-center gap-1.5">
-                        {discount === 0 && (
+                        {discount === 0 && hasOriginalPrice && (
                           <span className="line-through text-slate-400 text-[11px] font-normal">{currencySymbol}{origPrice}</span>
                         )}
                         <span>{currencySymbol}{taxableBase.toFixed(2)}</span>
@@ -1159,14 +1491,14 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
                     <div className="flex justify-between font-black text-slate-900 dark:text-slate-100 text-sm">
                       <span className="flex items-baseline space-x-0.5">
                         <span>Total Price</span>
-                        <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold ml-1">/ year</span>
+                        <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold ml-1">/ {cycleText}</span>
                       </span>
                       <span className="text-primary font-black">{currencySymbol}{totalToPay.toFixed(2)}</span>
                     </div>
                     <div className="pt-1 flex items-center justify-between">
                       <span className="text-[10px] font-extrabold text-blue-700 dark:text-blue-300 bg-blue-50/90 dark:bg-blue-900/30 border border-blue-200/80 dark:border-blue-800/40 px-2.5 py-0.5 rounded-full flex items-center gap-1.5">
                         <Sparkles className="w-3 h-3 text-blue-600 dark:text-blue-400" />
-                        <span>Free for {planTrialHours} hours • Then {currencySymbol}{price} / year</span>
+                        <span>Free for {planTrialHours} hours • Then {currencySymbol}{price} / {cycleText}</span>
                       </span>
                     </div>
                   </div>
@@ -1176,12 +1508,51 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
                     {renderFeatureList(plan.features, plan)}
                   </div>
 
+                  {/* AutoPay Opt-in Card (During Purchase) */}
+                  {!isActivePlan && !isIOSAppStoreBlocked && (
+                    <div className="my-4 p-4 rounded-2xl bg-gradient-to-r from-blue-50/70 via-indigo-50/50 to-blue-50/70 dark:from-slate-800/80 dark:via-indigo-950/30 dark:to-slate-800/80 border border-blue-200/80 dark:border-indigo-800/50 transition-all">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <RefreshCw className={`w-4 h-4 ${enableAutoPay ? 'text-primary' : 'text-slate-400'}`} />
+                            <span className="text-xs font-black text-slate-800 dark:text-slate-100">
+                              Enable AutoPay (Recurring Deduction)
+                            </span>
+                            <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300">
+                              Recommended
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-slate-600 dark:text-slate-300 font-medium leading-relaxed">
+                            {enableAutoPay
+                              ? `Recurring automatic deduction of ₹${totalToPay.toFixed(2)} every ${cycleText}. Uninterrupted CGM reports, food insights & consultations.`
+                              : 'One-time manual payment without recurring mandate authorization.'}
+                          </p>
+                          <div className="mt-2 text-[10px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5 font-semibold">
+                            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                            <span>Powered by Razorpay eMandate • Turn off anytime in 1 click</span>
+                          </div>
+                        </div>
+
+                        {/* Toggle Switch */}
+                        <label className="relative inline-flex items-center cursor-pointer shrink-0 mt-1">
+                          <input
+                            type="checkbox"
+                            checked={enableAutoPay}
+                            onChange={(e) => setEnableAutoPay(e.target.checked)}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                        </label>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Action Buttons */}
                   <div className="mt-4 space-y-2">
                     {isActivePlan ? (
                       <div className="text-center py-3 text-xs text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 rounded-2xl border border-emerald-200 dark:border-emerald-900/40 font-extrabold flex items-center justify-center space-x-1.5 shadow-xs">
                         <Check className="h-4 w-4 text-emerald-500" />
-                        <span>{t('sub.activeSubscription', 'Active Annual Subscription')}</span>
+                        <span>Active {activeSub?.billingCycle === 'yearly' ? 'Annual' : 'Monthly'} Subscription</span>
                       </div>
                     ) : isTrialActive ? (
                       <div className="space-y-2">
@@ -1199,11 +1570,13 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
                           disabled={actionLoading}
                           className="w-full text-white font-extrabold py-3.5 px-4 rounded-2xl shadow-md hover:shadow-lg active:scale-[0.99] flex items-center justify-center space-x-2 transition-all disabled:opacity-50 cursor-pointer bg-primary hover:bg-primary-dark"
                         >
-                          <CreditCard className="h-4.5 w-4.5" />
+                          {enableAutoPay ? <RefreshCw className="h-4.5 w-4.5" /> : <CreditCard className="h-4.5 w-4.5" />}
                           <span className="text-xs sm:text-sm font-black tracking-wide">
                             {totalToPay <= 0
-                              ? '🎁 Activate Free 1-Year Membership'
-                              : `Upgrade Now to Annual Plan (${currencySymbol}${totalToPay.toFixed(2)}/yr)`}
+                              ? `🎁 Activate Free Membership`
+                              : enableAutoPay
+                                ? `Upgrade with AutoPay (${currencySymbol}${totalToPay.toFixed(2)}/${cycleShort})`
+                                : `Upgrade Now (${currencySymbol}${totalToPay.toFixed(2)}/${cycleShort})`}
                           </span>
                         </button>
                       </div>
@@ -1233,8 +1606,8 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
                           disabled={actionLoading || trialLoading}
                           className="w-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-extrabold py-3 px-4 rounded-2xl transition-all cursor-pointer flex items-center justify-center space-x-2 text-xs border border-slate-200/80 dark:border-slate-700"
                         >
-                          <CreditCard className="h-4 w-4" />
-                          <span>Or Subscribe Directly ({currencySymbol}{totalToPay.toFixed(2)} / yr)</span>
+                          {enableAutoPay ? <RefreshCw className="h-4 w-4" /> : <CreditCard className="h-4 w-4" />}
+                          <span>{enableAutoPay ? `Subscribe with AutoPay (${currencySymbol}${totalToPay.toFixed(2)}/${cycleShort})` : `Subscribe Once (${currencySymbol}${totalToPay.toFixed(2)}/${cycleShort})`}</span>
                         </button>
                       </div>
                     ) : (
@@ -1251,9 +1624,11 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
                           className="w-full text-white font-extrabold py-3.5 px-4 rounded-2xl shadow-md hover:shadow-lg active:scale-[0.99] flex items-center justify-center space-x-2 transition-all disabled:opacity-50 cursor-pointer"
                           style={{ backgroundColor: color }}
                         >
-                          <CreditCard className="h-4.5 w-4.5" />
+                          {enableAutoPay ? <RefreshCw className="h-4.5 w-4.5" /> : <CreditCard className="h-4.5 w-4.5" />}
                           <span className="text-xs sm:text-sm font-black tracking-wide">
-                            Subscribe Now ({currencySymbol}{totalToPay.toFixed(2)} / year)
+                            {enableAutoPay
+                              ? `Subscribe with AutoPay (${currencySymbol}${totalToPay.toFixed(2)} / ${cycleText})`
+                              : `Pay Once (${currencySymbol}${totalToPay.toFixed(2)} / ${cycleText})`}
                           </span>
                         </button>
                       </div>
@@ -1266,35 +1641,263 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
         </div>
       </div>
 
-      {/* Invoice Directory */}
-      {invoices.length > 0 && (
-        <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200 dark:border-slate-800 shadow-soft">
-          <h4 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-3 flex items-center space-x-1.5">
-            <FileText className="h-4 w-4" />
-            <span>{t('sub.billingInvoiceHistory', 'Billing & Invoice History')}</span>
-          </h4>
+      {/* Invoice & Payment History Directory */}
+      {(invoices.length > 0 || transactions.length > 0) && (
+        <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-6 border border-slate-200/80 dark:border-slate-800 shadow-soft space-y-5">
+          {/* Section Header & Date Range Filter */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
+            <div>
+              <h4 className="text-xs font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider flex items-center gap-2">
+                <Receipt className="h-4 w-4 text-primary" />
+                <span>{t('sub.billingInvoiceHistory', 'Billing & Payment History')}</span>
+              </h4>
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                Download tax invoices and review all transaction receipts
+              </p>
+            </div>
 
-          <div className="divide-y divide-slate-100 dark:divide-slate-800 max-h-60 overflow-y-auto no-scrollbar">
-            {invoices.map((inv) => (
-              <div key={inv._id} className="py-3 flex justify-between items-center text-xs font-semibold">
-                <div>
-                  <span className="text-slate-800 dark:text-slate-100 font-bold block">{inv.invoiceNumber}</span>
-                  <span className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold">
-                    {new Date(inv.createdAt).toLocaleDateString(activeLocale)}
-                  </span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <span className="text-slate-700 dark:text-slate-200 font-bold">₹{inv.totalAmount.toFixed(2)}</span>
-                  <button
-                    onClick={() => setSelectedInvoice(inv)}
-                    className="p-1.5 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-primary transition-all cursor-pointer"
-                  >
-                    <Download className="h-4.5 w-4.5" />
-                  </button>
-                </div>
-              </div>
-            ))}
+            {/* Date Preset Filter Pills */}
+            <div className="flex flex-wrap items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => setBillingDateFilter('ALL')}
+                className={`px-2.5 py-1 rounded-xl text-[10px] font-black transition-all cursor-pointer ${
+                  billingDateFilter === 'ALL'
+                    ? 'bg-primary text-white shadow-2xs'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+                }`}
+              >
+                All Time
+              </button>
+              <button
+                type="button"
+                onClick={() => setBillingDateFilter('30D')}
+                className={`px-2.5 py-1 rounded-xl text-[10px] font-black transition-all cursor-pointer ${
+                  billingDateFilter === '30D'
+                    ? 'bg-primary text-white shadow-2xs'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+                }`}
+              >
+                30 Days
+              </button>
+              <button
+                type="button"
+                onClick={() => setBillingDateFilter('90D')}
+                className={`px-2.5 py-1 rounded-xl text-[10px] font-black transition-all cursor-pointer ${
+                  billingDateFilter === '90D'
+                    ? 'bg-primary text-white shadow-2xs'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+                }`}
+              >
+                90 Days
+              </button>
+              <button
+                type="button"
+                onClick={() => setBillingDateFilter('CUSTOM')}
+                className={`px-2.5 py-1 rounded-xl text-[10px] font-black flex items-center gap-1 transition-all cursor-pointer ${
+                  billingDateFilter === 'CUSTOM'
+                    ? 'bg-primary text-white shadow-2xs'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+                }`}
+              >
+                <Filter className="w-2.5 h-2.5" />
+                Custom
+              </button>
+            </div>
           </div>
+
+          {/* Custom Date Range Picker inputs (only shown when CUSTOM preset selected) */}
+          {billingDateFilter === 'CUSTOM' && (
+            <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200/60 dark:border-slate-700 flex flex-wrap items-center gap-3 text-xs">
+              <span className="font-bold text-slate-600 dark:text-slate-300 flex items-center gap-1 text-[11px]">
+                <Calendar className="w-3.5 h-3.5 text-primary" /> Filter Range:
+              </span>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] text-slate-400 font-semibold">From:</span>
+                <input
+                  type="date"
+                  value={billingStartDate}
+                  onChange={(e) => setBillingStartDate(e.target.value)}
+                  className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-slate-800 dark:text-slate-100 text-[11px] font-bold focus:outline-none focus:border-primary"
+                />
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] text-slate-400 font-semibold">To:</span>
+                <input
+                  type="date"
+                  value={billingEndDate}
+                  onChange={(e) => setBillingEndDate(e.target.value)}
+                  className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-slate-800 dark:text-slate-100 text-[11px] font-bold focus:outline-none focus:border-primary"
+                />
+              </div>
+              {(billingStartDate || billingEndDate) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setBillingStartDate('');
+                    setBillingEndDate('');
+                  }}
+                  className="text-[10px] font-bold text-rose-600 hover:underline ml-auto flex items-center gap-1"
+                >
+                  <RotateCcw className="w-2.5 h-2.5" />
+                  Clear Dates
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Invoices List */}
+          {invoices.length > 0 && (
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] uppercase font-black text-slate-400 dark:text-slate-500 tracking-wider">
+                  Tax Invoices ({filteredInvoices.length})
+                </span>
+                <span className="text-[10px] text-slate-400 font-medium">
+                  Showing {Math.min(invoiceDisplayLimit, filteredInvoices.length)} of {filteredInvoices.length}
+                </span>
+              </div>
+
+              {filteredInvoices.length === 0 ? (
+                <div className="py-6 text-center text-xs text-slate-400 bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800">
+                  No invoices found for the selected date range.
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {filteredInvoices.slice(0, invoiceDisplayLimit).map((inv) => (
+                    <div
+                      key={inv._id}
+                      className="p-3 bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100/80 dark:hover:bg-slate-800 rounded-2xl border border-slate-200/60 dark:border-slate-800/80 transition-all flex items-center justify-between gap-3 text-xs"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="p-2 bg-white dark:bg-slate-900 rounded-xl border border-slate-200/60 dark:border-slate-700/60 text-primary shrink-0">
+                          <FileText className="w-4 h-4" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="font-bold text-slate-800 dark:text-slate-100 truncate block">
+                              {inv.invoiceNumber}
+                            </span>
+                            {inv.isRecurring && (
+                              <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 shrink-0">
+                                AutoPay
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium block mt-0.5">
+                            {new Date(inv.createdAt).toLocaleDateString(activeLocale, {
+                              day: 'numeric',
+                              month: 'short',
+                              year: 'numeric'
+                            })}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2.5 shrink-0">
+                        <span className="font-black text-slate-900 dark:text-slate-100 text-xs sm:text-sm">
+                          ₹{inv.totalAmount.toFixed(2)}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedInvoice(inv)}
+                          className="p-2 bg-white dark:bg-slate-900 hover:bg-primary hover:text-white dark:hover:bg-primary text-slate-600 dark:text-slate-300 rounded-xl border border-slate-200 dark:border-slate-700 transition-all cursor-pointer shadow-2xs"
+                          title="View / Download Invoice"
+                        >
+                          <Download className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Load More Invoices Button */}
+                  {filteredInvoices.length > invoiceDisplayLimit && (
+                    <button
+                      type="button"
+                      onClick={() => setInvoiceDisplayLimit((prev) => prev + 5)}
+                      className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer mt-1"
+                    >
+                      <ChevronDown className="w-3.5 h-3.5" />
+                      <span>Load More Invoices ({filteredInvoices.length - invoiceDisplayLimit} remaining)</span>
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Transactions List */}
+          {transactions.length > 0 && (
+            <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] uppercase font-black text-slate-400 dark:text-slate-500 tracking-wider">
+                  Payment Transactions ({filteredTransactions.length})
+                </span>
+                <span className="text-[10px] text-slate-400 font-medium">
+                  Showing {Math.min(transactionDisplayLimit, filteredTransactions.length)} of {filteredTransactions.length}
+                </span>
+              </div>
+
+              {filteredTransactions.length === 0 ? (
+                <div className="py-6 text-center text-xs text-slate-400 bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800">
+                  No payment transactions found for the selected date range.
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {filteredTransactions.slice(0, transactionDisplayLimit).map((tx) => (
+                    <div
+                      key={tx._id}
+                      className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 flex items-center justify-between gap-3 text-xs border border-slate-200/60 dark:border-slate-800/60"
+                    >
+                      <div className="space-y-0.5 min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-black text-slate-800 dark:text-slate-200 text-xs sm:text-sm">
+                            ₹{tx.amount}
+                          </span>
+                          {tx.isRecurring && (
+                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/60">
+                              AutoPay
+                            </span>
+                          )}
+                          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider ${
+                            tx.status === 'success'
+                              ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60'
+                              : tx.status === 'failed'
+                              ? 'bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 border border-rose-200 dark:border-rose-800/60'
+                              : 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60'
+                          }`}>
+                            {tx.status}
+                          </span>
+                        </div>
+                        <span className="text-[10px] text-slate-400 font-mono truncate block">
+                          {tx.gatewayPaymentId || tx._id}
+                        </span>
+                      </div>
+                      <span className="text-[10px] text-slate-400 font-semibold shrink-0">
+                        {new Date(tx.createdAt).toLocaleDateString(activeLocale, {
+                          day: 'numeric',
+                          month: 'short',
+                          year: 'numeric'
+                        })}
+                      </span>
+                    </div>
+                  ))}
+
+                  {/* Load More Transactions Button */}
+                  {filteredTransactions.length > transactionDisplayLimit && (
+                    <button
+                      type="button"
+                      onClick={() => setTransactionDisplayLimit((prev) => prev + 5)}
+                      className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer mt-1"
+                    >
+                      <ChevronDown className="w-3.5 h-3.5" />
+                      <span>Load More Transactions ({filteredTransactions.length - transactionDisplayLimit} remaining)</span>
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -1421,6 +2024,154 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
                   Explore Membership Details
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Enable AutoPay Confirmation Modal */}
+      {showEnableAutoPayModal && activeSub && activePlanDetails && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl p-6 shadow-2xl border border-slate-100 dark:border-slate-800 relative">
+            <div className="flex justify-between items-center pb-3 border-b border-slate-100 dark:border-slate-800 mb-4">
+              <div className="flex items-center space-x-2">
+                <div className="p-2 rounded-xl bg-primary/10 text-primary">
+                  <Zap className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-slate-800 dark:text-slate-100">
+                    Enable AutoPay (Recurring Renewal)
+                  </h3>
+                  <p className="text-[11px] text-slate-400 font-medium">Automatic hassle-free subscription renewal</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowEnableAutoPayModal(false)}
+                className="p-1 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3 mb-5 text-xs">
+              <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 space-y-2 border border-slate-100 dark:border-slate-800">
+                <div className="flex justify-between">
+                  <span className="text-slate-500 dark:text-slate-400 font-medium">Plan:</span>
+                  <span className="font-bold text-slate-800 dark:text-slate-100">{activePlanDetails.name}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500 dark:text-slate-400 font-medium">Billing Period:</span>
+                  <span className="font-bold capitalize text-slate-800 dark:text-slate-100">{activeSub.billingCycle}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500 dark:text-slate-400 font-medium">Recurring Amount:</span>
+                  <span className="font-bold text-slate-800 dark:text-slate-100">
+                    ₹{(activeSub.recurringAmount || (activeSub.billingCycle === 'yearly' ? activePlanDetails.yearlyPrice : activePlanDetails.monthlyPrice)).toFixed(2)} / {activeSub.billingCycle}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500 dark:text-slate-400 font-medium">First Auto-Debit Date:</span>
+                  <span className="font-bold text-primary">
+                    {formatSubscriptionDateTime(activeSub.endDate)}
+                  </span>
+                </div>
+              </div>
+
+              <div className="p-3 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/40 text-[11px] text-indigo-900 dark:text-indigo-200 leading-relaxed space-y-1.5">
+                <div className="font-bold flex items-center gap-1 text-indigo-700 dark:text-indigo-300">
+                  <ShieldCheck className="w-4 h-4 shrink-0" />
+                  <span>No Double Charge Guarantee</span>
+                </div>
+                <p>
+                  Your card/mandate will be verified and authorized securely via Razorpay. Your current paid access remains valid until <strong>{formatSubscriptionDateTime(activeSub.endDate)}</strong>. The first recurring renewal charge will take place on this date.
+                </p>
+                <p className="text-[10px] text-indigo-600/80 dark:text-indigo-400">
+                  You can disable AutoPay anytime from this page before the renewal date with no cancellation fees.
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <button
+                onClick={() => {
+                  setShowEnableAutoPayModal(false);
+                  handleEnableAutoPay();
+                }}
+                disabled={autoPayActionLoading}
+                className="w-full bg-primary hover:bg-primary-dark text-white font-extrabold py-3 px-4 rounded-2xl transition-all shadow-sm text-xs flex items-center justify-center space-x-2 cursor-pointer"
+              >
+                {autoPayActionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+                <span>Authorize AutoPay Mandate</span>
+              </button>
+              <button
+                onClick={() => setShowEnableAutoPayModal(false)}
+                className="w-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold py-2.5 px-4 rounded-2xl transition-all text-xs cursor-pointer"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Disable AutoPay Confirmation Modal */}
+      {showDisableAutoPayModal && activeSub && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl p-6 shadow-2xl border border-slate-100 dark:border-slate-800 relative">
+            <div className="flex justify-between items-center pb-3 border-b border-slate-100 dark:border-slate-800 mb-4">
+              <div className="flex items-center space-x-2">
+                <div className="p-2 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-600">
+                  <AlertTriangle className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-slate-800 dark:text-slate-100">
+                    Disable AutoPay?
+                  </h3>
+                  <p className="text-[11px] text-slate-400 font-medium">Turn off automatic renewals</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowDisableAutoPayModal(false)}
+                className="p-1 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3 mb-5 text-xs text-slate-600 dark:text-slate-300">
+              <p className="leading-relaxed">
+                Are you sure you want to turn off AutoPay? We will immediately cancel the recurring deduction mandate with Razorpay.
+              </p>
+
+              <div className="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200/80 dark:border-emerald-900/40 text-emerald-900 dark:text-emerald-200 text-[11px] leading-relaxed space-y-1">
+                <div className="font-bold flex items-center gap-1.5 text-emerald-800 dark:text-emerald-300">
+                  <Check className="w-4 h-4 shrink-0" />
+                  <span>Your Current Paid Period Remains Protected</span>
+                </div>
+                <p>
+                  Your current subscription will remain fully active with all features until <strong>{formatSubscriptionDateTime(activeSub.endDate)}</strong>. Disabling AutoPay will not cancel or shorten your active period.
+                </p>
+              </div>
+
+              <p className="text-[11px] text-slate-400">
+                After this date, your subscription will not renew automatically and you can manually renew anytime.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <button
+                onClick={handleDisableAutoPay}
+                disabled={autoPayActionLoading}
+                className="w-full bg-rose-600 hover:bg-rose-700 text-white font-extrabold py-3 px-4 rounded-2xl transition-all shadow-sm text-xs flex items-center justify-center space-x-2 cursor-pointer"
+              >
+                {autoPayActionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <X className="w-4 h-4" />}
+                <span>Yes, Turn Off AutoPay</span>
+              </button>
+              <button
+                onClick={() => setShowDisableAutoPayModal(false)}
+                className="w-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold py-2.5 px-4 rounded-2xl transition-all text-xs cursor-pointer"
+              >
+                Keep AutoPay Active
+              </button>
             </div>
           </div>
         </div>

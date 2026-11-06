@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, X, ChevronRight, ShieldCheck, PlayCircle, Bot, Sun, Check, Languages } from 'lucide-react';
+import { Sparkles, X, ChevronRight, ShieldCheck, Sun, Check, Languages, RefreshCw, Receipt } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import type { SupportedLanguage } from '../i18n/types';
 
-export const CURRENT_APP_VERSION = 'v6.2.1';
+export const CURRENT_APP_VERSION = 'v6.3.0';
 
 interface WhatsNewModalProps {
   isOpen?: boolean;
@@ -46,11 +46,29 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({
 
   if (!isOpen && !shouldShow) return null;
 
-  // v6.1.1 Current Release Features
+  // v6.3.0 Current Release Features
   const features = [
     {
-      key: 'motivation',
+      key: 'autopay',
       badge: 'NEW',
+      badgeColor: 'bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/30',
+      title: t('whatsNew.autopay.title', 'Razorpay AutoPay Subscriptions'),
+      description: t('whatsNew.autopay.desc', 'Seamless automated membership renewals via UPI and Card mandates. Manage, enable, or pause AutoPay anytime with zero lock-in.'),
+      icon: <RefreshCw className="h-5 w-5 text-blue-500" />,
+      bg: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
+    },
+    {
+      key: 'billing',
+      badge: 'NEW',
+      badgeColor: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30',
+      title: t('whatsNew.billing.title', 'Tax Invoices & Date Range Filter'),
+      description: t('whatsNew.billing.desc', 'Clean billing hub with 1-tap PDF invoice downloads, date range filters, and paginated transaction receipts.'),
+      icon: <Receipt className="h-5 w-5 text-emerald-500" />,
+      bg: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+    },
+    {
+      key: 'motivation',
+      badge: 'POPULAR',
       badgeColor: 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30',
       title: t('whatsNew.motivation.title', '365 Days of Daily Motivation'),
       description: t('whatsNew.motivation.desc', 'Start each morning with curated cellular health one-liners, metabolic balance tips, and timely inspiration reminders.'),
@@ -59,30 +77,12 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({
     },
     {
       key: 'kitchen',
-      badge: 'NEW',
-      badgeColor: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30',
+      badge: 'HEALTH',
+      badgeColor: 'bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/30',
       title: t('whatsNew.kitchen.title', 'Safe Kitchen & Cooking Audit'),
       description: t('whatsNew.kitchen.desc', 'Audit for high-temperature frying, charred foods, heated plastics, and toxic cookware to protect cellular health.'),
-      icon: <ShieldCheck className="h-5 w-5 text-emerald-500" />,
-      bg: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
-    },
-    {
-      key: 'checkin',
-      badge: 'UPDATED',
-      badgeColor: 'bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/30',
-      title: t('whatsNew.checkin.title', 'Interactive Daily AI Check-in Bot'),
-      description: t('whatsNew.checkin.desc', 'Conversational check-in bot tracks sleep latency, resting breath rate, snoring checks, and 9 daily recovery habits.'),
-      icon: <Bot className="h-5 w-5 text-purple-500" />,
+      icon: <ShieldCheck className="h-5 w-5 text-purple-500" />,
       bg: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20'
-    },
-    {
-      key: 'screening',
-      badge: 'NEW',
-      badgeColor: 'bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/30',
-      title: t('whatsNew.screening.title', 'Clinical Self-Exam Video Guides'),
-      description: t('whatsNew.screening.desc', 'Step-by-step animated breast self-examination guides and clinical symptom screening directly in your wellness hub.'),
-      icon: <PlayCircle className="h-5 w-5 text-rose-500" />,
-      bg: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20'
     }
   ];
 

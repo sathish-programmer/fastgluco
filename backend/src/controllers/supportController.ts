@@ -9,7 +9,7 @@ export class SupportController {
    */
   public static async submitTicket(req: AuthRequest, res: Response) {
     try {
-      const { name, email, mobile, question, relatedId, type } = req.body;
+      const { name, email, mobile, question, relatedId, type, category } = req.body;
       if (!name || !email || !question) {
         return res.status(400).json({ message: 'Name, email, and question are required.' });
       }
@@ -21,7 +21,8 @@ export class SupportController {
         mobile,
         question,
         relatedId,
-        type: type || 'GENERAL'
+        type: type || 'GENERAL',
+        category: category || 'General'
       });
 
       await ticket.save();

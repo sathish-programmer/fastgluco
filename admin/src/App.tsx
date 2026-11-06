@@ -91,6 +91,7 @@ import { AdminAskMitoTopics } from './components/AdminAskMitoTopics';
 import { AdminUserFeedback } from './components/AdminUserFeedback';
 import { AdminAppHealth } from './components/AdminAppHealth';
 import { AdminOtpLogs } from './components/AdminOtpLogs';
+import { AdminSentEmails } from './components/AdminSentEmails';
 import { OrderManagementHub } from './components/orderManagement/OrderManagementHub';
 import { RevenueAnalyticsHub } from './components/revenueAnalytics/RevenueAnalyticsHub';
 
@@ -383,6 +384,15 @@ const ADMIN_NAV_PAGES: AdminNavCatalogItem[] = [
     keywords: ['otp logs', 'sms logs', 'verification codes', 'auth logs', 'login attempts'],
     icon: 'History',
     view: 'otp-logs'
+  },
+  {
+    id: 'sent-emails',
+    title: 'Sent Emails to Users',
+    subtitle: 'Outbound Brevo/Titan SMTP email logs, full content preview, and resend history',
+    category: 'System & Apps',
+    keywords: ['sent emails', 'brevo', 'titan', 'email logs', 'user emails', 'smtp delivery', 'mail preview', 'outbound emails'],
+    icon: 'Mail',
+    view: 'sent-emails'
   }
 ];
 
@@ -408,6 +418,7 @@ const renderSearchNavIcon = (icon: string, className: string = "w-4 h-4") => {
     case 'FileText': return <FileText className={className} />;
     case 'BarChart3': return <BarChart3 className={className} />;
     case 'History': return <History className={className} />;
+    case 'Mail': return <Mail className={className} />;
     default: return <Compass className={className} />;
   }
 };
@@ -2813,6 +2824,20 @@ const AdminPanelContent: React.FC = () => {
                       </span>
                     </button>
                     <button 
+                      onClick={() => { setActiveView('sent-emails'); setSearchQuery(''); }}
+                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold flex items-center justify-between ${
+                        activeView === 'sent-emails' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      <span className="flex items-center gap-1.5">
+                        <Mail className="w-3.5 h-3.5 text-blue-400" />
+                        Sent Emails
+                      </span>
+                      <span className="bg-blue-500/20 text-blue-300 text-[9px] font-extrabold px-1.5 py-0.5 rounded border border-blue-500/30">
+                        Brevo
+                      </span>
+                    </button>
+                    <button 
                       onClick={() => { setActiveView('pendingEdits'); setSearchQuery(''); }}
                       className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
                         activeView === 'pendingEdits' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
@@ -3142,6 +3167,23 @@ const AdminPanelContent: React.FC = () => {
                 {!sidebarCollapsed && (
                   <span className="bg-amber-500/20 text-amber-300 text-[9px] font-black px-1.5 py-0.5 rounded border border-amber-500/30">
                     Live
+                  </span>
+                )}
+              </button>
+
+              <button 
+                onClick={() => { setActiveView('sent-emails'); setSearchQuery(''); }}
+                className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                  activeView === 'sent-emails' ? 'bg-primary text-white shadow-md shadow-primary/20' : 'hover:bg-slate-800 text-slate-400 hover:text-white'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <Mail className="h-4.5 w-4.5 shrink-0 text-blue-400" />
+                  {!sidebarCollapsed && <span>Sent Emails</span>}
+                </div>
+                {!sidebarCollapsed && (
+                  <span className="bg-blue-500/20 text-blue-300 text-[9px] font-black px-1.5 py-0.5 rounded border border-blue-500/30">
+                    Brevo
                   </span>
                 )}
               </button>
@@ -5660,6 +5702,11 @@ const AdminPanelContent: React.FC = () => {
         {/* OTP & AUTH LOGS VIEW */}
         {activeView === 'otp-logs' && (
           <AdminOtpLogs apiUrl={apiUrl} token={token || ''} />
+        )}
+
+        {/* SENT EMAILS VIEW */}
+        {activeView === 'sent-emails' && (
+          <AdminSentEmails apiUrl={apiUrl} token={token || ''} />
         )}
 
         {/* REVENUE & BUSINESS ANALYTICS MODULE */}

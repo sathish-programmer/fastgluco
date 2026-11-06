@@ -11,6 +11,7 @@ import AskMitoQuery from '../models/AskMitoQuery';
 import ShopOrder from '../models/ShopOrder';
 import { Appointment } from '../models/Appointment';
 import LabBooking from '../models/LabBooking';
+import { AutoPayService } from './autoPayService';
 
 export interface DateRangeFilter {
   startDate: Date;
@@ -1277,6 +1278,12 @@ export class RevenueAnalyticsService {
 
     const event = eventPayload.event;
     console.log(`[Razorpay Webhook] Processing verified event: ${event}`);
+
+    // If this is a subscription-related event, delegate to AutoPayService
+    if (typeof event === 'string' && (event.startsWith('subscription.') || (event === 'payment.failed' && (eventPayload?.payload?.payment?.entity?.subscription_id || eventPayload?.payload?.payment?.entity?.notes?.subscription_id)))) {
+      const autoPayRes = await AutoPayService.processWebhook(signature, rawBody, eventPayload);
+      return autoPayRes;
+    }
 
     if (event === 'payment.captured') {
       const payment = eventPayload.payload.payment.entity;

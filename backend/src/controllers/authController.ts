@@ -149,7 +149,7 @@ function encryptOtp(text: string): string {
   return iv.toString('hex') + ':' + encrypted;
 }
 
-function decryptOtp(text: string): string | null {
+export function decryptOtp(text: string): string | null {
   try {
     const parts = text.split(':');
     if (parts.length !== 2) return null;
