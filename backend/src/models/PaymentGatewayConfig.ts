@@ -3,6 +3,7 @@ import { Schema, model, Document } from 'mongoose';
 export interface IPaymentGatewayConfig extends Document {
   razorpayKeyId?: string;
   razorpayKeySecret?: string;
+  razorpayWebhookSecret?: string;
   isSandbox: boolean;
   enablePayments: boolean;
   enableSubscriptions: boolean; // Subscription Required ON/OFF
@@ -49,6 +50,7 @@ const paymentGatewayConfigSchema = new Schema<IPaymentGatewayConfig>(
   {
     razorpayKeyId: { type: String, trim: true },
     razorpayKeySecret: { type: String, trim: true },
+    razorpayWebhookSecret: { type: String, trim: true },
     isSandbox: { type: Boolean, default: true, required: true },
     enablePayments: { type: Boolean, default: false, required: true },
     enableSubscriptions: { type: Boolean, default: false, required: true },

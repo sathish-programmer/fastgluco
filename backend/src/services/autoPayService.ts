@@ -189,7 +189,10 @@ export class AutoPayService {
     eventPayload: any
   ): Promise<{ success: boolean; event?: string; message?: string; duplicate?: boolean }> {
     const config = await PaymentGatewayConfig.findOne();
-    const webhookSecret = (config as any)?.razorpayWebhookSecret || config?.razorpayKeySecret;
+    const webhookSecret =
+      process.env.RAZORPAY_WEBHOOK_SECRET ||
+      (config as any)?.razorpayWebhookSecret ||
+      config?.razorpayKeySecret;
 
     if (!webhookSecret) {
       console.warn('[AutoPayService Webhook] Missing webhook secret, skipping verification.');

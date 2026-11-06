@@ -100,10 +100,6 @@ PODS:
   - nanopb/decode (3.30910.0)
   - nanopb/encode (3.30910.0)
   - PromisesObjC (2.4.1)
-  - RecaptchaEnterprise (18.9.1):
-    - RecaptchaEnterpriseSDK (= 18.9.1)
-    - RecaptchaInterop (~> 101.0.0)
-  - RecaptchaEnterpriseSDK (18.9.1)
   - RecaptchaInterop (101.0.0)
 
 DEPENDENCIES:
@@ -120,7 +116,6 @@ DEPENDENCIES:
   - "CapacitorLocalNotifications (from `../../node_modules/@capacitor/local-notifications`)"
   - "CapacitorShare (from `../../node_modules/@capacitor/share`)"
   - Firebase/Auth
-  - RecaptchaEnterprise
 
 SPEC REPOS:
   trunk:
@@ -138,8 +133,6 @@ SPEC REPOS:
     - GTMSessionFetcher
     - nanopb
     - PromisesObjC
-    - RecaptchaEnterprise
-    - RecaptchaEnterpriseSDK
     - RecaptchaInterop
 
 EXTERNAL SOURCES:
@@ -195,10 +188,8 @@ SPEC CHECKSUMS:
   GTMSessionFetcher: fc75fc972958dceedee61cb662ae1da7a83a91cf
   nanopb: fad817b59e0457d11a5dfbde799381cd727c1275
   PromisesObjC: 752c3227f599e3467650e47ea36f433eeb10c273
-  RecaptchaEnterprise: a28429a5366cc0f687ac5e93a44c5caa2c685aa9
-  RecaptchaEnterpriseSDK: 72239ea30c486d9093918c7b31eb85629eff1a50
   RecaptchaInterop: 11e0b637842dfb48308d242afc3f448062325aba
 
-PODFILE CHECKSUM: 459cc6b087f5ddfc48dbde26008d9380afd6f23c
+PODFILE CHECKSUM: 43bfca5fe531c7ce04ad4327d8b72c4d253b1a64
 
 COCOAPODS: 1.16.2

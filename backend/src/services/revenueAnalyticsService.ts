@@ -1259,7 +1259,10 @@ export class RevenueAnalyticsService {
    */
   public static async processRazorpayWebhook(signature: string, rawBody: string, eventPayload: any) {
     const config = await PaymentGatewayConfig.findOne();
-    const webhookSecret = (config as any)?.razorpayWebhookSecret || config?.razorpayKeySecret;
+    const webhookSecret =
+      process.env.RAZORPAY_WEBHOOK_SECRET ||
+      (config as any)?.razorpayWebhookSecret ||
+      config?.razorpayKeySecret;
 
     if (!webhookSecret) {
       console.warn('[Razorpay Webhook] Missing webhook secret, skipping verification.');

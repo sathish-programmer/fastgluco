@@ -526,8 +526,9 @@ export class EmailService {
         from: `"${appName} Security" <support@mitoreboot.in>`, 
         to: email, 
         subject: `${otpCode} is your ${appName} verification code`, 
-        html 
-      }); 
+        html,
+        metadata: { otpCode, category: 'OTP' }
+      } as any); 
       console.log(`[EmailService] OTP email sent successfully to ${email} via ${provider}. MessageId: ${info?.messageId || 'ok'}`);
       return {
         success: true,

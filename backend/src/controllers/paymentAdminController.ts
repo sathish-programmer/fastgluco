@@ -46,7 +46,8 @@ export class PaymentAdminController {
     try {
       const { 
         razorpayKeyId, 
-        razorpayKeySecret, 
+        razorpayKeySecret,
+        razorpayWebhookSecret,
         isSandbox, 
         enablePayments, 
         enableSubscriptions, 
@@ -91,6 +92,7 @@ export class PaymentAdminController {
 
       config.razorpayKeyId = razorpayKeyId !== undefined ? razorpayKeyId : config.razorpayKeyId;
       config.razorpayKeySecret = razorpayKeySecret !== undefined ? razorpayKeySecret : config.razorpayKeySecret;
+      if (razorpayWebhookSecret !== undefined) config.razorpayWebhookSecret = razorpayWebhookSecret;
       if (isSandbox !== undefined) config.isSandbox = isSandbox;
       if (enablePayments !== undefined) config.enablePayments = enablePayments;
       if (enableSubscriptions !== undefined) config.enableSubscriptions = enableSubscriptions;
