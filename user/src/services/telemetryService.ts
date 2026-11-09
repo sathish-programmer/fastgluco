@@ -88,8 +88,8 @@ class TelemetryService {
     const { osVersion, deviceModel } = this.parseUserAgent();
     const deviceId = this.getOrCreateDeviceId();
 
-    let appVersion = '6.3.1';
-    let buildNumber = '123';
+    let appVersion = '6.3.2';
+    let buildNumber = '124';
 
     try {
       const appInfo = await App.getInfo();

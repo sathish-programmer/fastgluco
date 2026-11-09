@@ -24,6 +24,10 @@ const config: CapacitorConfig = {
     ]
   },
   plugins: {
+    PushNotifications: {
+      presentationOptions: ["badge", "sound", "alert"],
+      iconColor: "#0D9488"
+    },
     FirebaseAuthentication: {
       skipNativeAuth: false,
       providers: ['phone']

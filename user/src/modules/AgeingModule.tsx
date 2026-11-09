@@ -249,12 +249,19 @@ export const AgeingModule: React.FC = () => {
     return localStorage.getItem('mito_ageing_selected_decade') || '40-50';
   });
   const [checkedFactors, setCheckedFactors] = useState<Record<string, boolean>>(() => {
+    if (localStorage.getItem('mito_ageing_date') !== new Date().toDateString()) return {};
     try {
       return JSON.parse(localStorage.getItem('mito_ageing_factors') || '{}');
     } catch {
       return {};
     }
   });
+
+  // Check if today has already been logged
+  const isLoggedToday = useMemo(() => {
+    const today = new Date().toDateString();
+    return historyLogs.some(l => new Date(l.timestamp || (l as any).createdAt).toDateString() === today);
+  }, [historyLogs]);
 
   // Load from backend on mount
   const loadHistory = useCallback(async () => {
@@ -263,18 +270,33 @@ export const AgeingModule: React.FC = () => {
       const logs = await HabitsService.getRecentHabits(apiUrl, token, 'ageing', 365);
       setHistoryLogs(logs || []);
       if (logs && logs.length > 0) {
-        const latest = logs[0]?.value;
-        if (latest) {
-          if (latest.selectedAge) setSelectedAge(latest.selectedAge);
-          if (latest.checkedFactors) {
-            setCheckedFactors(prev => ({ ...latest.checkedFactors, ...prev }));
+        // 1. Persistent decade selection
+        for (const log of logs) {
+          if (log.value?.selectedAge && !selectedAge) {
+            setSelectedAge(log.value.selectedAge);
+            break;
           }
+        }
+
+        // 2. Daily habits & factors ONLY from today's log
+        const currentToday = new Date().toDateString();
+        const todayLog = logs.find(l => new Date(l.timestamp || (l as any).createdAt).toDateString() === currentToday);
+        if (todayLog?.value) {
+          const val = todayLog.value;
+          if (val.selectedAge) setSelectedAge(val.selectedAge);
+          if (val.checkedFactors) {
+            setCheckedFactors(prev => ({ ...val.checkedFactors, ...prev }));
+          }
+          setLastSaved(new Date(todayLog.timestamp || (todayLog as any).createdAt));
+        } else if (localStorage.getItem('mito_ageing_date') !== currentToday) {
+          // Fresh day: reset checked factors
+          setCheckedFactors({});
         }
       }
     } catch (e) {
       console.error('Failed to load ageing history from cloud', e);
     }
-  }, [apiUrl, token]);
+  }, [apiUrl, token, selectedAge]);
 
   useEffect(() => {
     if (user?.id && token) {
@@ -285,6 +307,8 @@ export const AgeingModule: React.FC = () => {
   const toggleFactor = (id: string) => {
     setCheckedFactors(prev => {
       const next = { ...prev, [id]: !prev[id] };
+      const today = new Date().toDateString();
+      localStorage.setItem('mito_ageing_date', today);
       localStorage.setItem('mito_ageing_factors', JSON.stringify(next));
       return next;
     });
@@ -400,6 +424,7 @@ export const AgeingModule: React.FC = () => {
         saveButtonText={t('protocols.saveAgeingEntry', "Save Today's Entry")}
         onViewHistory={() => setShowDailyHistoryModal(true)}
         historyCount={historyLogs.length}
+        isLoggedToday={isLoggedToday}
       />
 
       <Card>

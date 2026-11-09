@@ -129,6 +129,8 @@ export class FCMService {
             sound: 'default',
             defaultSound: true,
             defaultVibrateTimings: true,
+            icon: 'ic_stat_notification',
+            color: '#0D9488',
             clickAction: 'FLUTTER_NOTIFICATION_CLICK'
           }
         },
@@ -271,7 +273,9 @@ export class FCMService {
             priority: 'high',
             notification: {
               channelId: 'mitoreboot_notifications',
-              sound: 'default'
+              sound: 'default',
+              icon: 'ic_stat_notification',
+              color: '#0D9488'
             }
           },
           apns: {

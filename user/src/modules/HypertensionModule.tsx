@@ -26,24 +26,31 @@ export const HypertensionModule: React.FC = () => {
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [historyLogs, setHistoryLogs] = useState<HabitLog[]>([]);
 
-  // Prevention State
+  // Prevention State (Scoped to current day)
   const [exercised, setExercised] = useState<boolean | null>(() => {
+    if (localStorage.getItem('mito_htn_date') !== new Date().toDateString()) return null;
     const v = localStorage.getItem('mito_htn_exercised');
     return v === null ? null : v === 'true';
   });
   const [meditated, setMeditated] = useState<boolean | null>(() => {
+    if (localStorage.getItem('mito_htn_date') !== new Date().toDateString()) return null;
     const v = localStorage.getItem('mito_htn_meditated');
     return v === null ? null : v === 'true';
   });
   const [lowSalt, setLowSalt] = useState<boolean | null>(() => {
+    if (localStorage.getItem('mito_htn_date') !== new Date().toDateString()) return null;
     const v = localStorage.getItem('mito_htn_lowsalt');
     return v === null ? null : v === 'true';
   });
   const [slept8, setSlept8] = useState<boolean | null>(() => {
+    if (localStorage.getItem('mito_htn_date') !== new Date().toDateString()) return null;
     const v = localStorage.getItem('mito_htn_slept8');
     return v === null ? null : v === 'true';
   });
-  const [stress, setStress] = useState<number>(() => Number(localStorage.getItem('mito_htn_stress')) || 5);
+  const [stress, setStress] = useState<number>(() => {
+    if (localStorage.getItem('mito_htn_date') !== new Date().toDateString()) return 5;
+    return Number(localStorage.getItem('mito_htn_stress')) || 5;
+  });
 
   // Treatment State
   const [bpLog, setBpLog] = useState<{ date: string; amSys?: number; amDia?: number; pmSys?: number; pmDia?: number }[]>(() => {
@@ -59,26 +66,42 @@ export const HypertensionModule: React.FC = () => {
   const [pmSys, setPmSys] = useState<string>('');
   const [pmDia, setPmDia] = useState<string>('');
   const [highSaltToday, setHighSaltToday] = useState<boolean | null>(() => {
+    if (localStorage.getItem('mito_htn_date') !== new Date().toDateString()) return null;
     const v = localStorage.getItem('mito_htn_highsalt_tx');
     return v === null ? null : v === 'true';
   });
   const [exercisedTx, setExercisedTx] = useState<boolean | null>(() => {
+    if (localStorage.getItem('mito_htn_date') !== new Date().toDateString()) return null;
     const v = localStorage.getItem('mito_htn_exercised_tx');
     return v === null ? null : v === 'true';
   });
   const [meditatedTx, setMeditatedTx] = useState<boolean | null>(() => {
+    if (localStorage.getItem('mito_htn_date') !== new Date().toDateString()) return null;
     const v = localStorage.getItem('mito_htn_meditated_tx');
     return v === null ? null : v === 'true';
   });
   const [lovedActivity, setLovedActivity] = useState<boolean | null>(() => {
+    if (localStorage.getItem('mito_htn_date') !== new Date().toDateString()) return null;
     const v = localStorage.getItem('mito_htn_loved');
     return v === null ? null : v === 'true';
   });
   const [slept8Tx, setSlept8Tx] = useState<boolean | null>(() => {
+    if (localStorage.getItem('mito_htn_date') !== new Date().toDateString()) return null;
     const v = localStorage.getItem('mito_htn_slept8_tx');
     return v === null ? null : v === 'true';
   });
-  const [stressTx, setStressTx] = useState<number>(() => Number(localStorage.getItem('mito_htn_stress_tx')) || 5);
+  const [stressTx, setStressTx] = useState<number>(() => {
+    if (localStorage.getItem('mito_htn_date') !== new Date().toDateString()) return 5;
+    return Number(localStorage.getItem('mito_htn_stress_tx')) || 5;
+  });
+
+  // Check if today has already been logged
+  const isLoggedToday = useMemo(() => {
+    const today = new Date().toDateString();
+    return historyLogs.some(l => new Date(l.timestamp || (l as any).createdAt).toDateString() === today);
+  }, [historyLogs]);
+
+  const hasAnsweredDaily = exercised !== null || meditated !== null || lowSalt !== null || slept8 !== null;
 
   // Load from cloud on mount
   const loadHistory = useCallback(async () => {
@@ -87,34 +110,60 @@ export const HypertensionModule: React.FC = () => {
       const logs = await HabitsService.getRecentHabits(apiUrl, token, 'hypertension', 365);
       setHistoryLogs(logs || []);
       if (logs && logs.length > 0) {
-        const latest = logs[0]?.value;
-        if (latest) {
-          if (latest.mode) setMode(latest.mode);
-          if (latest.exercised !== undefined) setExercised(latest.exercised);
-          if (latest.meditated !== undefined) setMeditated(latest.meditated);
-          if (latest.lowSalt !== undefined) setLowSalt(latest.lowSalt);
-          if (latest.slept8 !== undefined) setSlept8(latest.slept8);
-          if (latest.stress !== undefined) setStress(Number(latest.stress));
-          if (latest.bpLog && Array.isArray(latest.bpLog)) {
-            setBpLog(prev => {
-              const map = new Map<string, any>();
-              latest.bpLog.forEach((item: any) => map.set(item.date, item));
-              prev.forEach(item => map.set(item.date, item));
-              return Array.from(map.values()).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-            });
+        // 1. Long-term clinical history (preserve bpLog)
+        for (const log of logs) {
+          const val = log.value;
+          if (val) {
+            if (val.mode && !mode) setMode(val.mode);
+            if (val.bpLog && Array.isArray(val.bpLog)) {
+              setBpLog(prev => {
+                const map = new Map<string, any>();
+                val.bpLog.forEach((item: any) => map.set(item.date, item));
+                prev.forEach(item => map.set(item.date, item));
+                return Array.from(map.values()).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+              });
+            }
+            break;
           }
-          if (latest.highSaltToday !== undefined) setHighSaltToday(latest.highSaltToday);
-          if (latest.exercisedTx !== undefined) setExercisedTx(latest.exercisedTx);
-          if (latest.meditatedTx !== undefined) setMeditatedTx(latest.meditatedTx);
-          if (latest.lovedActivity !== undefined) setLovedActivity(latest.lovedActivity);
-          if (latest.slept8Tx !== undefined) setSlept8Tx(latest.slept8Tx);
-          if (latest.stressTx !== undefined) setStressTx(Number(latest.stressTx));
+        }
+
+        // 2. Daily habits ONLY from today's log
+        const currentToday = new Date().toDateString();
+        const todayLog = logs.find(l => new Date(l.timestamp || (l as any).createdAt).toDateString() === currentToday);
+        if (todayLog?.value) {
+          const val = todayLog.value;
+          if (val.mode) setMode(val.mode);
+          if (val.exercised !== undefined) setExercised(val.exercised);
+          if (val.meditated !== undefined) setMeditated(val.meditated);
+          if (val.lowSalt !== undefined) setLowSalt(val.lowSalt);
+          if (val.slept8 !== undefined) setSlept8(val.slept8);
+          if (val.stress !== undefined) setStress(Number(val.stress));
+          if (val.highSaltToday !== undefined) setHighSaltToday(val.highSaltToday);
+          if (val.exercisedTx !== undefined) setExercisedTx(val.exercisedTx);
+          if (val.meditatedTx !== undefined) setMeditatedTx(val.meditatedTx);
+          if (val.lovedActivity !== undefined) setLovedActivity(val.lovedActivity);
+          if (val.slept8Tx !== undefined) setSlept8Tx(val.slept8Tx);
+          if (val.stressTx !== undefined) setStressTx(Number(val.stressTx));
+          setLastSaved(new Date(todayLog.timestamp || (todayLog as any).createdAt));
+        } else if (localStorage.getItem('mito_htn_date') !== currentToday) {
+          // Fresh day: reset daily answers so past days' records don't bleed into today
+          setExercised(null);
+          setMeditated(null);
+          setLowSalt(null);
+          setSlept8(null);
+          setStress(5);
+          setHighSaltToday(null);
+          setExercisedTx(null);
+          setMeditatedTx(null);
+          setLovedActivity(null);
+          setSlept8Tx(null);
+          setStressTx(5);
         }
       }
     } catch (e) {
       console.error('Failed to load hypertension history from cloud', e);
     }
-  }, [apiUrl, token]);
+  }, [apiUrl, token, mode]);
 
   useEffect(() => {
     if (user?.id && token) {
@@ -163,7 +212,13 @@ export const HypertensionModule: React.FC = () => {
   };
 
   // Persist State
-  useEffect(() => { if (exercised !== null) localStorage.setItem('mito_htn_exercised', String(exercised)); }, [exercised]);
+  useEffect(() => {
+    const today = new Date().toDateString();
+    if (exercised !== null || meditated !== null || lowSalt !== null || slept8 !== null || highSaltToday !== null || exercisedTx !== null || meditatedTx !== null || lovedActivity !== null || slept8Tx !== null) {
+      localStorage.setItem('mito_htn_date', today);
+    }
+    if (exercised !== null) localStorage.setItem('mito_htn_exercised', String(exercised));
+  }, [exercised, meditated, lowSalt, slept8, highSaltToday, exercisedTx, meditatedTx, lovedActivity, slept8Tx]);
   useEffect(() => { if (meditated !== null) localStorage.setItem('mito_htn_meditated', String(meditated)); }, [meditated]);
   useEffect(() => { if (lowSalt !== null) localStorage.setItem('mito_htn_lowsalt', String(lowSalt)); }, [lowSalt]);
   useEffect(() => { if (slept8 !== null) localStorage.setItem('mito_htn_slept8', String(slept8)); }, [slept8]);
@@ -273,19 +328,35 @@ export const HypertensionModule: React.FC = () => {
         saveButtonText={t('protocols.saveHypertensionEntry', "Save Today's Entry")}
         onViewHistory={() => setShowHistoryModal(true)}
         historyCount={historyLogs.length}
+        isLoggedToday={isLoggedToday}
       />
 
       {mode === 'Prevention' && (
         <>
           <Card className="flex items-center justify-between">
             <div>
-              <p className="text-[10.5px] text-slate-400 font-bold uppercase tracking-wider">{t('protocols.dailyHypertensionScore')}</p>
-              <p className="text-2xl font-black" style={{ color: preventionScore >= 0 ? '#10B981' : '#EF4444' }}>
-                {preventionScore > 0 ? `+${preventionScore}` : preventionScore}
+              <div className="flex items-center gap-1.5 mb-0.5">
+                <p className="text-[10.5px] text-slate-400 font-bold uppercase tracking-wider">{t('protocols.dailyHypertensionScore')}</p>
+                <span className={`text-[9.5px] font-black px-2 py-0.5 rounded-full ${
+                  isLoggedToday 
+                    ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300' 
+                    : hasAnsweredDaily 
+                      ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
+                }`}>
+                  {isLoggedToday ? t('common.loggedTodayBadge', 'Logged Today') : hasAnsweredDaily ? t('common.previewUnsaved', 'Preview (Unsaved)') : t('common.notLoggedToday', 'Not Logged Today')}
+                </span>
+              </div>
+              <p className="text-2xl font-black" style={{ color: !hasAnsweredDaily && !isLoggedToday ? '#94A3B8' : preventionScore >= 0 ? '#10B981' : '#EF4444' }}>
+                {!hasAnsweredDaily && !isLoggedToday ? '--' : (preventionScore > 0 ? `+${preventionScore}` : preventionScore)}
               </p>
             </div>
-            <span className="text-xs font-bold text-slate-400 text-right">
-              {t('protocols.hypertensionSummary')}
+            <span className="text-xs font-bold text-slate-400 text-right max-w-[160px]">
+              {isLoggedToday 
+                ? t('protocols.hypertensionSummary') 
+                : hasAnsweredDaily 
+                  ? t('protocols.saveToRecordScore', 'Save below to record this score for today')
+                  : t('protocols.answerHabitsHint', 'Log your habits below to track your score')}
             </span>
           </Card>
 

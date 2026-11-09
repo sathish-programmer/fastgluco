@@ -6922,12 +6922,12 @@ const AdminPanelContent: React.FC = () => {
 
               <form onSubmit={handleSendPush} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Recipient User ID (Optional)</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Recipient User (Email, Mobile, Name, or ID - Optional)</label>
                   <input
                     type="text"
                     value={pushForm.userId}
                     onChange={(e) => setPushForm({ ...pushForm, userId: e.target.value })}
-                    placeholder="Broadcast to all users if left blank"
+                    placeholder="Enter email, mobile number, or leave blank to broadcast to all"
                     className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary"
                   />
                 </div>

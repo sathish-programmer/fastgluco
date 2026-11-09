@@ -27,19 +27,26 @@ export const PCODModule: React.FC = () => {
   const [height, setHeight] = useState<string>(() => localStorage.getItem('mito_pcod_height') || '');
   const [weight, setWeight] = useState<string>(() => localStorage.getItem('mito_pcod_weight') || '');
   const [exercised, setExercised] = useState<boolean | null>(() => {
+    if (localStorage.getItem('mito_pcod_date') !== new Date().toDateString()) return null;
     const val = localStorage.getItem('mito_pcod_exercised');
     return val === null ? null : val === 'true';
   });
   const [ateJunk, setAteJunk] = useState<boolean | null>(() => {
+    if (localStorage.getItem('mito_pcod_date') !== new Date().toDateString()) return null;
     const val = localStorage.getItem('mito_pcod_junk');
     return val === null ? null : val === 'true';
   });
   const [slept8, setSlept8] = useState<boolean | null>(() => {
+    if (localStorage.getItem('mito_pcod_date') !== new Date().toDateString()) return null;
     const val = localStorage.getItem('mito_pcod_slept8');
     return val === null ? null : val === 'true';
   });
-  const [stress, setStress] = useState<number>(() => Number(localStorage.getItem('mito_pcod_stress')) || 5);
+  const [stress, setStress] = useState<number>(() => {
+    if (localStorage.getItem('mito_pcod_date') !== new Date().toDateString()) return 5;
+    return Number(localStorage.getItem('mito_pcod_stress')) || 5;
+  });
   const [hirsutism, setHirsutism] = useState<boolean | null>(() => {
+    if (localStorage.getItem('mito_pcod_date') !== new Date().toDateString()) return null;
     const val = localStorage.getItem('mito_pcod_hirsutism');
     return val === null ? null : val === 'true';
   });
@@ -52,6 +59,14 @@ export const PCODModule: React.FC = () => {
   });
   const [newPeriodDate, setNewPeriodDate] = useState<string>('');
 
+  // Check if today has already been logged
+  const isLoggedToday = useMemo(() => {
+    const today = new Date().toDateString();
+    return historyLogs.some(l => new Date(l.timestamp || (l as any).createdAt).toDateString() === today);
+  }, [historyLogs]);
+
+  const hasAnsweredDaily = exercised !== null || ateJunk !== null || slept8 !== null;
+
   // Load from backend on mount
   const loadHistory = useCallback(async () => {
     if (!token) return;
@@ -59,27 +74,46 @@ export const PCODModule: React.FC = () => {
       const logs = await HabitsService.getRecentHabits(apiUrl, token, 'pcod', 365);
       setHistoryLogs(logs || []);
       if (logs && logs.length > 0) {
-        const latest = logs[0]?.value;
-        if (latest) {
-          if (latest.height && !height) setHeight(latest.height);
-          if (latest.weight && !weight) setWeight(latest.weight);
-          if (latest.exercised !== undefined) setExercised(latest.exercised);
-          if (latest.ateJunk !== undefined) setAteJunk(latest.ateJunk);
-          if (latest.slept8 !== undefined) setSlept8(latest.slept8);
-          if (latest.stress !== undefined) setStress(Number(latest.stress));
-          if (latest.hirsutism !== undefined) setHirsutism(latest.hirsutism);
-          if (latest.periodDates && Array.isArray(latest.periodDates)) {
-            setPeriodDates(prev => {
-              const set = new Set([...latest.periodDates, ...prev]);
-              return Array.from(set).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
-            });
+        // 1. Persistent medical & profile history (height, weight, periodDates)
+        for (const log of logs) {
+          const val = log.value;
+          if (val) {
+            if (val.height && !height) setHeight(val.height);
+            if (val.weight && !weight) setWeight(val.weight);
+            if (val.periodDates && Array.isArray(val.periodDates)) {
+              setPeriodDates(prev => {
+                const set = new Set([...val.periodDates, ...prev]);
+                return Array.from(set).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
+              });
+            }
+            break;
           }
+        }
+
+        // 2. Daily habits ONLY from today's log
+        const currentToday = new Date().toDateString();
+        const todayLog = logs.find(l => new Date(l.timestamp || (l as any).createdAt).toDateString() === currentToday);
+        if (todayLog?.value) {
+          const val = todayLog.value;
+          if (val.exercised !== undefined) setExercised(val.exercised);
+          if (val.ateJunk !== undefined) setAteJunk(val.ateJunk);
+          if (val.slept8 !== undefined) setSlept8(val.slept8);
+          if (val.stress !== undefined) setStress(Number(val.stress));
+          if (val.hirsutism !== undefined) setHirsutism(val.hirsutism);
+          setLastSaved(new Date(todayLog.timestamp || (todayLog as any).createdAt));
+        } else if (localStorage.getItem('mito_pcod_date') !== currentToday) {
+          // Reset daily answers for fresh day
+          setExercised(null);
+          setAteJunk(null);
+          setSlept8(null);
+          setStress(5);
+          setHirsutism(null);
         }
       }
     } catch (e) {
       console.error('Failed to load PCOD history from cloud', e);
     }
-  }, [apiUrl, token]);
+  }, [apiUrl, token, height, weight]);
 
   useEffect(() => {
     if (user?.id && token) {
@@ -123,10 +157,16 @@ export const PCODModule: React.FC = () => {
     }
   };
 
-  // Persist state to local cache
+  // Persist state to local cache (date-stamped)
   useEffect(() => { localStorage.setItem('mito_pcod_height', height); }, [height]);
   useEffect(() => { localStorage.setItem('mito_pcod_weight', weight); }, [weight]);
-  useEffect(() => { if (exercised !== null) localStorage.setItem('mito_pcod_exercised', String(exercised)); }, [exercised]);
+  useEffect(() => {
+    const today = new Date().toDateString();
+    if (exercised !== null || ateJunk !== null || slept8 !== null || hirsutism !== null) {
+      localStorage.setItem('mito_pcod_date', today);
+    }
+    if (exercised !== null) localStorage.setItem('mito_pcod_exercised', String(exercised));
+  }, [exercised, ateJunk, slept8, hirsutism]);
   useEffect(() => { if (ateJunk !== null) localStorage.setItem('mito_pcod_junk', String(ateJunk)); }, [ateJunk]);
   useEffect(() => { if (slept8 !== null) localStorage.setItem('mito_pcod_slept8', String(slept8)); }, [slept8]);
   useEffect(() => { localStorage.setItem('mito_pcod_stress', String(stress)); }, [stress]);
@@ -217,9 +257,20 @@ export const PCODModule: React.FC = () => {
 
         {/* Daily Score Indicator */}
         <div className="mt-4 pt-4 border-t border-white/20 flex items-center justify-between">
-          <span className="text-xs font-bold text-pink-100">{t('protocols.pcodScoreLabel')}</span>
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs font-bold text-pink-100">{t('protocols.pcodScoreLabel')}</span>
+            <span className={`text-[9.5px] font-black px-2 py-0.5 rounded-full ${
+              isLoggedToday 
+                ? 'bg-emerald-500/30 text-emerald-100' 
+                : hasAnsweredDaily 
+                  ? 'bg-amber-500/30 text-amber-100'
+                  : 'bg-white/10 text-pink-200'
+            }`}>
+              {isLoggedToday ? t('common.loggedTodayBadge', 'Logged Today') : hasAnsweredDaily ? t('common.previewUnsaved', 'Preview (Unsaved)') : t('common.notLoggedToday', 'Not Logged Today')}
+            </span>
+          </div>
           <span className="text-lg font-black bg-white/20 px-3.5 py-1 rounded-xl backdrop-blur-md">
-            {dailyScore > 0 ? `+${dailyScore}` : dailyScore}
+            {!hasAnsweredDaily && !isLoggedToday ? '--' : (dailyScore > 0 ? `+${dailyScore}` : dailyScore)}
           </span>
         </div>
       </div>
@@ -231,6 +282,7 @@ export const PCODModule: React.FC = () => {
         saveButtonText={t('protocols.savePcodEntry', "Save Today's Entry")}
         onViewHistory={() => setShowDailyHistoryModal(true)}
         historyCount={historyLogs.length}
+        isLoggedToday={isLoggedToday}
       />
 
       {/* Height, Weight & BMI */}

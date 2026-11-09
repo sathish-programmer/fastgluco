@@ -37,24 +37,31 @@ export const DiabetesModule: React.FC = () => {
   const [historyLogs, setHistoryLogs] = useState<HabitLog[]>([]);
   const [, setIsLoadingCloud] = useState<boolean>(false);
 
-  // Prevention State
+  // Prevention State (Scoped to current day)
   const [exercised, setExercised] = useState<boolean | null>(() => {
+    if (localStorage.getItem('mito_diab_date') !== new Date().toDateString()) return null;
     const v = localStorage.getItem('mito_diab_exercised');
     return v === null ? null : v === 'true';
   });
   const [tookAlcohol, setTookAlcohol] = useState<boolean | null>(() => {
+    if (localStorage.getItem('mito_diab_date') !== new Date().toDateString()) return null;
     const v = localStorage.getItem('mito_diab_alcohol');
     return v === null ? null : v === 'true';
   });
   const [ateJunk, setAteJunk] = useState<boolean | null>(() => {
+    if (localStorage.getItem('mito_diab_date') !== new Date().toDateString()) return null;
     const v = localStorage.getItem('mito_diab_junk');
     return v === null ? null : v === 'true';
   });
   const [slept8, setSlept8] = useState<boolean | null>(() => {
+    if (localStorage.getItem('mito_diab_date') !== new Date().toDateString()) return null;
     const v = localStorage.getItem('mito_diab_slept8');
     return v === null ? null : v === 'true';
   });
-  const [stress, setStress] = useState<number>(() => Number(localStorage.getItem('mito_diab_stress')) || 5);
+  const [stress, setStress] = useState<number>(() => {
+    if (localStorage.getItem('mito_diab_date') !== new Date().toDateString()) return 5;
+    return Number(localStorage.getItem('mito_diab_stress')) || 5;
+  });
   const [lastFbsPpbs, setLastFbsPpbs] = useState<string>(() => localStorage.getItem('mito_diab_last_fbs') || '');
 
   // Treatment State
@@ -75,9 +82,18 @@ export const DiabetesModule: React.FC = () => {
     }
   });
   const [ateHighCarb, setAteHighCarb] = useState<boolean | null>(() => {
+    if (localStorage.getItem('mito_diab_date') !== new Date().toDateString()) return null;
     const v = localStorage.getItem('mito_diab_highcarb');
     return v === null ? null : v === 'true';
   });
+
+  // Check if today has already been logged
+  const isLoggedToday = useMemo(() => {
+    const today = new Date().toDateString();
+    return historyLogs.some(l => new Date(l.timestamp || (l as any).createdAt).toDateString() === today);
+  }, [historyLogs]);
+
+  const hasAnsweredDaily = exercised !== null || tookAlcohol !== null || ateJunk !== null || slept8 !== null;
 
   // Load from backend on mount so web & app remain in sync
   const loadHistory = useCallback(async () => {
@@ -87,29 +103,50 @@ export const DiabetesModule: React.FC = () => {
       const logs = await HabitsService.getRecentHabits(apiUrl, token, 'diabetes', 365);
       setHistoryLogs(logs || []);
       if (logs && logs.length > 0) {
-        const latest = logs[0]?.value;
-        if (latest) {
-          if (latest.mode) setMode(latest.mode);
-          if (latest.exercised !== undefined) setExercised(latest.exercised);
-          if (latest.tookAlcohol !== undefined) setTookAlcohol(latest.tookAlcohol);
-          if (latest.ateJunk !== undefined) setAteJunk(latest.ateJunk);
-          if (latest.slept8 !== undefined) setSlept8(latest.slept8);
-          if (latest.stress !== undefined) setStress(Number(latest.stress));
-          if (latest.lastFbsPpbs !== undefined) setLastFbsPpbs(latest.lastFbsPpbs);
-          if (latest.hba1cLog && Array.isArray(latest.hba1cLog)) {
-            setHba1cLog(prev => {
-              const map = new Map<string, number>();
-              latest.hba1cLog.forEach((item: any) => map.set(item.date, item.value));
-              prev.forEach(item => map.set(item.date, item.value));
-              return Array.from(map.entries())
-                .map(([date, value]) => ({ date, value }))
-                .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-            });
+        // 1. Long-term medical history (persists across days)
+        for (const log of logs) {
+          const val = log.value;
+          if (val) {
+            if (val.mode && !mode) setMode(val.mode);
+            if (val.lastFbsPpbs && !lastFbsPpbs) setLastFbsPpbs(val.lastFbsPpbs);
+            if (val.hba1cLog && Array.isArray(val.hba1cLog)) {
+              setHba1cLog(prev => {
+                const map = new Map<string, number>();
+                val.hba1cLog.forEach((item: any) => map.set(item.date, item.value));
+                prev.forEach(item => map.set(item.date, item.value));
+                return Array.from(map.entries())
+                  .map(([date, value]) => ({ date, value }))
+                  .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+              });
+            }
+            if (val.yearlyChecks) {
+              setYearlyChecks(prev => ({ ...val.yearlyChecks, ...prev }));
+            }
+            break;
           }
-          if (latest.yearlyChecks) {
-            setYearlyChecks(prev => ({ ...latest.yearlyChecks, ...prev }));
-          }
-          if (latest.ateHighCarb !== undefined) setAteHighCarb(latest.ateHighCarb);
+        }
+
+        // 2. Daily habits ONLY populated if recorded for TODAY
+        const currentToday = new Date().toDateString();
+        const todayLog = logs.find(l => new Date(l.timestamp || (l as any).createdAt).toDateString() === currentToday);
+        if (todayLog?.value) {
+          const val = todayLog.value;
+          if (val.mode) setMode(val.mode);
+          if (val.exercised !== undefined) setExercised(val.exercised);
+          if (val.tookAlcohol !== undefined) setTookAlcohol(val.tookAlcohol);
+          if (val.ateJunk !== undefined) setAteJunk(val.ateJunk);
+          if (val.slept8 !== undefined) setSlept8(val.slept8);
+          if (val.stress !== undefined) setStress(Number(val.stress));
+          if (val.ateHighCarb !== undefined) setAteHighCarb(val.ateHighCarb);
+          setLastSaved(new Date(todayLog.timestamp || (todayLog as any).createdAt));
+        } else if (localStorage.getItem('mito_diab_date') !== currentToday) {
+          // Reset daily habits for fresh day so past days' negative/positive entries don't bleed into today
+          setExercised(null);
+          setTookAlcohol(null);
+          setAteJunk(null);
+          setSlept8(null);
+          setStress(5);
+          setAteHighCarb(null);
         }
       }
     } catch (e) {
@@ -117,7 +154,7 @@ export const DiabetesModule: React.FC = () => {
     } finally {
       setIsLoadingCloud(false);
     }
-  }, [apiUrl, token]);
+  }, [apiUrl, token, mode, lastFbsPpbs]);
 
   useEffect(() => {
     if (user?.id && token) {
@@ -125,8 +162,14 @@ export const DiabetesModule: React.FC = () => {
     }
   }, [user?.id, token, loadHistory]);
 
-  // Persist State to Local Storage as secondary cache
-  useEffect(() => { if (exercised !== null) localStorage.setItem('mito_diab_exercised', String(exercised)); }, [exercised]);
+  // Persist State to Local Storage as secondary cache (stamped with date)
+  useEffect(() => {
+    const today = new Date().toDateString();
+    if (exercised !== null || tookAlcohol !== null || ateJunk !== null || slept8 !== null) {
+      localStorage.setItem('mito_diab_date', today);
+    }
+    if (exercised !== null) localStorage.setItem('mito_diab_exercised', String(exercised));
+  }, [exercised, tookAlcohol, ateJunk, slept8]);
   useEffect(() => { if (tookAlcohol !== null) localStorage.setItem('mito_diab_alcohol', String(tookAlcohol)); }, [tookAlcohol]);
   useEffect(() => { if (ateJunk !== null) localStorage.setItem('mito_diab_junk', String(ateJunk)); }, [ateJunk]);
   useEffect(() => { if (slept8 !== null) localStorage.setItem('mito_diab_slept8', String(slept8)); }, [slept8]);
@@ -287,19 +330,35 @@ export const DiabetesModule: React.FC = () => {
         saveButtonText={t('protocols.saveDiabetesEntry', "Save Today's Entry")}
         onViewHistory={() => setShowHistoryModal(true)}
         historyCount={historyLogs.length}
+        isLoggedToday={isLoggedToday}
       />
 
       {mode === 'Prevention' && (
         <>
           <Card className="flex items-center justify-between">
             <div>
-              <p className="text-[10.5px] text-slate-400 font-bold uppercase tracking-wider">{t('protocols.diabetesPreventionScore')}</p>
-              <p className="text-2xl font-black" style={{ color: preventionScore >= 0 ? '#10B981' : '#EF4444' }}>
-                {preventionScore > 0 ? `+${preventionScore}` : preventionScore}
+              <div className="flex items-center gap-1.5 mb-0.5">
+                <p className="text-[10.5px] text-slate-400 font-bold uppercase tracking-wider">{t('protocols.diabetesPreventionScore')}</p>
+                <span className={`text-[9.5px] font-black px-2 py-0.5 rounded-full ${
+                  isLoggedToday 
+                    ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300' 
+                    : hasAnsweredDaily 
+                      ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
+                }`}>
+                  {isLoggedToday ? t('common.loggedTodayBadge', 'Logged Today') : hasAnsweredDaily ? t('common.previewUnsaved', 'Preview (Unsaved)') : t('common.notLoggedToday', 'Not Logged Today')}
+                </span>
+              </div>
+              <p className="text-2xl font-black" style={{ color: !hasAnsweredDaily && !isLoggedToday ? '#94A3B8' : preventionScore >= 0 ? '#10B981' : '#EF4444' }}>
+                {!hasAnsweredDaily && !isLoggedToday ? '--' : (preventionScore > 0 ? `+${preventionScore}` : preventionScore)}
               </p>
             </div>
-            <span className="text-xs font-bold text-slate-400 text-right">
-              {t('protocols.diabetesSummary')}
+            <span className="text-xs font-bold text-slate-400 text-right max-w-[160px]">
+              {isLoggedToday 
+                ? t('protocols.diabetesSummary') 
+                : hasAnsweredDaily 
+                  ? t('protocols.saveToRecordScore', 'Save below to record this score for today')
+                  : t('protocols.answerHabitsHint', 'Log your habits below to track your score')}
             </span>
           </Card>
 

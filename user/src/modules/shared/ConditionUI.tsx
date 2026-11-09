@@ -272,7 +272,8 @@ export function ConditionSaveButton({
   lastSaved,
   saveButtonText,
   onViewHistory,
-  historyCount = 0
+  historyCount = 0,
+  isLoggedToday = false
 }: {
   onSave: () => Promise<void> | void;
   isSaving: boolean;
@@ -280,6 +281,7 @@ export function ConditionSaveButton({
   saveButtonText?: string;
   onViewHistory?: () => void;
   historyCount?: number;
+  isLoggedToday?: boolean;
 }) {
   const { t } = useLanguage();
   const [justSaved, setJustSaved] = useState(false);
@@ -291,24 +293,39 @@ export function ConditionSaveButton({
     setTimeout(() => setJustSaved(false), 3000);
   };
 
+  const isSavedStatus = justSaved || isLoggedToday;
+
   return (
     <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-3xl p-4 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3">
       <div className="flex items-center gap-2.5 text-xs text-slate-500 dark:text-slate-400">
         <div className={`h-8 w-8 rounded-xl flex items-center justify-center transition-colors shrink-0 ${
-          justSaved 
+          isSavedStatus 
             ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400' 
             : 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400'
         }`}>
-          {justSaved ? <CheckCircle2 className="h-4 w-4" /> : <Cloud className="h-4 w-4" />}
+          {isSavedStatus ? <CheckCircle2 className="h-4 w-4" /> : <Cloud className="h-4 w-4" />}
         </div>
         <div>
-          <p className="font-extrabold text-slate-800 dark:text-slate-200 text-xs">
-            {justSaved ? t('common.savedToCloud', 'Saved to Cloud') : t('common.syncNotice', 'Cloud Sync Enabled')}
-          </p>
+          <div className="flex items-center gap-1.5">
+            <p className="font-extrabold text-slate-800 dark:text-slate-200 text-xs">
+              {justSaved 
+                ? t('common.savedToCloud', 'Saved to Cloud') 
+                : isLoggedToday 
+                  ? t('common.loggedToday', 'Logged for Today') 
+                  : t('common.syncNotice', 'Cloud Sync Enabled')}
+            </p>
+            {isLoggedToday && !justSaved && (
+              <span className="text-[9.5px] px-1.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-bold">
+                {t('common.done', 'Done')}
+              </span>
+            )}
+          </div>
           <p className="text-[10.5px]">
             {lastSaved 
               ? `${t('common.lastSaved', 'Last saved')}: ${new Date(lastSaved).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
-              : t('common.cloudSyncHint', 'Data automatically syncs across your web & mobile app')
+              : isLoggedToday
+                ? t('common.entryLoggedDesc', 'Today\'s entry is recorded and synced')
+                : t('common.cloudSyncHint', 'Data automatically syncs across your web & mobile app')
             }
           </p>
         </div>
@@ -336,7 +353,7 @@ export function ConditionSaveButton({
           onClick={handleSaveClick}
           disabled={isSaving}
           className={`flex-1 sm:flex-none px-5 py-2.5 rounded-2xl font-black text-xs transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer ${
-            justSaved
+            isSavedStatus
               ? 'bg-emerald-600 text-white hover:bg-emerald-700'
               : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white'
           }`}
@@ -350,6 +367,11 @@ export function ConditionSaveButton({
             <>
               <Check className="h-3.5 w-3.5" />
               <span>{t('common.saved', 'Saved!')}</span>
+            </>
+          ) : isLoggedToday ? (
+            <>
+              <Check className="h-3.5 w-3.5" />
+              <span>{t('common.updateTodayEntry', "Update Today's Entry")}</span>
             </>
           ) : (
             <>

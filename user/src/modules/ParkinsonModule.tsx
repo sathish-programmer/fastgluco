@@ -33,6 +33,7 @@ export const ParkinsonModule: React.FC = () => {
   const [saveToast, setSaveToast] = useState<string | null>(null);
 
   const [symptomScores, setSymptomScores] = useState<Record<string, Record<string, number>>>(() => {
+    if (localStorage.getItem('mito_pd_date') !== new Date().toDateString()) return {};
     try {
       return JSON.parse(localStorage.getItem('mito_pd_symptom_scores') || '{}');
     } catch {
@@ -53,25 +54,38 @@ export const ParkinsonModule: React.FC = () => {
   const [drugTime, setDrugTime] = useState<string>('');
 
   const [slept8, setSlept8] = useState<boolean | null>(() => {
+    if (localStorage.getItem('mito_pd_date') !== new Date().toDateString()) return null;
     const v = localStorage.getItem('mito_pd_slept8');
     return v === null ? null : v === 'true';
   });
   const [lovedActivity, setLovedActivity] = useState<boolean | null>(() => {
+    if (localStorage.getItem('mito_pd_date') !== new Date().toDateString()) return null;
     const v = localStorage.getItem('mito_pd_loved');
     return v === null ? null : v === 'true';
   });
-  const [lovedActivityNote, setLovedActivityNote] = useState<string>(() => localStorage.getItem('mito_pd_loved_note') || '');
+  const [lovedActivityNote, setLovedActivityNote] = useState<string>(() => {
+    if (localStorage.getItem('mito_pd_date') !== new Date().toDateString()) return '';
+    return localStorage.getItem('mito_pd_loved_note') || '';
+  });
   const [darkChocolate, setDarkChocolate] = useState<boolean | null>(() => {
+    if (localStorage.getItem('mito_pd_date') !== new Date().toDateString()) return null;
     const v = localStorage.getItem('mito_pd_choc');
     return v === null ? null : v === 'true';
   });
   const [boosters, setBoosters] = useState<Record<string, boolean>>(() => {
+    if (localStorage.getItem('mito_pd_date') !== new Date().toDateString()) return {};
     try {
       return JSON.parse(localStorage.getItem('mito_pd_boosters') || '{}');
     } catch {
       return {};
     }
   });
+
+  // Check if today has already been logged
+  const isLoggedToday = useMemo(() => {
+    const today = new Date().toDateString();
+    return historyLogs.some(l => new Date(l.timestamp || (l as any).createdAt).toDateString() === today);
+  }, [historyLogs]);
 
   // Load from backend on mount
   const loadHistory = useCallback(async () => {
@@ -80,32 +94,50 @@ export const ParkinsonModule: React.FC = () => {
       const logs = await HabitsService.getRecentHabits(apiUrl, token, 'parkinson', 365);
       setHistoryLogs(logs || []);
       if (logs && logs.length > 0) {
-        const latest = logs[0]?.value;
-        if (latest) {
-          if (latest.symptomScores) {
-            setSymptomScores(prev => ({ ...latest.symptomScores, ...prev }));
-          }
-          if (latest.drugLog && Array.isArray(latest.drugLog)) {
+        // 1. Persistent medication schedule
+        for (const log of logs) {
+          const val = log.value;
+          if (val?.drugLog && Array.isArray(val.drugLog)) {
             setDrugLog(prev => {
               const map = new Map<number | string, any>();
-              latest.drugLog.forEach((d: any) => map.set(d.id || d.name, d));
+              val.drugLog.forEach((d: any) => map.set(d.id || d.name, d));
               prev.forEach(d => map.set(d.id || d.name, d));
               return Array.from(map.values());
             });
+            break;
           }
-          if (latest.slept8 !== undefined) setSlept8(latest.slept8);
-          if (latest.lovedActivity !== undefined) setLovedActivity(latest.lovedActivity);
-          if (latest.lovedActivityNote && !lovedActivityNote) setLovedActivityNote(latest.lovedActivityNote);
-          if (latest.darkChocolate !== undefined) setDarkChocolate(latest.darkChocolate);
-          if (latest.boosters) {
-            setBoosters(prev => ({ ...latest.boosters, ...prev }));
+        }
+
+        // 2. Daily habits & symptoms ONLY from today's log
+        const currentToday = new Date().toDateString();
+        const todayLog = logs.find(l => new Date(l.timestamp || (l as any).createdAt).toDateString() === currentToday);
+        if (todayLog?.value) {
+          const val = todayLog.value;
+          if (val.symptomScores) {
+            setSymptomScores(prev => ({ ...val.symptomScores, ...prev }));
           }
+          if (val.slept8 !== undefined) setSlept8(val.slept8);
+          if (val.lovedActivity !== undefined) setLovedActivity(val.lovedActivity);
+          if (val.lovedActivityNote && !lovedActivityNote) setLovedActivityNote(val.lovedActivityNote);
+          if (val.darkChocolate !== undefined) setDarkChocolate(val.darkChocolate);
+          if (val.boosters) {
+            setBoosters(prev => ({ ...val.boosters, ...prev }));
+          }
+          setLastSaved(new Date(todayLog.timestamp || (todayLog as any).createdAt));
+        } else if (localStorage.getItem('mito_pd_date') !== currentToday) {
+          // Reset daily items for fresh day
+          setSymptomScores({});
+          setSlept8(null);
+          setLovedActivity(null);
+          setLovedActivityNote('');
+          setDarkChocolate(null);
+          setBoosters({});
         }
       }
     } catch (e) {
       console.error('Failed to load parkinson history from cloud', e);
     }
-  }, [apiUrl, token]);
+  }, [apiUrl, token, lovedActivityNote]);
 
   useEffect(() => {
     if (user?.id && token) {
@@ -113,8 +145,14 @@ export const ParkinsonModule: React.FC = () => {
     }
   }, [user?.id, token, loadHistory]);
 
-  // Persist State to Local Storage
-  useEffect(() => { localStorage.setItem('mito_pd_symptom_scores', JSON.stringify(symptomScores)); }, [symptomScores]);
+  // Persist State to Local Storage (date-stamped)
+  useEffect(() => {
+    const today = new Date().toDateString();
+    if (Object.keys(symptomScores).length > 0 || slept8 !== null || lovedActivity !== null || darkChocolate !== null || Object.keys(boosters).length > 0) {
+      localStorage.setItem('mito_pd_date', today);
+    }
+    localStorage.setItem('mito_pd_symptom_scores', JSON.stringify(symptomScores));
+  }, [symptomScores, slept8, lovedActivity, darkChocolate, boosters]);
   useEffect(() => { localStorage.setItem('mito_pd_drug_log', JSON.stringify(drugLog)); }, [drugLog]);
   useEffect(() => { if (slept8 !== null) localStorage.setItem('mito_pd_slept8', String(slept8)); }, [slept8]);
   useEffect(() => { if (lovedActivity !== null) localStorage.setItem('mito_pd_loved', String(lovedActivity)); }, [lovedActivity]);
@@ -309,6 +347,7 @@ export const ParkinsonModule: React.FC = () => {
         saveButtonText={t('protocols.saveParkinsonEntry', "Save Today's Entry")}
         onViewHistory={() => setShowDailyHistoryModal(true)}
         historyCount={historyLogs.length}
+        isLoggedToday={isLoggedToday}
       />
 
       {/* Symptom Severity by Time of Day */}

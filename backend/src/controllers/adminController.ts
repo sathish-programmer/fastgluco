@@ -1281,30 +1281,80 @@ export class AdminController {
       }
 
       if (userId && userId.trim()) {
-        const trimmed = userId.trim();
-        let resolvedUserId = '';
+        const cleanQuery = userId.trim();
+        const digitsOnly = cleanQuery.replace(/\D/g, '');
+        let user: any = null;
 
-        if (trimmed.includes('@')) {
-          // Resolve by Email
-          const user = await User.findOne({ email: trimmed });
-          if (!user) {
-            return res.status(404).json({ message: `User with email "${trimmed}" not found.` });
-          }
-          resolvedUserId = user._id.toString();
-        } else if (mongoose.Types.ObjectId.isValid(trimmed)) {
-          // Resolve by exact ObjectId
-          resolvedUserId = trimmed;
-        } else {
-          // Resolve by Name
-          const user = await User.findOne({ name: trimmed });
-          if (!user) {
-            return res.status(400).json({ message: `Could not resolve user identifier "${trimmed}" to a valid Email or ID.` });
-          }
-          resolvedUserId = user._id.toString();
+        // 1. Exact ObjectId match
+        if (mongoose.Types.ObjectId.isValid(cleanQuery) && cleanQuery.length === 24) {
+          user = await User.findById(cleanQuery);
         }
 
+        // 2. Email exact match (case-insensitive)
+        if (!user && cleanQuery.includes('@')) {
+          user = await User.findOne({ email: { $regex: new RegExp(`^${cleanQuery}$`, 'i') } });
+        }
+
+        // 3. Mobile Number match (exact, with/without country code, or last 10 digits)
+        if (!user && digitsOnly.length >= 7) {
+          user = await User.findOne({
+            $or: [
+              { mobileNumber: cleanQuery },
+              { mobileNumber: digitsOnly },
+              { mobileNumber: { $regex: digitsOnly.slice(-10) } },
+              { mobile: cleanQuery },
+              { mobile: digitsOnly },
+              { mobile: { $regex: digitsOnly.slice(-10) } }
+            ]
+          });
+        }
+
+        // 4. Name match (case-insensitive)
+        if (!user) {
+          user = await User.findOne({ name: { $regex: new RegExp(`^${cleanQuery}$`, 'i') } });
+        }
+
+        // 5. Fuzzy match on email prefix or typo (e.g. sathishkumarsk vs sathishkumark)
+        if (!user && cleanQuery.includes('@')) {
+          const emailPrefix = cleanQuery.split('@')[0];
+          if (emailPrefix.length >= 5) {
+            user = await User.findOne({
+              email: { $regex: emailPrefix.slice(0, 8), $options: 'i' }
+            });
+          }
+        }
+
+        // 6. Substring match across email, name, mobile
+        if (!user) {
+          user = await User.findOne({
+            $or: [
+              { email: { $regex: cleanQuery, $options: 'i' } },
+              { name: { $regex: cleanQuery, $options: 'i' } }
+            ]
+          });
+        }
+
+        if (!user) {
+          return res.status(404).json({
+            message: `User "${cleanQuery}" not found. Please verify the user's registered phone, email, or name in the Users tab.`
+          });
+        }
+
+        const resolvedUserId = user._id.toString();
+        const displayName = user.name || user.email || user.mobileNumber || resolvedUserId;
+        const hasToken = (Array.isArray(user.fcmTokens) && user.fcmTokens.some((t: any) => t?.token)) || Boolean(user.fcmToken);
+
         const sent = await FCMService.sendPushNotification(resolvedUserId, title, body, 'General');
-        return res.status(200).json({ message: sent ? 'Notification sent.' : 'Mock sent (user lacks device token).' });
+
+        if (sent) {
+          return res.status(200).json({ message: `Push notification delivered to "${displayName}".` });
+        } else if (!hasToken) {
+          return res.status(200).json({
+            message: `Notification saved to in-app inbox for "${displayName}", but this user has not registered a mobile push token yet. They must log in on their mobile device and grant notification permission.`
+          });
+        } else {
+          return res.status(200).json({ message: `Notification processed for "${displayName}".` });
+        }
       } else {
         // Broadcast to all (handled internally by FCMService, creating a single broadcast record)
         const count = await FCMService.broadcastNotification(title, body);
