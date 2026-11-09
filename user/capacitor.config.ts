@@ -20,7 +20,11 @@ const config: CapacitorConfig = {
       '*.sbi.co.in',
       '*.axisbank.com',
       '*.idbibank.co.in',
-      '*.canarabank.com'
+      '*.canarabank.com',
+      '*.firebaseapp.com',
+      '*.googleapis.com',
+      '*.google.com',
+      '*.recaptcha.net'
     ]
   },
   plugins: {
