@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, X, ChevronRight, ShieldCheck, Sun, Check, Languages, RefreshCw, Receipt } from 'lucide-react';
+import { Sparkles, X, ChevronRight, ShieldCheck, Check, Languages, RefreshCw, Flame, ArrowDownCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import type { SupportedLanguage } from '../i18n/types';
 
-export const CURRENT_APP_VERSION = 'v6.3.2';
+export const CURRENT_APP_VERSION = 'v6.3.3';
 
 interface WhatsNewModalProps {
   isOpen?: boolean;
@@ -46,34 +46,34 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({
 
   if (!isOpen && !shouldShow) return null;
 
-  // v6.3.0 Current Release Features
+  // v6.3.3 Current Release Features
   const features = [
     {
-      key: 'autopay',
+      key: 'streak',
       badge: 'NEW',
+      badgeColor: 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30',
+      title: t('whatsNew.streak.title', 'Consistency Streak & Milestone Journey'),
+      description: t('whatsNew.streak.desc', 'Track your habit consistency with a sleek micro-badge, 7-day progress dots, and milestone level rewards right on your dashboard.'),
+      icon: <Flame className="h-5 w-5 text-amber-500" />,
+      bg: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
+    },
+    {
+      key: 'pulltorefresh',
+      badge: 'ENHANCED',
       badgeColor: 'bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/30',
-      title: t('whatsNew.autopay.title', 'Razorpay AutoPay Subscriptions'),
-      description: t('whatsNew.autopay.desc', 'Seamless automated membership renewals via UPI and Card mandates. Manage, enable, or pause AutoPay anytime with zero lock-in.'),
-      icon: <RefreshCw className="h-5 w-5 text-blue-500" />,
+      title: t('whatsNew.pullrefresh.title', 'Smooth Pull-to-Refresh & Haptics'),
+      description: t('whatsNew.pullrefresh.desc', 'Pull down anywhere on your dashboard to instantly refresh data with smooth tactile animations and live status feedback.'),
+      icon: <ArrowDownCircle className="h-5 w-5 text-blue-500" />,
       bg: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
     },
     {
-      key: 'billing',
-      badge: 'NEW',
+      key: 'autopay',
+      badge: 'BILLING',
       badgeColor: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30',
-      title: t('whatsNew.billing.title', 'Tax Invoices & Date Range Filter'),
-      description: t('whatsNew.billing.desc', 'Clean billing hub with 1-tap PDF invoice downloads, date range filters, and paginated transaction receipts.'),
-      icon: <Receipt className="h-5 w-5 text-emerald-500" />,
+      title: t('whatsNew.autopay.title', 'Automated Membership AutoPay'),
+      description: t('whatsNew.autopay.desc', 'Seamless automated membership renewals via UPI and Card mandates. Manage, enable, or pause AutoPay anytime with zero lock-in.'),
+      icon: <RefreshCw className="h-5 w-5 text-emerald-500" />,
       bg: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
-    },
-    {
-      key: 'motivation',
-      badge: 'POPULAR',
-      badgeColor: 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30',
-      title: t('whatsNew.motivation.title', '365 Days of Daily Motivation'),
-      description: t('whatsNew.motivation.desc', 'Start each morning with curated cellular health one-liners, metabolic balance tips, and timely inspiration reminders.'),
-      icon: <Sun className="h-5 w-5 text-amber-500" />,
-      bg: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
     },
     {
       key: 'kitchen',

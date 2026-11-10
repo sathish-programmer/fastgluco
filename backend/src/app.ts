@@ -3,6 +3,9 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import path from 'path';
+import crypto from 'crypto';
+import mongoose from 'mongoose';
+import { compressionMiddleware } from './middlewares/compressionMiddleware';
 import apiRouter from './routes/api';
 
 const app = express();
@@ -45,6 +48,8 @@ const corsOptions: cors.CorsOptions = {
     'x-os-version',
     'x-device-model',
     'x-device-id',
+    'x-request-id',
+    'X-Request-Id',
     'Cache-Control',
     'sec-ch-ua',
     'sec-ch-ua-mobile',
@@ -71,6 +76,17 @@ const limiter = rateLimit({
 app.use('/api', limiter);
 
 // 4. Request parsing (support large base64 medical reports and camera images)
+// 4a. Distributed Request Correlation ID (x-request-id)
+app.use((req: any, res: Response, next: NextFunction) => {
+  const reqId = (req.headers['x-request-id'] as string) || crypto.randomUUID();
+  req.id = reqId;
+  res.setHeader('x-request-id', reqId);
+  next();
+});
+
+// 4b. Native Response Compression (Gzip/Deflate for payloads >= 1KB)
+app.use(compressionMiddleware);
+
 app.use(express.json({
   limit: '50mb',
   verify: (req: any, _res: any, buf: Buffer) => {
@@ -93,10 +109,51 @@ app.use('/api', legalPublicRoutes);
 app.use('/api/labs', labRoutes);
 app.use('/api', apiRouter);
 
-// 7. Base healthcheck
-app.get('/health', (req: Request, res: Response) => {
-  res.status(200).json({ status: 'ok', timestamp: new Date() });
-});
+// 7. Base healthcheck & Detailed Observability Telemetry
+const handleHealthCheck = async (_req: Request, res: Response) => {
+  const startTime = Date.now();
+  let dbStatus = 'disconnected';
+  let dbLatencyMs: number | null = null;
+
+  try {
+    if (mongoose.connection.readyState === 1 && mongoose.connection.db) {
+      await mongoose.connection.db.admin().ping();
+      dbStatus = 'connected';
+      dbLatencyMs = Date.now() - startTime;
+    } else if (mongoose.connection.readyState === 2) {
+      dbStatus = 'connecting';
+    }
+  } catch (err: any) {
+    dbStatus = 'error: ' + (err?.message || 'ping failed');
+  }
+
+  const memoryUsage = process.memoryUsage();
+
+  res.status(dbStatus === 'connected' ? 200 : 503).json({
+    status: dbStatus === 'connected' ? 'healthy' : 'degraded',
+    service: 'mitoreboot-backend',
+    version: '1.0.0',
+    uptimeSeconds: Math.floor(process.uptime()),
+    database: {
+      status: dbStatus,
+      latencyMs: dbLatencyMs,
+      readyState: mongoose.connection.readyState
+    },
+    system: {
+      nodeVersion: process.version,
+      memoryMB: {
+        heapUsed: Math.round(memoryUsage.heapUsed / 1024 / 1024),
+        heapTotal: Math.round(memoryUsage.heapTotal / 1024 / 1024),
+        rss: Math.round(memoryUsage.rss / 1024 / 1024)
+      }
+    },
+    timestamp: new Date().toISOString()
+  });
+};
+
+app.get('/health', handleHealthCheck);
+app.get('/healthz', handleHealthCheck);
+app.get('/api/health', handleHealthCheck);
 
 app.get('/ip', (req, res) => {
   res.json({

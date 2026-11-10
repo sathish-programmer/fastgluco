@@ -33,6 +33,9 @@ const glucoseReadingSchema = new Schema<IGlucoseReading>(
 
 // Compound index to prevent duplicate readings for a single user at the exact same timestamp
 glucoseReadingSchema.index({ userId: 1, timestamp: 1 }, { unique: true });
+// Fast query index for time range lookups and historical charts
+glucoseReadingSchema.index({ userId: 1, timestamp: -1, isDeleted: 1 });
+glucoseReadingSchema.index({ userId: 1, source: 1, timestamp: -1 });
 
 glucoseReadingSchema.pre('find', function () {
   this.where({ isDeleted: false });

@@ -74,6 +74,10 @@ const notificationSchema = new Schema<INotification>(
   }
 );
 
+// High speed indexes for user notification bell & scheduled pushes
+notificationSchema.index({ userId: 1, createdAt: -1, isRead: 1 });
+notificationSchema.index({ isSent: 1, scheduledFor: 1 });
+
 notificationSchema.pre('find', function () {
   this.where({ isDeleted: false });
 });

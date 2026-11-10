@@ -131,6 +131,97 @@ transporter.sendMail = (async (mailOptions: any, callback?: any) => {
   }
 }) as any;
 
+export const generateEmailFooterHtml = (appName: string = 'Mito_Reboot'): string => {
+  const cleanAppName = appName.replace(/_/g, ' ');
+  const smartPlayStoreLink = 'https://api.mitoreboot.in/open-app?fallback=store&store=google';
+  const smartAppStoreLink = 'https://api.mitoreboot.in/open-app?fallback=store&store=apple';
+  const websiteUrl = 'https://www.mitoreboot.in';
+  const privacyUrl = 'https://www.mitoreboot.in/privacy-policy';
+  const termsUrl = 'https://www.mitoreboot.in/terms-and-conditions';
+  const supportEmail = 'support@mitoreboot.in';
+
+  return `
+      <!-- ==================== MODERN COMPACT EMAIL FOOTER (INDmoney Clean Style) ==================== -->
+      <div style="background-color: #f8fafc; border-top: 1px solid #e2e8f0; padding: 22px 20px 20px; text-align: center; color: #475569; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+        <!-- 1. App Download Header & Badges -->
+        <p style="margin: 0 0 3px 0; font-size: 14px; font-weight: 800; color: #0f172a; letter-spacing: -0.2px;">
+          Get the ${cleanAppName} app!
+        </p>
+        <p style="margin: 0 0 12px 0; font-size: 11.5px; font-weight: 500; color: #64748b;">
+          Available in the App Store or Google Play
+        </p>
+
+        <!-- Store Badges Table (side-by-side, 32px height) -->
+        <table border="0" cellpadding="0" cellspacing="0" align="center" style="margin: 0 auto 14px;">
+          <tr>
+            <td align="center" valign="middle" style="padding: 0 4px;">
+              <a href="${smartPlayStoreLink}" target="_blank" rel="noopener noreferrer" style="text-decoration: none; display: inline-block;">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg" alt="Get it on Google Play" height="32" style="height: 32px; width: auto; border: 0; display: block;" />
+              </a>
+            </td>
+            <td align="center" valign="middle" style="padding: 0 4px;">
+              <a href="${smartAppStoreLink}" target="_blank" rel="noopener noreferrer" style="text-decoration: none; display: inline-block;">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/3/3c/Download_on_the_App_Store_Badge.svg" alt="Download on the App Store" height="32" style="height: 32px; width: auto; border: 0; display: block;" />
+              </a>
+            </td>
+          </tr>
+        </table>
+
+        <!-- Subtle Hairline Separator -->
+        <div style="height: 1px; background-color: #e2e8f0; max-width: 440px; margin: 0 auto 12px;"></div>
+
+        <!-- 2. High-Contrast Navigation Links (INDmoney style) -->
+        <p style="margin: 0 0 10px 0; font-size: 11.5px; font-weight: 700; color: #0f172a; line-height: 1.4;">
+          <a href="${privacyUrl}" target="_blank" rel="noopener noreferrer" style="color: #0f172a !important; text-decoration: none !important; font-weight: 700;">Privacy Policy</a>
+          <span style="color: #cbd5e1; margin: 0 7px;">&bull;</span>
+          <a href="${termsUrl}" target="_blank" rel="noopener noreferrer" style="color: #0f172a !important; text-decoration: none !important; font-weight: 700;">Terms &amp; Conditions</a>
+          <span style="color: #cbd5e1; margin: 0 7px;">&bull;</span>
+          <a href="mailto:${supportEmail}" style="color: #0f172a !important; text-decoration: none !important; font-weight: 700;">Support</a>
+          <span style="color: #cbd5e1; margin: 0 7px;">&bull;</span>
+          <a href="${websiteUrl}" target="_blank" rel="noopener noreferrer" style="color: #0f172a !important; text-decoration: none !important; font-weight: 700;">Website</a>
+        </p>
+
+        <!-- 3. Social Media Connect Icons (18px neat icons) -->
+        <table border="0" cellpadding="0" cellspacing="0" align="center" style="margin: 0 auto 12px;">
+          <tr>
+            <td align="center" valign="middle" style="padding: 0 4px;">
+              <a href="https://www.instagram.com/mitoreboot" target="_blank" rel="noopener noreferrer" style="text-decoration: none; display: inline-block;">
+                <img src="https://cdn-icons-png.flaticon.com/512/174/174855.png" alt="Instagram" width="18" height="18" style="display: block; width: 18px; height: 18px; border: 0; opacity: 0.75;" />
+              </a>
+            </td>
+            <td align="center" valign="middle" style="padding: 0 4px;">
+              <a href="https://www.linkedin.com/company/mitoreboot" target="_blank" rel="noopener noreferrer" style="text-decoration: none; display: inline-block;">
+                <img src="https://cdn-icons-png.flaticon.com/512/174/174857.png" alt="LinkedIn" width="18" height="18" style="display: block; width: 18px; height: 18px; border: 0; opacity: 0.75;" />
+              </a>
+            </td>
+            <td align="center" valign="middle" style="padding: 0 4px;">
+              <a href="https://www.youtube.com/@mitoreboot" target="_blank" rel="noopener noreferrer" style="text-decoration: none; display: inline-block;">
+                <img src="https://cdn-icons-png.flaticon.com/512/174/174883.png" alt="YouTube" width="18" height="18" style="display: block; width: 18px; height: 18px; border: 0; opacity: 0.75;" />
+              </a>
+            </td>
+            <td align="center" valign="middle" style="padding: 0 4px;">
+              <a href="https://twitter.com/mitoreboot" target="_blank" rel="noopener noreferrer" style="text-decoration: none; display: inline-block;">
+                <img src="https://cdn-icons-png.flaticon.com/512/5969/5969020.png" alt="X" width="18" height="18" style="display: block; width: 18px; height: 18px; border: 0; opacity: 0.75;" />
+              </a>
+            </td>
+          </tr>
+        </table>
+
+        <!-- 4. Company & Regulatory Details (Compact micro typography) -->
+        <p style="margin: 0; font-weight: 700; color: #475569; font-size: 11px; letter-spacing: 0.2px;">
+          MITOREBOOT PRIVATE LIMITED
+        </p>
+        <p class="footer-address" style="margin: 2px 0 0 0; font-size: 10px; color: #64748b; line-height: 1.4;">
+          No 11/7, Krishna Residency, Flat No B-1, Basavanagudi, Bangalore South, Bangalore- 560004, Karnataka
+        </p>
+        <p style="margin: 5px 0 0 0; font-size: 10px; color: #94a3b8; line-height: 1.4;">
+          &copy; ${new Date().getFullYear()} ${cleanAppName} &bull; Preventive Lifestyle App. All rights reserved.<br />
+          You are receiving this email because you are a registered user of ${cleanAppName}.
+        </p>
+      </div>
+  `;
+};
+
 export const generateEmailTemplatePublic = (title: string, contentHTML: string, appName: string = 'Mito_Reboot', appTagline: string = '') => generateEmailTemplate(title, contentHTML, appName, appTagline);
 
 const generateEmailTemplate = (title: string, contentHTML: string, appName: string = 'Mito_Reboot', appTagline: string = '') => {
@@ -176,18 +267,7 @@ const generateEmailTemplate = (title: string, contentHTML: string, appName: stri
         <h2 style="color: #0f172a; font-size: 22px; font-weight: 700; margin-top: 0; margin-bottom: 20px;">${title}</h2>
         ${contentHTML}
       </div>
-      <div style="background-color: #f8fafc; padding: 24px 30px; text-align: center; color: #64748b; font-size: 13px; border-top: 1px solid #e2e8f0;">
-        <p style="margin: 0; font-weight: 700; color: #1e293b; font-size: 13px;">MITOREBOOT PRIVATE LIMITED</p>
-        <p class="footer-address" style="margin: 4px 0 0 0; font-size: 11px; color: #64748b; line-height: 1.5;">
-          <span style="color: #64748b !important; text-decoration: none !important;">
-            <a href="https://www.mitoreboot.in" style="color: #64748b !important; text-decoration: none !important; pointer-events: none; cursor: default;">
-              <font color="#64748b">No 11/7, Krishna Residency, Flat No B-1, Basavanagudi, Bangalore South, Bangalore- 560004, Karnataka</font>
-            </a>
-          </span>
-        </p>
-        <p style="margin: 8px 0 0 0; font-size: 12px; color: #64748b;">&copy; ${new Date().getFullYear()} ${appName} &bull; Preventive Lifestyle App. All rights reserved.</p>
-        <p style="margin: 4px 0 0 0; font-size: 11px; color: #94a3b8;">You are receiving this email because you are a registered user of ${appName}.</p>
-      </div>
+      ${generateEmailFooterHtml(appName)}
     </div>
   </div>
 </body>
@@ -390,10 +470,11 @@ export const generateShopCoBrandedEmailTemplate = ({
     </div>
 
     <!-- Official Partnership Footer -->
-    <div style="background-color: #f8fafc; padding: 20px 24px; text-align: center; color: #94a3b8; font-size: 11px; border-top: 1px solid #f1f5f9; line-height: 1.6;">
-      <p style="margin: 0 0 6px;">This order update is sent as part of the <strong>MitoReboot &times; ${vendorName}</strong> fulfillment and delivery partnership.</p>
-      <p style="margin: 0;">&copy; ${new Date().getFullYear()} MitoReboot &bull; Healthy Living &amp; Nutrition Sourcing</p>
+    <div style="background-color: #f8fafc; padding: 18px 24px; text-align: center; color: #94a3b8; font-size: 11px; border-top: 1px solid #f1f5f9; line-height: 1.6;">
+      <p style="margin: 0;">This order update is delivered via the <strong>MitoReboot &times; ${vendorName}</strong> fulfillment network.</p>
     </div>
+
+    ${generateEmailFooterHtml('MitoReboot')}
 
   </div>
 </body>

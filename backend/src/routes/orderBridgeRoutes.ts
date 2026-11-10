@@ -37,8 +37,13 @@ const renderUniversalAppBridge = async (req: Request, res: Response) => {
     subtitle = `Opening ${formatted} in the MitoReboot app...`;
   }
 
+  const fallback = (req.query.fallback || req.query.default || '').toString().trim();
+  const websiteUrl = 'https://www.mitoreboot.in';
+  const targetFallbackUrl = fallback === 'store' ? PLAY_STORE_URL : websiteUrl;
+  const iosFallbackUrl = fallback === 'store' ? APP_STORE_URL : websiteUrl;
+
   const appSchemeUrl = `mitoreboot://${cleanPath}`;
-  const androidIntentUrl = `intent://${cleanPath}#Intent;scheme=mitoreboot;package=com.mitoreboot.app;S.browser_fallback_url=${encodeURIComponent(PLAY_STORE_URL)};end`;
+  const androidIntentUrl = `intent://${cleanPath}#Intent;scheme=mitoreboot;package=com.mitoreboot.app;S.browser_fallback_url=${encodeURIComponent(targetFallbackUrl)};end`;
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -96,7 +101,13 @@ const renderUniversalAppBridge = async (req: Request, res: Response) => {
       align-items: center;
       justify-content: center;
       box-shadow: 0 12px 28px -6px rgba(37, 99, 235, 0.5);
-      font-size: 2rem;
+      overflow: hidden;
+    }
+    .logo-badge img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
     }
     h1 {
       font-size: 1.45rem;
@@ -192,10 +203,12 @@ const renderUniversalAppBridge = async (req: Request, res: Response) => {
 </head>
 <body>
   <div class="card">
-    <div class="logo-badge">🧬</div>
+    <div class="logo-badge">
+      <img src="/uploads/app-logo.png" alt="Mito Reboot" onerror="this.onerror=null; this.src='https://app.mitoreboot.in/assets/mitoreboot-logo.png';" />
+    </div>
 
-    <h1>MitoReboot</h1>
-    <p class="tagline">Preventive Lifestyle & Cellular Health</p>
+    <h1>Mito Reboot</h1>
+    <p class="tagline">Preventive Lifestyle App</p>
 
     <div class="spinner" id="spinner"></div>
     <p class="status-text" id="statusMessage">${subtitle}</p>
@@ -248,11 +261,11 @@ const renderUniversalAppBridge = async (req: Request, res: Response) => {
         // Attempt launch via Android Intent (system automatically redirects to Google Play if not installed)
         window.location.href = androidIntentUrl;
 
-        // Fallback for non-Chrome or older Android browsers: if still visible after 1.5s, redirect to Play Store
+        // Fallback for non-Chrome or older Android browsers: if still visible after 1.5s, redirect to fallback
         setTimeout(function() {
           if (!document.hidden) {
-            if (statusMessage) statusMessage.textContent = 'App not installed. Redirecting to Google Play...';
-            window.location.href = playStoreUrl;
+            if (statusMessage) statusMessage.textContent = 'Opening MitoReboot...';
+            window.location.href = "${targetFallbackUrl}";
           }
         }, 1500);
       } else if (isIOS) {
@@ -263,19 +276,22 @@ const renderUniversalAppBridge = async (req: Request, res: Response) => {
         const startTime = Date.now();
         window.location.href = appSchemeUrl;
 
-        // If app is not installed, the prompt doesn't open and page remains active -> forward to App Store
+        // If app is not installed, forward to fallback URL (website or App Store)
         setTimeout(function() {
           if (!document.hidden && Date.now() - startTime < 2500) {
-            if (statusMessage) statusMessage.textContent = 'App not installed. Redirecting to App Store...';
-            window.location.href = appStoreUrl;
+            if (statusMessage) statusMessage.textContent = 'Opening MitoReboot...';
+            window.location.href = "${iosFallbackUrl}";
           }
         }, 1500);
       } else {
-        // Desktop browser: App is smartphone-only
+        // Desktop browser: Smoothly forward to MitoReboot website
         if (spinner) spinner.style.display = 'none';
         if (statusMessage) {
-          statusMessage.textContent = 'MitoReboot is built for mobile devices. Download the app on your smartphone:';
+          statusMessage.innerHTML = 'MitoReboot mobile app &bull; Opening website at <a href="${websiteUrl}" style="color: #60a5fa; text-decoration: underline;">${websiteUrl}</a>...';
         }
+        setTimeout(function() {
+          window.location.href = "${websiteUrl}";
+        }, 750);
       }
     })();
   </script>
@@ -370,12 +386,18 @@ const renderOrderBridge = async (req: Request, res: Response) => {
       height: 64px;
       border-radius: 1rem;
       margin: 0 auto 1.25rem;
-      background: #047857;
+      background: linear-gradient(135deg, #047857 0%, #065f46 100%);
       display: flex;
       align-items: center;
       justify-content: center;
       box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.4);
-      font-size: 1.75rem;
+      overflow: hidden;
+    }
+    .logo-badge img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
     }
     h1 {
       font-size: 1.35rem;
@@ -493,9 +515,11 @@ const renderOrderBridge = async (req: Request, res: Response) => {
 </head>
 <body>
   <div class="card">
-    <div class="logo-badge">📦</div>
+    <div class="logo-badge">
+      <img src="/uploads/app-logo.png" alt="Mito Reboot Shop" onerror="this.onerror=null; this.src='https://app.mitoreboot.in/assets/mitoreboot-logo.png';" />
+    </div>
 
-    <h1>MitoReboot Shop</h1>
+    <h1>Mito Reboot Shop</h1>
     <div class="badge">Order #${displayId}</div>
 
     <div class="info-box">

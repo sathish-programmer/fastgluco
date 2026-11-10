@@ -49,6 +49,10 @@ const foodMasterSchema = new Schema<IFoodMaster>(
   }
 );
 
+// High performance search and filter indexes
+foodMasterSchema.index({ name: 'text', aliases: 'text' });
+foodMasterSchema.index({ category: 1, verified: -1 });
+
 foodMasterSchema.pre('find', function () {
   this.where({ isDeleted: false });
 });

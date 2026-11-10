@@ -62,4 +62,9 @@ const AppointmentSchema: Schema = new Schema(
   { timestamps: true }
 );
 
+// Indexes for cron reminders, user history, and doctor schedules
+AppointmentSchema.index({ status: 1, date: 1, time: 1 });
+AppointmentSchema.index({ userId: 1, date: -1 });
+AppointmentSchema.index({ doctorId: 1, date: 1 });
+
 export const Appointment = mongoose.model<IAppointment>('Appointment', AppointmentSchema);

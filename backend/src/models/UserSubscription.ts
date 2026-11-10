@@ -84,6 +84,11 @@ const userSubscriptionSchema = new Schema<IUserSubscription>(
   }
 );
 
+// High-speed compound indexes for subscription verification & cron renewals
+userSubscriptionSchema.index({ userId: 1, status: 1, endDate: -1 });
+userSubscriptionSchema.index({ userId: 1, status: 1, trialEndDate: -1 });
+userSubscriptionSchema.index({ status: 1, autoPayEnabled: 1, nextBillingDate: 1 });
+
 userSubscriptionSchema.pre('find', function () {
   this.where({ isDeleted: false });
 });

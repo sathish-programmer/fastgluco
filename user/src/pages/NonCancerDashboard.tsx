@@ -1,8 +1,11 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, Suspense, lazy } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { HabitsService } from '../services/habitsService';
 import type { HabitLog } from '../services/habitsService';
+import { PullToRefresh } from '../components/PullToRefresh';
+import { HabitStreakBadge } from '../components/HabitStreakBadge';
+import { flushOfflineQueue } from '../utils/offlineSyncQueue';
 import {
   Skull,
   Frown,
@@ -59,40 +62,41 @@ import { DailyLoggingChatbotModal } from '../components/DailyLoggingChatbotModal
 import { SymptomCheckAIChatModal } from '../components/SymptomCheckAIChatModal';
 import { AiBannerQuickNudge } from '../components/AiBannerQuickNudge';
 import { useConsultation } from '../context/ConsultationContext';
-import { StressLogScreen } from '../screens/HabitScreens/StressLogScreen';
-import { SmokingLogScreen } from '../screens/HabitScreens/SmokingLogScreen';
-import { SubstancesLogScreen } from '../screens/HabitScreens/SubstancesLogScreen';
-import { IntimacyCheckScreen } from '../screens/HabitScreens/IntimacyCheckScreen';
-import { FastingLogScreen } from '../screens/HabitScreens/FastingLogScreen';
-import { StillnessLogScreen } from '../screens/HabitScreens/StillnessLogScreen';
-import { JoyLogScreen } from '../screens/HabitScreens/JoyLogScreen';
-import { SleepLogScreen } from '../screens/HabitScreens/SleepLogScreen';
-import { MovementLogScreen } from '../screens/HabitScreens/MovementLogScreen';
-import { AlcoholLogScreen } from '../screens/HabitScreens/AlcoholLogScreen';
-import { ShopScreen } from '../screens/Shop/ShopScreen';
-import { SymptomCheckinScreen, getNextCheckinDueDate } from '../screens/HabitScreens/SymptomCheckinScreen';
-import { CancerScreeningScreen } from '../screens/HabitScreens/CancerScreeningScreen';
-import { IndianCancersScreen } from '../screens/HabitScreens/IndianCancersScreen';
-import { ObesityLogScreen } from '../screens/HabitScreens/ObesityLogScreen';
-import { DentalLogScreen } from '../screens/HabitScreens/DentalLogScreen';
-import { GastritisLogScreen } from '../screens/HabitScreens/GastritisLogScreen';
-import { GeneticLogScreen } from '../screens/HabitScreens/GeneticLogScreen';
-import { AntioxidantLogScreen } from '../screens/HabitScreens/AntioxidantLogScreen';
-import { EnvironmentalExposuresLogScreen } from '../screens/HabitScreens/EnvironmentalExposuresLogScreen';
-import { BreathLogScreen } from '../screens/HabitScreens/BreathLogScreen';
-import { KitchenLogScreen } from '../screens/HabitScreens/KitchenLogScreen';
-import { DietLogScreen } from '../screens/HabitScreens/DietLogScreen';
+import { getNextCheckinDueDate } from '../screens/HabitScreens/SymptomCheckinScreen';
 import { ModeSwitcher } from '../components/ModeSwitcher';
 import { Dashboard } from './Dashboard';
-import { AgeingModule } from '../modules/AgeingModule';
-import { PCODModule } from '../modules/PCODModule';
-import { DiabetesModule } from '../modules/DiabetesModule';
-import { HypertensionModule } from '../modules/HypertensionModule';
-import { CardiacModule } from '../modules/CardiacModule';
-import { ParkinsonModule } from '../modules/ParkinsonModule';
-// import { ContinueWhereLeftOff } from '../components/ContinueWhereLeftOff';
-// import { MitoProgressCard } from '../components/MitoProgressCard';
 import { ExploreFeaturesGrid } from '../components/ExploreFeaturesGrid';
+
+// Code-split habit screens & clinical modules to eliminate monolithic chunking & preserve old business logic
+const StressLogScreen = lazy(() => import('../screens/HabitScreens/StressLogScreen').then(m => ({ default: m.StressLogScreen })));
+const SmokingLogScreen = lazy(() => import('../screens/HabitScreens/SmokingLogScreen').then(m => ({ default: m.SmokingLogScreen })));
+const SubstancesLogScreen = lazy(() => import('../screens/HabitScreens/SubstancesLogScreen').then(m => ({ default: m.SubstancesLogScreen })));
+const IntimacyCheckScreen = lazy(() => import('../screens/HabitScreens/IntimacyCheckScreen').then(m => ({ default: m.IntimacyCheckScreen })));
+const FastingLogScreen = lazy(() => import('../screens/HabitScreens/FastingLogScreen').then(m => ({ default: m.FastingLogScreen })));
+const StillnessLogScreen = lazy(() => import('../screens/HabitScreens/StillnessLogScreen').then(m => ({ default: m.StillnessLogScreen })));
+const JoyLogScreen = lazy(() => import('../screens/HabitScreens/JoyLogScreen').then(m => ({ default: m.JoyLogScreen })));
+const SleepLogScreen = lazy(() => import('../screens/HabitScreens/SleepLogScreen').then(m => ({ default: m.SleepLogScreen })));
+const MovementLogScreen = lazy(() => import('../screens/HabitScreens/MovementLogScreen').then(m => ({ default: m.MovementLogScreen })));
+const AlcoholLogScreen = lazy(() => import('../screens/HabitScreens/AlcoholLogScreen').then(m => ({ default: m.AlcoholLogScreen })));
+const ShopScreen = lazy(() => import('../screens/Shop/ShopScreen').then(m => ({ default: m.ShopScreen })));
+const SymptomCheckinScreen = lazy(() => import('../screens/HabitScreens/SymptomCheckinScreen').then(m => ({ default: m.SymptomCheckinScreen })));
+const CancerScreeningScreen = lazy(() => import('../screens/HabitScreens/CancerScreeningScreen').then(m => ({ default: m.CancerScreeningScreen })));
+const IndianCancersScreen = lazy(() => import('../screens/HabitScreens/IndianCancersScreen').then(m => ({ default: m.IndianCancersScreen })));
+const ObesityLogScreen = lazy(() => import('../screens/HabitScreens/ObesityLogScreen').then(m => ({ default: m.ObesityLogScreen })));
+const DentalLogScreen = lazy(() => import('../screens/HabitScreens/DentalLogScreen').then(m => ({ default: m.DentalLogScreen })));
+const GastritisLogScreen = lazy(() => import('../screens/HabitScreens/GastritisLogScreen').then(m => ({ default: m.GastritisLogScreen })));
+const GeneticLogScreen = lazy(() => import('../screens/HabitScreens/GeneticLogScreen').then(m => ({ default: m.GeneticLogScreen })));
+const AntioxidantLogScreen = lazy(() => import('../screens/HabitScreens/AntioxidantLogScreen').then(m => ({ default: m.AntioxidantLogScreen })));
+const EnvironmentalExposuresLogScreen = lazy(() => import('../screens/HabitScreens/EnvironmentalExposuresLogScreen').then(m => ({ default: m.EnvironmentalExposuresLogScreen })));
+const BreathLogScreen = lazy(() => import('../screens/HabitScreens/BreathLogScreen').then(m => ({ default: m.BreathLogScreen })));
+const KitchenLogScreen = lazy(() => import('../screens/HabitScreens/KitchenLogScreen').then(m => ({ default: m.KitchenLogScreen })));
+const DietLogScreen = lazy(() => import('../screens/HabitScreens/DietLogScreen').then(m => ({ default: m.DietLogScreen })));
+const AgeingModule = lazy(() => import('../modules/AgeingModule').then(m => ({ default: m.AgeingModule })));
+const PCODModule = lazy(() => import('../modules/PCODModule').then(m => ({ default: m.PCODModule })));
+const DiabetesModule = lazy(() => import('../modules/DiabetesModule').then(m => ({ default: m.DiabetesModule })));
+const HypertensionModule = lazy(() => import('../modules/HypertensionModule').then(m => ({ default: m.HypertensionModule })));
+const CardiacModule = lazy(() => import('../modules/CardiacModule').then(m => ({ default: m.CardiacModule })));
+const ParkinsonModule = lazy(() => import('../modules/ParkinsonModule').then(m => ({ default: m.ParkinsonModule })));
 import { ContextualShopCard } from '../components/ContextualShopCard';
 import { AskMitoDrawer } from '../components/AskMitoDrawer';
 import { AiFeatureDiscoveryModal } from '../components/AiFeatureDiscoveryModal';
@@ -236,6 +240,9 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
       const logs = await HabitsService.getRecentHabits(apiUrl, token, 'all', 365);
       setHabits(logs);
       checkHealthDanger(logs);
+
+      // Opportunistically flush any offline queued habits
+      flushOfflineQueue(apiUrl, token).catch(() => {});
 
       // Calculate pending habits count for today
       const todayStr = new Date().toDateString();
@@ -1916,7 +1923,14 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
         )}
 
         <div className="sub-page-body flex-1">
-          {activeScreenComponent}
+          <Suspense fallback={
+            <div className="p-4 space-y-4 max-w-lg mx-auto w-full animate-pulse">
+              <div className="h-24 bg-slate-100 dark:bg-slate-800 rounded-3xl w-full" />
+              <div className="h-44 bg-slate-100 dark:bg-slate-800 rounded-2xl w-full" />
+            </div>
+          }>
+            {activeScreenComponent}
+          </Suspense>
         </div>
 
         {/* AI Daily Logging Chatbot Modal */}
@@ -2023,7 +2037,8 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
   };
 
   return (
-    <div className="pb-24 pt-4 px-3.5 sm:px-4 max-w-5xl mx-auto bg-gradient-to-b from-slate-50/90 to-slate-100/80 dark:from-slate-900/90 dark:to-slate-950/80 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-200 transition-colors duration-300">
+    <PullToRefresh onRefresh={fetchHabitsAndAppointments}>
+      <div className="pb-24 pt-4 px-3.5 sm:px-4 max-w-5xl mx-auto bg-gradient-to-b from-slate-50/90 to-slate-100/80 dark:from-slate-900/90 dark:to-slate-950/80 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-200 transition-colors duration-300">
 
       {/* Feature Discovery & Ask Mito Modals */}
       <AskMitoDrawer
@@ -2034,55 +2049,66 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
 
       {/* Top Greeting & Action Bar */}
       <div className="mb-4">
-        <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 block">
-          {new Date().toLocaleDateString(activeLocale, { weekday: 'long', day: 'numeric', month: 'short' }).toUpperCase()}
-        </span>
-        <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-slate-100 tracking-tight leading-tight mt-0.5 truncate max-w-[210px] min-[380px]:max-w-[260px] sm:max-w-none">
-          {(() => {
-            const h = new Date().getHours();
-            if (h >= 5 && h < 12) return t('dashboard.goodMorning', 'Good Morning');
-            if (h >= 12 && h < 18) return t('dashboard.goodAfternoon', 'Good Afternoon');
-            return t('dashboard.goodEvening', 'Good Evening');
-          })()},{' '}
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">
-            {user?.name?.split(' ')[0] || 'Friend'}
-          </span>
-        </h2>
+        <div className="flex items-center justify-between gap-2.5">
+          <div className="min-w-0 flex-1">
+            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 block">
+              {new Date().toLocaleDateString(activeLocale, { weekday: 'long', day: 'numeric', month: 'short' }).toUpperCase()}
+            </span>
+            <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-slate-100 tracking-tight leading-tight mt-0.5 truncate">
+              {(() => {
+                const h = new Date().getHours();
+                if (h >= 5 && h < 12) return t('dashboard.goodMorning', 'Good Morning');
+                if (h >= 12 && h < 18) return t('dashboard.goodAfternoon', 'Good Afternoon');
+                return t('dashboard.goodEvening', 'Good Evening');
+              })()},{' '}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">
+                {user?.name?.split(' ')[0] || 'Friend'}
+              </span>
+            </h2>
+          </div>
+          {!['AGEING', 'PCOD', 'DIABETES', 'HYPERTENSION', 'PARKINSON', 'CARDIAC'].includes(activeMode) && (
+            <div className="shrink-0">
+              <HabitStreakBadge habits={habits} />
+            </div>
+          )}
+        </div>
       </div>
 
       <ModeSwitcher />
 
       {/* SPECIALIZED MULTI-CONDITION HEALTH MODULES (Ageing, PCOD, Diabetes, Hypertension, Parkinson's, Cardiac) */}
-      {activeMode === 'AGEING' && (
-        <div className="mb-6">
-          <AgeingModule />
-        </div>
-      )}
-      {activeMode === 'PCOD' && (
-        <div className="mb-6">
-          <PCODModule />
-        </div>
-      )}
-      {activeMode === 'DIABETES' && (
-        <div className="mb-6">
-          <DiabetesModule />
-        </div>
-      )}
-      {activeMode === 'HYPERTENSION' && (
-        <div className="mb-6">
-          <HypertensionModule />
-        </div>
-      )}
-      {activeMode === 'PARKINSON' && (
-        <div className="mb-6">
-          <ParkinsonModule />
-        </div>
-      )}
-      {activeMode === 'CARDIAC' && (
-        <div className="mb-6">
-          <CardiacModule />
-        </div>
-      )}
+      <Suspense fallback={<div className="h-40 bg-slate-100 dark:bg-slate-800 rounded-3xl animate-pulse mb-6" />}>
+        {activeMode === 'AGEING' && (
+          <div className="mb-6">
+            <AgeingModule />
+          </div>
+        )}
+        {activeMode === 'PCOD' && (
+          <div className="mb-6">
+            <PCODModule />
+          </div>
+        )}
+        {activeMode === 'DIABETES' && (
+          <div className="mb-6">
+            <DiabetesModule />
+          </div>
+        )}
+        {activeMode === 'HYPERTENSION' && (
+          <div className="mb-6">
+            <HypertensionModule />
+          </div>
+        )}
+        {activeMode === 'PARKINSON' && (
+          <div className="mb-6">
+            <ParkinsonModule />
+          </div>
+        )}
+        {activeMode === 'CARDIAC' && (
+          <div className="mb-6">
+            <CardiacModule />
+          </div>
+        )}
+      </Suspense>
 
       {/* RENDER CANCER PREVENTION/RECURRENCE DASHBOARD ONLY WHEN IN CANCER MODES */}
       {!['AGEING', 'PCOD', 'DIABETES', 'HYPERTENSION', 'PARKINSON', 'CARDIAC'].includes(activeMode) && (
@@ -3308,6 +3334,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
         </div>
       )}
     </div>
+  </PullToRefresh>
   );
 };
 

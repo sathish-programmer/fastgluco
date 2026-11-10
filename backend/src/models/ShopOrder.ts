@@ -242,5 +242,10 @@ const ShopOrderSchema: Schema = new Schema({
   }]
 }, { timestamps: true });
 
+// High speed indexes for customer order history and vendor fulfillment
+ShopOrderSchema.index({ userId: 1, createdAt: -1 });
+ShopOrderSchema.index({ orderNumber: 1 });
+ShopOrderSchema.index({ status: 1, createdAt: -1 });
+
 export default mongoose.model<IShopOrder>('ShopOrder', ShopOrderSchema);
 

@@ -1,4 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { InteractiveCGMSimulator } from './components/InteractiveCGMSimulator';
+import { FeatureBentoGrid } from './components/FeatureBentoGrid';
+import { InteractiveBreathworkPacer } from './components/InteractiveBreathworkPacer';
+import { QRCodeModal } from './components/QRCodeModal';
+import { SocialProofStats } from './components/SocialProofStats';
+import { BiomarkerTransformationShowcase } from './components/BiomarkerTransformationShowcase';
+import { HeroAppShowcase } from './components/HeroAppShowcase';
 import {
   Smartphone,
   Activity,
@@ -18,7 +25,6 @@ import {
   Languages,
   ChevronRight,
   ArrowRight,
-  RotateCcw,
   HeartPulse,
   Smile,
   Menu,
@@ -27,10 +33,12 @@ import {
   TestTube,
   Video,
   Award,
-  ChevronDown
+  ChevronDown,
+  QrCode,
+  Search
 } from 'lucide-react';
 
-const CURRENT_APP_VERSION = 'v6.1.4';
+const CURRENT_APP_VERSION = 'v6.3.3';
 
 const getEmbedUrl = (url: string) => {
   if (!url) return '';
@@ -73,6 +81,7 @@ export default function App() {
   };
 
   const [activeTab, setActiveTab] = useState<'home' | 'privacy-policy' | 'terms-and-conditions'>(getInitialTab());
+  const [showQRModal, setShowQRModal] = useState<boolean>(false);
 
   // Sync URL with tab state so the links are shareable
   useEffect(() => {
@@ -99,30 +108,15 @@ export default function App() {
   const [videosData, setVideosData] = useState<any[]>([]);
   const [foundersData, setFoundersData] = useState<any[]>([]);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
-
-  // Interactive Mockup Simulator State
-  const [simStress, setSimStress] = useState<boolean>(true);
-  const [simEnv, setSimEnv] = useState<boolean>(true);
-  const [simSugarSpike, setSimSugarSpike] = useState<boolean>(false);
-  const [simFasting, setSimFasting] = useState<boolean>(true);
-  const [simExercise, setSimExercise] = useState<boolean>(true);
-  const [simBreathwork, setSimBreathwork] = useState<boolean>(true);
-  const [simAntioxidants, setSimAntioxidants] = useState<boolean>(false);
-  const [simMode, setSimMode] = useState<'PREVENTION' | 'TREATMENT'>('PREVENTION');
-  const [showSimDisclaimer, setShowSimDisclaimer] = useState<boolean>(false);
-  const [showSimWigsPopup, setShowSimWigsPopup] = useState<boolean>(false);
-  const [isSimulatorHighlighted, setIsSimulatorHighlighted] = useState<boolean>(false);
+  const [faqSearchQuery, setFaqSearchQuery] = useState<string>('');
+  const [activeFaqCategory, setActiveFaqCategory] = useState<'all' | 'cgm' | 'consult' | 'diet' | 'plans'>('all');
 
   const handleTrySimulator = (e: React.MouseEvent) => {
     e.preventDefault();
-    const el = document.getElementById('interactive-simulator');
+    const el = document.getElementById('cgm-simulator');
     if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
-    setIsSimulatorHighlighted(true);
-    setTimeout(() => {
-      setIsSimulatorHighlighted(false);
-    }, 4500);
   };
 
   // Smart Deep-Link: Opens app if installed on device, otherwise falls back to App Store / Google Play
@@ -164,12 +158,6 @@ export default function App() {
       }
     }, 1200);
   };
-
-  // Interactive Breathwork Widget State
-  const [breathType, setBreathType] = useState<'box' | 'relax' | 'coherent'>('box');
-  const [breathPhase, setBreathPhase] = useState<'inhale' | 'hold' | 'exhale' | 'hold2'>('inhale');
-  const [breathTimer, setBreathTimer] = useState<number>(4);
-  const [isBreathingActive, setIsBreathingActive] = useState<boolean>(false);
 
   // Active Disease Module Tab
   const [activeModule, setActiveModule] = useState<'cancer' | 'parkinson' | 'diabetes' | 'cardiac' | 'hypertension' | 'pcod' | 'longevity'>('cancer');
@@ -219,35 +207,6 @@ export default function App() {
     fetchData();
   }, []);
 
-  // Vagus Nerve Breathing Simulator Timer Loop
-  useEffect(() => {
-    if (!isBreathingActive) return;
-
-    const interval = setInterval(() => {
-      setBreathTimer((prev) => {
-        if (prev <= 1) {
-          if (breathType === 'box') {
-            if (breathPhase === 'inhale') { setBreathPhase('hold'); return 4; }
-            if (breathPhase === 'hold') { setBreathPhase('exhale'); return 4; }
-            if (breathPhase === 'exhale') { setBreathPhase('hold2'); return 4; }
-            if (breathPhase === 'hold2') { setBreathPhase('inhale'); return 4; }
-          } else if (breathType === 'relax') {
-            if (breathPhase === 'inhale') { setBreathPhase('hold'); return 7; }
-            if (breathPhase === 'hold') { setBreathPhase('exhale'); return 8; }
-            if (breathPhase === 'exhale') { setBreathPhase('inhale'); return 4; }
-          } else if (breathType === 'coherent') {
-            if (breathPhase === 'inhale') { setBreathPhase('exhale'); return 5.5; }
-            if (breathPhase === 'exhale') { setBreathPhase('inhale'); return 5.5; }
-          }
-          return 4;
-        }
-        return Number((prev - 0.5).toFixed(1));
-      });
-    }, 500);
-
-    return () => clearInterval(interval);
-  }, [isBreathingActive, breathPhase, breathType]);
-
   // Contact Form State
   const [contactName, setContactName] = useState('');
   const [contactEmail, setContactEmail] = useState('');
@@ -280,11 +239,6 @@ export default function App() {
       setSubmitting(false);
     }
   };
-
-  // Damage vs Repair Calculation
-  const damageScore = (simStress ? 1 : 0) + (simEnv ? 1 : 0) + (simSugarSpike ? 1 : 0);
-  const repairScore = (simFasting ? 1 : 0) + (simExercise ? 1 : 0) + (simBreathwork ? 1 : 0) + (simAntioxidants ? 1 : 0);
-  const netBalance = repairScore - damageScore;
 
   if (activeTab === 'privacy-policy') {
     return (
@@ -440,15 +394,21 @@ export default function App() {
 
               <button
                 type="button"
+                onClick={() => setShowQRModal(true)}
+                className="px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 text-slate-700 hover:text-blue-600 bg-white hover:bg-slate-50 border border-slate-200/90 shadow-soft"
+                title="Scan QR Code to download on mobile"
+              >
+                <QrCode className="h-4 w-4 text-blue-600" />
+                <span>Scan QR</span>
+              </button>
+
+              <button
+                type="button"
                 onClick={handleTrySimulator}
-                className={`px-5 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
-                  isSimulatorHighlighted
-                    ? 'bg-blue-600 text-white shadow-glow-blue scale-105 ring-2 ring-blue-400'
-                    : 'text-slate-700 hover:text-blue-600 bg-white hover:bg-slate-50 border border-slate-200/90 shadow-soft'
-                }`}
+                className="px-5 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 text-slate-700 hover:text-blue-600 bg-white hover:bg-slate-50 border border-slate-200/90 shadow-soft"
               >
                 <Sparkles className="h-4 w-4 text-blue-500" />
-                <span>Try Live Simulator</span>
+                <span>Explore Live CGM</span>
                 <ChevronRight className="h-4 w-4" />
               </button>
             </div>
@@ -463,350 +423,15 @@ export default function App() {
             </div>
           </div>
 
-          {/* Interactive Mobile Simulator Device */}
-          <div id="interactive-simulator" className="lg:col-span-5 flex justify-center relative">
-            {isSimulatorHighlighted && (
-              <div className="absolute -top-11 z-40 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-1.5 rounded-full text-[11px] font-black shadow-lg animate-bounce flex items-center gap-1.5 border border-white/20">
-                <Sparkles className="h-3.5 w-3.5" />
-                <span>Active Simulator: Tap habits inside to adjust Cellular Balance!</span>
-              </div>
-            )}
-
-            <div className={`bg-slate-950 p-3 sm:p-4 rounded-[44px] shadow-2xl border-[5px] transition-all duration-500 max-w-[350px] w-full relative overflow-hidden select-none ${
-              isSimulatorHighlighted
-                ? 'border-blue-500 ring-4 ring-blue-500/50 shadow-glow-blue scale-105'
-                : 'border-slate-800'
-            }`}>
-              {/* Dynamic Island / Camera Notch */}
-              <div className="absolute top-0 inset-x-0 h-5 flex justify-center z-30">
-                <div className="bg-slate-950 w-28 h-4 rounded-b-xl flex items-center justify-center">
-                  <div className="h-2 w-2 rounded-full bg-slate-900 mr-2"></div>
-                  <div className="h-1.5 w-1.5 rounded-full bg-blue-900/60"></div>
-                </div>
-              </div>
-
-              {/* Simulated Screen Body */}
-              <div className="bg-slate-50 rounded-[34px] overflow-hidden p-4 pt-6 text-left font-sans relative min-h-[490px] flex flex-col justify-between border border-slate-800/40">
-                <div>
-                  {/* Simulated App Header */}
-                  <div className="flex justify-between items-center mb-3">
-                    <div className="flex items-center gap-2">
-                      <div className="h-6 w-6 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center shadow-xs">
-                        <span className="text-[11px] text-white font-black">M</span>
-                      </div>
-                      <div>
-                        <div className="flex items-center">
-                          <span className="text-xs font-extrabold text-slate-900 tracking-tight leading-none">
-                            {branding.appName.replace(/_/g, ' ')}
-                          </span>
-                          <sup className="text-[6.5px] font-black text-blue-600 ml-0.5 -top-1 relative">TM</sup>
-                        </div>
-                        <span className="text-[8px] text-slate-400 font-bold block">{CURRENT_APP_VERSION} Active</span>
-                      </div>
-                    </div>
-                    <span className="text-[9px] bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-black px-2 py-0.5 rounded-full uppercase tracking-wider shadow-2xs">
-                      Pro
-                    </span>
-                  </div>
-
-                  {/* Mode Switcher Toggle: Prevention vs Active Cancer Treatment */}
-                  <div className="bg-slate-200/80 rounded-xl p-1 mb-3 flex text-[10px] font-extrabold">
-                    <button
-                      onClick={() => { setSimMode('PREVENTION'); setShowSimDisclaimer(false); }}
-                      className={`flex-1 py-1.5 rounded-lg text-center transition-all cursor-pointer ${
-                        simMode === 'PREVENTION'
-                          ? 'bg-white text-blue-700 shadow-sm'
-                          : 'text-slate-500 hover:text-slate-800'
-                      }`}
-                    >
-                      Prevention
-                    </button>
-                    <button
-                      onClick={() => setSimMode('TREATMENT')}
-                      className={`flex-1 py-1.5 rounded-lg text-center transition-all cursor-pointer ${
-                        simMode === 'TREATMENT'
-                          ? 'bg-emerald-600 text-white shadow-sm'
-                          : 'text-slate-500 hover:text-slate-800'
-                      }`}
-                    >
-                      Active Cancer Care
-                    </button>
-                  </div>
-
-                  {/* Active Focus Header */}
-                  <div className={`rounded-xl p-2.5 text-[10px] font-bold mb-3 text-white flex justify-between items-center transition-colors ${
-                    simMode === 'PREVENTION' ? 'bg-indigo-600' : 'bg-emerald-600'
-                  }`}>
-                    <span className="flex items-center gap-1.5">
-                      <Sparkles className="h-3.5 w-3.5" />
-                      <span>{simMode === 'PREVENTION' ? 'Lifestyle & Recurrence Defense' : 'Chemo Tolerance & Organ Care'}</span>
-                    </span>
-                    <span className="text-[8px] bg-white/25 px-1.5 py-0.5 rounded font-black tracking-widest uppercase">
-                      Live
-                    </span>
-                  </div>
-
-                  {/* Cellular Balance Tug-of-War Card */}
-                  <div className="bg-white border border-slate-200/80 rounded-2xl p-3 shadow-xs space-y-2">
-                    <div className="flex justify-between items-end">
-                      <div>
-                        <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest block">
-                          Cellular Balance Score
-                        </span>
-                        <div className="flex items-baseline gap-1.5">
-                          <span className={`text-2xl font-black ${netBalance >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                            {netBalance > 0 ? `+${netBalance}` : netBalance}
-                          </span>
-                          <span className="text-[10px] font-bold text-slate-400">
-                            {netBalance >= 2 ? 'Optimal Autophagy' : netBalance >= 0 ? 'Equilibrium' : 'Damage Dominated'}
-                          </span>
-                        </div>
-                      </div>
-                      <span className="text-[9px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">
-                        Abbott CGM Sync
-                      </span>
-                    </div>
-
-                    {/* Balance Bar Indicator */}
-                    <div>
-                      <div className="flex justify-between text-[8px] font-extrabold uppercase mb-1">
-                        <span className="text-rose-600">Damage ({damageScore})</span>
-                        <span className="text-emerald-600">Repair ({repairScore})</span>
-                      </div>
-                      <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden flex shadow-inner">
-                        <div
-                          className="bg-rose-500 transition-all duration-500 ease-out"
-                          style={{ width: `${((damageScore / (damageScore + repairScore || 1))) * 100}%` }}
-                        ></div>
-                        <div
-                          className="bg-emerald-500 transition-all duration-500 ease-out flex-1"
-                        ></div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Interactive Habit Logging Matrix */}
-                  <div className="mt-2.5">
-                    {/* 1-Tap Quick Presets */}
-                    <div className="flex items-center justify-between gap-1 mb-2 px-1">
-                      <span className="text-[7.5px] font-black uppercase text-slate-400">Presets:</span>
-                      <div className="flex gap-1">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSimStress(true);
-                            setSimSugarSpike(true);
-                            setSimEnv(true);
-                            setSimFasting(false);
-                            setSimExercise(false);
-                          }}
-                          className="text-[7.5px] font-bold px-1.5 py-0.5 rounded bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 cursor-pointer active:scale-95 transition-all"
-                        >
-                          ⚡ Stress Spike
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSimStress(false);
-                            setSimSugarSpike(false);
-                            setSimEnv(false);
-                            setSimFasting(true);
-                            setSimExercise(true);
-                          }}
-                          className="text-[7.5px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 cursor-pointer active:scale-95 transition-all"
-                        >
-                          🌿 Autophagy
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSimStress(false);
-                            setSimSugarSpike(false);
-                            setSimEnv(false);
-                            setSimFasting(false);
-                            setSimExercise(false);
-                          }}
-                          className="text-[7.5px] font-bold px-1.5 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-200 cursor-pointer active:scale-95 transition-all"
-                        >
-                          ↺ Reset
-                        </button>
-                      </div>
-                    </div>
-
-                    <p className="text-[7.5px] text-center font-bold text-indigo-600 uppercase tracking-wider mb-1.5">
-                      👇 Tap any habit to test live balance:
-                    </p>
-
-                    <div className="grid grid-cols-2 gap-2 text-[9px]">
-                      {/* Damage Column */}
-                      <div className="space-y-1.5">
-                        <span className="text-[8px] font-black text-rose-500 uppercase tracking-widest block pl-1">
-                          Cellular Damage
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => setSimStress(!simStress)}
-                          className={`w-full p-2 rounded-xl text-left border flex justify-between items-center transition-all cursor-pointer ${
-                            simStress ? 'bg-rose-50 border-rose-300 text-rose-800 font-bold shadow-2xs' : 'bg-white border-slate-200 text-slate-400 font-medium'
-                          }`}
-                        >
-                          <span>Chronic Stress</span>
-                          <span className="font-extrabold text-[10px]">{simStress ? '-1' : '+0'}</span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => setSimEnv(!simEnv)}
-                          className={`w-full p-2 rounded-xl text-left border flex justify-between items-center transition-all cursor-pointer ${
-                            simEnv ? 'bg-rose-50 border-rose-300 text-rose-800 font-bold shadow-2xs' : 'bg-white border-slate-200 text-slate-400 font-medium'
-                          }`}
-                        >
-                          <span>Toxins / Non-Stick</span>
-                          <span className="font-extrabold text-[10px]">{simEnv ? '-1' : '+0'}</span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => setSimSugarSpike(!simSugarSpike)}
-                          className={`w-full p-2 rounded-xl text-left border flex justify-between items-center transition-all cursor-pointer ${
-                            simSugarSpike ? 'bg-rose-50 border-rose-300 text-rose-800 font-bold shadow-2xs' : 'bg-white border-slate-200 text-slate-400 font-medium'
-                          }`}
-                        >
-                          <span>CGM Glucose Spike</span>
-                          <span className="font-extrabold text-[10px]">{simSugarSpike ? '-1' : '+0'}</span>
-                        </button>
-                      </div>
-
-                      {/* Repair Column */}
-                      <div className="space-y-1.5">
-                        <span className="text-[8px] font-black text-emerald-600 uppercase tracking-widest block pl-1">
-                          Cellular Repair
-                        </span>
-
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (simMode === 'TREATMENT' && !simFasting) {
-                              setShowSimDisclaimer(true);
-                            } else {
-                              setSimFasting(!simFasting);
-                            }
-                          }}
-                          className={`w-full p-2 rounded-xl text-left border flex justify-between items-center transition-all cursor-pointer ${
-                            simFasting ? 'bg-emerald-50 border-emerald-300 text-emerald-800 font-bold shadow-2xs' : 'bg-white border-slate-200 text-slate-400 font-medium'
-                          }`}
-                        >
-                          <span>Autophagy Fasting</span>
-                          <span className="font-extrabold text-[10px]">{simFasting ? '+1' : '+0'}</span>
-                        </button>
-
-                        {simMode === 'TREATMENT' ? (
-                          <button
-                            type="button"
-                            onClick={() => setShowSimWigsPopup(true)}
-                            className="w-full p-2 rounded-xl text-left border border-purple-300 bg-purple-50 text-purple-800 font-bold flex justify-between items-center transition-all shadow-2xs cursor-pointer active:scale-95"
-                          >
-                            <span>Scalp Caps & Wigs 🛍️</span>
-                            <span className="text-[8px] uppercase bg-purple-200 px-1 py-0.5 rounded font-black">Shop</span>
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => setSimExercise(!simExercise)}
-                            className={`w-full p-2 rounded-xl text-left border flex justify-between items-center transition-all cursor-pointer ${
-                              simExercise ? 'bg-emerald-50 border-emerald-300 text-emerald-800 font-bold shadow-2xs' : 'bg-white border-slate-200 text-slate-400 font-medium'
-                            }`}
-                          >
-                            <span>Zone 2 Cardio</span>
-                            <span className="font-extrabold text-[10px]">{simExercise ? '+1' : '+0'}</span>
-                          </button>
-                        )}
-
-                        <button
-                          type="button"
-                          onClick={() => setSimBreathwork(!simBreathwork)}
-                          className={`w-full p-2 rounded-xl text-left border flex justify-between items-center transition-all cursor-pointer ${
-                            simBreathwork ? 'bg-emerald-50 border-emerald-300 text-emerald-800 font-bold shadow-2xs' : 'bg-white border-slate-200 text-slate-400 font-medium'
-                          }`}
-                        >
-                          <span>Vagus Breathwork</span>
-                          <span className="font-extrabold text-[10px]">{simBreathwork ? '+1' : '+0'}</span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => setSimAntioxidants(!simAntioxidants)}
-                          className={`w-full p-2 rounded-xl text-left border flex justify-between items-center transition-all cursor-pointer ${
-                            simAntioxidants ? 'bg-emerald-50 border-emerald-300 text-emerald-800 font-bold shadow-2xs' : 'bg-white border-slate-200 text-slate-400 font-medium'
-                          }`}
-                        >
-                          <span>Mito Antioxidants</span>
-                          <span className="font-extrabold text-[10px]">{simAntioxidants ? '+1' : '+0'}</span>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Bottom Status bar */}
-                <div className="pt-2 border-t border-slate-200/80 flex items-center justify-between text-[8px] text-slate-400 font-bold">
-                  <span>Mito Reboot™ Engine {CURRENT_APP_VERSION}</span>
-                  <span className="text-emerald-600 font-extrabold">● Sync Active</span>
-                </div>
-
-                {/* Simulated Medical Fasting Disclaimer Popup */}
-                {showSimDisclaimer && (
-                  <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-xs z-40 flex items-center justify-center p-3">
-                    <div className="bg-white rounded-2xl p-4 border border-slate-200 max-w-[270px] w-full text-center space-y-2.5 shadow-2xl">
-                      <div className="h-8 w-8 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto text-sm font-black">⚠️</div>
-                      <h4 className="text-[11px] font-black text-slate-900 uppercase">Oncology Fasting Disclaimer</h4>
-                      <p className="text-[9px] text-slate-600 leading-relaxed font-medium">
-                        Intermittent fasting during active chemotherapy is experimental. Always consult your oncology team before initiating fasting protocols.
-                      </p>
-                      <div className="flex flex-col gap-1.5 text-[9px] font-bold pt-1">
-                        <button
-                          type="button"
-                          onClick={() => { setSimFasting(true); setShowSimDisclaimer(false); }}
-                          className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl transition-all cursor-pointer shadow-sm"
-                        >
-                          I Understand & Accept
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setShowSimDisclaimer(false)}
-                          className="w-full py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl transition-all cursor-pointer"
-                        >
-                          Decline
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Simulated Shop Popup */}
-                {showSimWigsPopup && (
-                  <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-xs z-40 flex items-center justify-center p-3">
-                    <div className="bg-white rounded-2xl p-4 border border-slate-200 max-w-[270px] w-full text-center space-y-3 shadow-2xl">
-                      <div className="h-9 w-9 bg-purple-100 text-purple-700 rounded-full flex items-center justify-center mx-auto text-base">🛍️</div>
-                      <h4 className="text-[11px] font-black text-slate-900 uppercase">Curated Safe Living Store</h4>
-                      <p className="text-[9px] text-slate-600 leading-relaxed font-medium">
-                        Filtered for cancer care scalp cooling caps, chemical-free natural wigs, and targeted antioxidants in Indian Rupees (₹).
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => setShowSimWigsPopup(false)}
-                        className="w-full py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-[10px] font-bold transition-all shadow-sm cursor-pointer"
-                      >
-                        Understood!
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
+          {/* Modern Interactive Mobile Showcase */}
+          <div className="lg:col-span-5 flex justify-center relative">
+            <HeroAppShowcase appName={branding.appName} />
           </div>
         </div>
       </section>
+
+      {/* Social Proof Stats Bar */}
+      <SocialProofStats />
 
       {/* "What's New in v6.0.3" Highlights Banner */}
       <section className="bg-gradient-to-r from-blue-700 via-indigo-700 to-purple-800 text-white py-5 px-4 shadow-sm">
@@ -837,126 +462,13 @@ export default function App() {
         </div>
       </section>
 
-      {/* Core Key Features (Important Points Not All - Clean & Modern) */}
-      <section id="features" className="py-20 px-4 sm:px-6 max-w-7xl mx-auto">
-        <div className="text-center max-w-3xl mx-auto mb-14">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-700 text-xs font-bold rounded-full mb-3 border border-blue-200/80">
-            <ShieldCheck className="h-3.5 w-3.5" />
-            <span>Core Health Pillars</span>
-          </span>
-          <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
-            Important Features Designed for Real Clinical Impact
-          </h2>
-          <p className="text-sm sm:text-base text-slate-500 font-medium mt-2">
-            No endless fluff. <BrandName appName={branding.appName} /> combines real-time continuous biological telemetry with verified medical consultations to help you take control of your health.
-          </p>
-        </div>
-
-        {/* 6 Clean Feature Cards */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-          {/* Card 1: Cellular Balance */}
-          <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-soft hover:shadow-card hover:-translate-y-1 transition-all flex flex-col justify-between">
-            <div className="space-y-4">
-              <div className="h-12 w-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center font-black">
-                <Activity className="h-6 w-6" />
-              </div>
-              <h3 className="text-lg font-bold text-slate-900">Two-Force Cellular Balance</h3>
-              <p className="text-xs text-slate-600 leading-relaxed font-medium">
-                Our dynamic proprietary algorithm balances biological damage (glucose spikes, chronic stress, non-stick toxins) against cellular repair forces (autophagy fasting, cardio, restorative breathwork).
-              </p>
-            </div>
-            <div className="pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-blue-600">
-              <span>Real-Time Daily Scoring</span>
-              <span className="text-[10px] text-slate-400">Patented Algorithm</span>
-            </div>
-          </div>
-
-          {/* Card 2: Abbott FreeStyle Libre CGM */}
-          <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-soft hover:shadow-card hover:-translate-y-1 transition-all flex flex-col justify-between">
-            <div className="space-y-4">
-              <div className="h-12 w-12 rounded-2xl bg-teal-50 text-teal-600 flex items-center justify-center font-black">
-                <CheckCircle2 className="h-6 w-6" />
-              </div>
-              <h3 className="text-lg font-bold text-slate-900">Abbott FreeStyle Libre CGM</h3>
-              <p className="text-xs text-slate-600 leading-relaxed font-medium">
-                Seamless continuous glucose tracking. Upload Abbott Libre CSV or PDF exports to instantly map food triggers, calculate Time In Range (TIR 70–140 mg/dL), and neutralize hidden glycemic surges.
-              </p>
-            </div>
-            <div className="pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-teal-600">
-              <span>Safe vs Dangerous Spikes</span>
-              <span className="text-[10px] text-slate-400">FreeStyle Libre Sync</span>
-            </div>
-          </div>
-
-          {/* Card 3: Certified Specialist Doctors */}
-          <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-soft hover:shadow-card hover:-translate-y-1 transition-all flex flex-col justify-between">
-            <div className="space-y-4">
-              <div className="h-12 w-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-black">
-                <Stethoscope className="h-6 w-6" />
-              </div>
-              <h3 className="text-lg font-bold text-slate-900">Specialist Video Consultations</h3>
-              <p className="text-xs text-slate-600 leading-relaxed font-medium">
-                Book confidential 1-on-1 video consultations with verified Radiation Oncologists, Lifestyle Medicine Specialists, and Metabolic Doctors directly through the mobile app.
-              </p>
-            </div>
-            <div className="pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-emerald-600">
-              <span>Certified Doctors (Dr. Muthiah & more)</span>
-              <span className="text-[10px] text-slate-400">HD Video Appointments</span>
-            </div>
-          </div>
-
-          {/* Card 4: Home Diagnostic Blood Tests */}
-          <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-soft hover:shadow-card hover:-translate-y-1 transition-all flex flex-col justify-between">
-            <div className="space-y-4">
-              <div className="h-12 w-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center font-black">
-                <TestTube className="h-6 w-6" />
-              </div>
-              <h3 className="text-lg font-bold text-slate-900">At-Home Diagnostic Lab Tests</h3>
-              <p className="text-xs text-slate-600 leading-relaxed font-medium">
-                Order comprehensive blood biomarker testing with certified phlebotomists collecting samples at your doorstep. Fast digital delivery for HbA1c, lipid profiles, hs-CRP, and vitamins.
-              </p>
-            </div>
-            <div className="pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-purple-600">
-              <span>Home Sample Collection</span>
-              <span className="text-[10px] text-slate-400">NABL Accredited Labs</span>
-            </div>
-          </div>
-
-          {/* Card 5: Vagus Nerve Breathwork */}
-          <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-soft hover:shadow-card hover:-translate-y-1 transition-all flex flex-col justify-between">
-            <div className="space-y-4">
-              <div className="h-12 w-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-black">
-                <Wind className="h-6 w-6" />
-              </div>
-              <h3 className="text-lg font-bold text-slate-900">Vagus Breathwork Studio</h3>
-              <p className="text-xs text-slate-600 leading-relaxed font-medium">
-                Guided visual pacing for Box Breathing (4-4-4-4), 4-7-8 Deep Calm, and Coherent 5.5s resonance. Stimulates the parasympathetic nervous system to rapidly lower stress-induced blood sugar.
-              </p>
-            </div>
-            <div className="pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-indigo-600">
-              <span>Audio Pacing & Haptics</span>
-              <span className="text-[10px] text-slate-400">Immediate Stress Relief</span>
-            </div>
-          </div>
-
-          {/* Card 6: Clean Living Store in INR */}
-          <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-soft hover:shadow-card hover:-translate-y-1 transition-all flex flex-col justify-between">
-            <div className="space-y-4">
-              <div className="h-12 w-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center font-black">
-                <ShoppingCart className="h-6 w-6" />
-              </div>
-              <h3 className="text-lg font-bold text-slate-900">Curated Clean Living Store</h3>
-              <p className="text-xs text-slate-600 leading-relaxed font-medium">
-                Authentic, lab-tested health hardware in Indian Rupees (₹ INR): genuine Abbott CGM sensors, non-stick risk-free cast-iron and ceramic cookware, HEPA air purifiers, and cancer scalp cooling caps.
-              </p>
-            </div>
-            <div className="pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-amber-600">
-              <span>Standard ₹ INR Pricing</span>
-              <span className="text-[10px] text-slate-400">Zero Toxic Coatings</span>
-            </div>
-          </div>
-        </div>
+      {/* Interactive CGM Real-Time Telemetry Simulator */}
+      <section id="cgm-simulator" className="py-10 px-4 sm:px-6 max-w-7xl mx-auto">
+        <InteractiveCGMSimulator />
       </section>
+
+      {/* Modern Asymmetric Bento Grid of Core Longevity Pillars */}
+      <FeatureBentoGrid appName={branding.appName} />
 
       {/* Specialist Doctors Showcase Section */}
       <section id="specialists" className="py-20 px-4 sm:px-6 bg-slate-50 border-y border-slate-200/70">
@@ -1230,118 +742,9 @@ export default function App() {
         </div>
       </section>
 
-      {/* Interactive Vagus Nerve Breathwork Experience Section */}
-      <section id="breathwork" className="py-20 px-4 sm:px-6 bg-slate-900 text-white relative overflow-hidden">
-        {/* Glow ambient background */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] bg-blue-500/10 rounded-full filter blur-[100px] pointer-events-none"></div>
-
-        <div className="max-w-5xl mx-auto relative z-10 text-center">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-500/20 text-indigo-300 text-xs font-bold rounded-full mb-3 border border-indigo-500/30">
-            <Wind className="h-3.5 w-3.5" />
-            <span>Interactive Web Experience</span>
-          </span>
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
-            Vagus Nerve Stimulating Breathwork
-          </h2>
-          <p className="text-sm sm:text-base text-slate-400 font-medium max-w-2xl mx-auto mt-2">
-            Experience our in-app breathing pacer right now. Stimulate the vagus nerve, activate the parasympathetic nervous system, and blunt glucose-elevating cortisol spikes in minutes.
-          </p>
-
-          {/* Breath Pattern Selector */}
-          <div className="inline-flex p-1 bg-slate-800/80 rounded-2xl border border-slate-700/80 mt-8 mb-10 max-w-md mx-auto">
-            <button
-              type="button"
-              onClick={() => { setBreathType('box'); setBreathPhase('inhale'); setBreathTimer(4); }}
-              className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
-                breathType === 'box' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              Box (4-4-4-4)
-            </button>
-            <button
-              type="button"
-              onClick={() => { setBreathType('relax'); setBreathPhase('inhale'); setBreathTimer(4); }}
-              className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
-                breathType === 'relax' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              4-7-8 Deep Calm
-            </button>
-            <button
-              type="button"
-              onClick={() => { setBreathType('coherent'); setBreathPhase('inhale'); setBreathTimer(5.5); }}
-              className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
-                breathType === 'coherent' ? 'bg-teal-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              Coherent (5.5s)
-            </button>
-          </div>
-
-          {/* Animated Breathwork Circle */}
-          <div className="flex flex-col items-center justify-center my-6">
-            <div className="relative flex items-center justify-center w-64 h-64 sm:w-72 sm:h-72">
-              {/* Pulsing Ripple rings */}
-              <div
-                className={`absolute inset-0 rounded-full border-2 border-blue-500/30 transition-all duration-1000 ${
-                  isBreathingActive && breathPhase === 'inhale' ? 'scale-110 opacity-70' : 'scale-90 opacity-20'
-                }`}
-              ></div>
-              <div
-                className={`absolute inset-4 rounded-full border border-teal-500/20 transition-all duration-1000 ${
-                  isBreathingActive && (breathPhase === 'hold' || breathPhase === 'hold2') ? 'scale-105 opacity-80' : 'scale-95 opacity-30'
-                }`}
-              ></div>
-
-              {/* Main Core Circle */}
-              <div
-                className={`w-48 h-48 sm:w-56 sm:h-56 rounded-full flex flex-col items-center justify-center p-6 transition-all duration-1000 shadow-2xl ${
-                  breathPhase === 'inhale'
-                    ? 'bg-gradient-to-tr from-blue-600 to-teal-500 scale-105 shadow-glow-blue'
-                    : breathPhase === 'hold' || breathPhase === 'hold2'
-                    ? 'bg-gradient-to-tr from-indigo-600 to-purple-600 scale-100 shadow-glow-emerald'
-                    : 'bg-gradient-to-tr from-slate-800 to-slate-700 scale-90'
-                }`}
-              >
-                <span className="text-[10px] font-black uppercase tracking-widest text-white/80">
-                  {!isBreathingActive ? 'Ready' : breathPhase === 'inhale' ? 'Breathe In' : breathPhase === 'hold' || breathPhase === 'hold2' ? 'Hold Gently' : 'Release Slowly'}
-                </span>
-                <span className="text-4xl sm:text-5xl font-black text-white mt-1 tabular-nums">
-                  {!isBreathingActive ? '4.0s' : `${breathTimer}s`}
-                </span>
-                <span className="text-[9px] font-bold text-white/70 mt-1 uppercase tracking-wider">
-                  {breathType.toUpperCase()} MODE
-                </span>
-              </div>
-            </div>
-
-            {/* Controls */}
-            <div className="flex items-center gap-3 mt-6">
-              <button
-                type="button"
-                onClick={() => setIsBreathingActive(!isBreathingActive)}
-                className={`px-6 py-3 rounded-2xl font-extrabold text-xs sm:text-sm transition-all shadow-lg cursor-pointer flex items-center gap-2 ${
-                  isBreathingActive
-                    ? 'bg-rose-600 hover:bg-rose-700 text-white'
-                    : 'bg-blue-600 hover:bg-blue-500 text-white'
-                }`}
-              >
-                {isBreathingActive ? 'Pause Breathwork' : 'Start Breath Session'}
-              </button>
-              <button
-                type="button"
-                onClick={() => { setIsBreathingActive(false); setBreathPhase('inhale'); setBreathTimer(4); }}
-                className="p-3 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-2xl text-xs font-bold transition-all cursor-pointer border border-slate-700"
-                title="Reset timer"
-              >
-                <RotateCcw className="h-4 w-4" />
-              </button>
-            </div>
-            <p className="text-xs text-slate-400 mt-4 max-w-md">
-              Synchronized with auditory cues, vibration feedback, and daily reminders in the <BrandName appName={branding.appName} supClassName="text-[0.6em] font-extrabold text-blue-400 ml-0.5 -top-1 relative" /> mobile app.
-            </p>
-          </div>
-        </div>
+      {/* Interactive Vagus Nerve Breathwork Studio */}
+      <section id="breathwork" className="py-16 px-4 sm:px-6 max-w-7xl mx-auto">
+        <InteractiveBreathworkPacer />
       </section>
 
       {/* Chronic Disease Reversal & Care Modules Interactive Showcase */}
@@ -2021,9 +1424,14 @@ export default function App() {
         </section>
       )}
 
+      {/* Clinical Biomarker Transformation Timeline Showcase */}
+      <section className="py-12 px-4 sm:px-6 max-w-7xl mx-auto">
+        <BiomarkerTransformationShowcase />
+      </section>
+
       {/* Frequently Asked Questions Section */}
       <section id="faqs" className="bg-white py-20 px-4 sm:px-6 max-w-4xl mx-auto">
-        <div className="text-center max-w-2xl mx-auto mb-14">
+        <div className="text-center max-w-2xl mx-auto mb-10">
           <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-700 text-xs font-bold rounded-full mb-3 border border-blue-200/80">
             <CheckCircle2 className="h-3.5 w-3.5" />
             <span>Questions & Answers</span>
@@ -2034,28 +1442,112 @@ export default function App() {
           </p>
         </div>
 
-        <div className="space-y-3">
-          {faqsData.map((faq, idx) => (
-            <div
-              key={idx}
-              className="border border-slate-200/80 rounded-2xl overflow-hidden bg-slate-50/60 transition-colors"
-            >
+        {/* FAQ Instant Search and Category Filter Toolbar */}
+        <div className="mb-8 space-y-4">
+          <div className="relative max-w-lg mx-auto">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <input
+              type="text"
+              value={faqSearchQuery}
+              onChange={(e) => setFaqSearchQuery(e.target.value)}
+              placeholder="Search questions by keyword (CGM, fasting, doctor, sensor)..."
+              className="w-full pl-11 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs sm:text-sm font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all"
+            />
+            {faqSearchQuery && (
               <button
                 type="button"
-                onClick={() => setOpenFaqIndex(openFaqIndex === idx ? null : idx)}
-                className="w-full p-5 text-left flex justify-between items-center text-sm font-bold text-slate-900 hover:text-blue-600 transition-colors cursor-pointer"
+                onClick={() => setFaqSearchQuery('')}
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
               >
-                <span>{faq.question}</span>
-                <ChevronDown className={`h-4 w-4 shrink-0 text-slate-400 transition-transform ${openFaqIndex === idx ? 'rotate-180 text-blue-600' : ''}`} />
+                <X className="h-3.5 w-3.5" />
               </button>
-              {openFaqIndex === idx && (
-                <div className="px-5 pb-5 pt-1 text-xs text-slate-600 leading-relaxed font-medium border-t border-slate-200/60 bg-white">
-                  {faq.answer}
-                </div>
-              )}
-            </div>
-          ))}
+            )}
+          </div>
+
+          {/* Category Filter Pills */}
+          <div className="flex items-center justify-center gap-1.5 flex-wrap">
+            {[
+              { id: 'all', label: 'All Questions' },
+              { id: 'cgm', label: 'CGM & Sensors' },
+              { id: 'consult', label: 'Doctor Consults' },
+              { id: 'diet', label: 'Fasting & Diet' },
+              { id: 'plans', label: 'Pricing & Plans' }
+            ].map(cat => (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => setActiveFaqCategory(cat.id as any)}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  activeFaqCategory === cat.id
+                    ? 'bg-blue-600 text-white shadow-sm shadow-blue-600/30'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200/80 hover:text-slate-900'
+                }`}
+              >
+                {cat.label}
+              </button>
+            ))}
+          </div>
         </div>
+
+        {(() => {
+          const filtered = faqsData.filter((faq) => {
+            const query = faqSearchQuery.trim().toLowerCase();
+            const matchesQuery = !query ||
+              (faq.question || '').toLowerCase().includes(query) ||
+              (faq.answer || '').toLowerCase().includes(query);
+            if (!matchesQuery) return false;
+            if (activeFaqCategory === 'all') return true;
+            const text = ((faq.question || '') + ' ' + (faq.answer || '')).toLowerCase();
+            if (activeFaqCategory === 'cgm') return text.includes('cgm') || text.includes('sensor') || text.includes('freestyle') || text.includes('glucose');
+            if (activeFaqCategory === 'consult') return text.includes('doctor') || text.includes('consult') || text.includes('specialist') || text.includes('appointment');
+            if (activeFaqCategory === 'diet') return text.includes('diet') || text.includes('food') || text.includes('fasting') || text.includes('meal');
+            if (activeFaqCategory === 'plans') return text.includes('subscription') || text.includes('cost') || text.includes('free') || text.includes('price') || text.includes('plan');
+            return true;
+          });
+
+          if (filtered.length === 0) {
+            return (
+              <div className="text-center py-10 px-4 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                <p className="text-xs font-bold text-slate-500">No questions found matching your search.</p>
+                <button
+                  type="button"
+                  onClick={() => { setFaqSearchQuery(''); setActiveFaqCategory('all'); }}
+                  className="mt-2 text-xs text-blue-600 font-bold hover:underline cursor-pointer"
+                >
+                  Clear search and filters
+                </button>
+              </div>
+            );
+          }
+
+          return (
+            <div className="space-y-3">
+              <div className="text-right text-[11px] font-bold text-slate-400">
+                Showing {filtered.length} of {faqsData.length} questions
+              </div>
+              {filtered.map((faq, idx) => (
+                <div
+                  key={idx}
+                  className="border border-slate-200/80 rounded-2xl overflow-hidden bg-slate-50/60 hover:bg-slate-50 transition-colors"
+                >
+                  <button
+                    type="button"
+                    onClick={() => setOpenFaqIndex(openFaqIndex === idx ? null : idx)}
+                    className="w-full p-5 text-left flex justify-between items-center text-sm font-bold text-slate-900 hover:text-blue-600 transition-colors cursor-pointer"
+                  >
+                    <span>{faq.question}</span>
+                    <ChevronDown className={`h-4 w-4 shrink-0 text-slate-400 transition-transform ${openFaqIndex === idx ? 'rotate-180 text-blue-600' : ''}`} />
+                  </button>
+                  {openFaqIndex === idx && (
+                    <div className="px-5 pb-5 pt-1 text-xs text-slate-600 leading-relaxed font-medium border-t border-slate-200/60 bg-white">
+                      {faq.answer}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          );
+        })()}
       </section>
 
       {/* Contact Support Section */}
@@ -2149,6 +1641,9 @@ export default function App() {
           </form>
         </div>
       </section>
+
+      {/* Desktop QR Code Install Modal */}
+      <QRCodeModal isOpen={showQRModal} onClose={() => setShowQRModal(false)} appName={branding.appName} />
 
       {/* Footer Legal & Trademark */}
       <Footer onTabChange={setActiveTab} branding={branding} hasFounders={foundersData.length > 0} />

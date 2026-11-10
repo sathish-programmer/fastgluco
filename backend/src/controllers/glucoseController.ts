@@ -29,12 +29,15 @@ export class GlucoseController {
 
       await reading.save();
 
-      // Trigger re-analysis of all logs to check if the new manual reading fills gaps
-      try {
-        await GlucoseService.analyzeAllUserFoodLogs(userId!);
-      } catch (err) {
-        console.error('Manual reading synchronization warning:', err);
-      }
+      // Trigger asynchronous re-analysis only for food logs around the logged reading window (+/- 4 hrs)
+      // This eliminates the severe O(N) blocking loop and delivers sub-100ms response to the user.
+      setImmediate(async () => {
+        try {
+          await GlucoseService.analyzeNearbyFoodLogs(userId!, logTime);
+        } catch (err) {
+          console.warn('[Background] Nearby food log analysis warning:', err);
+        }
+      });
 
       return res.status(201).json({
         message: 'Glucose reading logged successfully.',

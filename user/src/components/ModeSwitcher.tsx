@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth, type FocusModeType } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -261,146 +262,152 @@ This module is intended to support your personal daily lifestyle habits, nutriti
         </div>
       </div>
 
-      {/* 9-Focus Selection Modal */}
-      <AnimatePresence>
-        {isOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0, y: 10 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0, y: 10 }}
-              className="bg-white dark:bg-slate-900 rounded-3xl p-6 max-w-2xl w-full border border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col max-h-[90vh]"
-            >
-              {/* Header */}
-              <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100 dark:border-slate-800">
-                <div>
-                  <h3 className="text-base font-black text-slate-900 dark:text-slate-100">
-                    {t('modes.selectHealthFocus', 'Select Your Health Focus')}
-                  </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                    {t('modes.selectHealthFocusDesc', 'Customize your dashboard, habit trackers, and AI assistant.')}
-                  </p>
+      {/* 9-Focus Selection Modal (Portalled directly into document.body to avoid parent transforms) */}
+      {typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          {isOpen && (
+            <div className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0, y: 10 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.95, opacity: 0, y: 10 }}
+                className="bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-6 max-w-2xl w-full border border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col max-h-[85vh] my-auto"
+              >
+                {/* Header */}
+                <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100 dark:border-slate-800 shrink-0">
+                  <div>
+                    <h3 className="text-base font-black text-slate-900 dark:text-slate-100">
+                      {t('modes.selectHealthFocus', 'Select Your Health Focus')}
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                      {t('modes.selectHealthFocusDesc', 'Customize your dashboard, habit trackers, and AI assistant.')}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsOpen(false)}
+                    className="h-8 w-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 flex items-center justify-center transition-colors cursor-pointer"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setIsOpen(false)}
-                  className="h-8 w-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 flex items-center justify-center transition-colors cursor-pointer"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
 
-              {/* 9-Focus Selection List / Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 overflow-y-auto max-h-[68vh] pr-1 py-1">
-                {modesConfig.map((mode) => {
-                  const Icon = mode.icon;
-                  const isSelected = mode.key === activeMode;
-                  return (
-                    <button
-                      key={mode.key}
-                      type="button"
-                      onClick={() => handleSelectMode(mode.key)}
-                      className={`p-3.5 rounded-2xl border text-left flex items-center sm:items-start sm:flex-col justify-between sm:justify-start gap-3 transition-all cursor-pointer relative overflow-hidden group ${
-                        isSelected
-                          ? 'border-blue-600 bg-blue-50/60 dark:bg-blue-950/40 shadow-sm ring-1 ring-blue-600/30'
-                          : 'border-slate-200 dark:border-slate-800 hover:border-blue-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900'
-                      }`}
-                    >
-                      <div className="flex items-center sm:items-start gap-3 min-w-0 flex-1">
-                        <div
-                          className="h-10 w-10 rounded-2xl flex items-center justify-center shrink-0 border shadow-xs"
-                          style={{
-                            backgroundColor: `${mode.accentColor}18`,
-                            color: mode.accentColor,
-                            borderColor: `${mode.accentColor}30`
-                          }}
-                        >
-                          <Icon className="h-5 w-5" />
+                {/* 9-Focus Selection List / Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 overflow-y-auto pr-1 py-1">
+                  {modesConfig.map((mode) => {
+                    const Icon = mode.icon;
+                    const isSelected = mode.key === activeMode;
+                    return (
+                      <button
+                        key={mode.key}
+                        type="button"
+                        onClick={() => handleSelectMode(mode.key)}
+                        className={`p-3.5 rounded-2xl border text-left flex items-center sm:items-start sm:flex-col justify-between sm:justify-start gap-3 transition-all cursor-pointer relative overflow-hidden group ${
+                          isSelected
+                            ? 'border-blue-600 bg-blue-50/60 dark:bg-blue-950/40 shadow-sm ring-1 ring-blue-600/30'
+                            : 'border-slate-200 dark:border-slate-800 hover:border-blue-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900'
+                        }`}
+                      >
+                        <div className="flex items-center sm:items-start gap-3 min-w-0 flex-1">
+                          <div
+                            className="h-10 w-10 rounded-2xl flex items-center justify-center shrink-0 border shadow-xs"
+                            style={{
+                              backgroundColor: `${mode.accentColor}18`,
+                              color: mode.accentColor,
+                              borderColor: `${mode.accentColor}30`
+                            }}
+                          >
+                            <Icon className="h-5 w-5" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <h4 className="text-xs font-black text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors leading-tight">
+                              {mode.title}
+                            </h4>
+                            <p className="text-[10.5px] text-slate-500 dark:text-slate-400 mt-1 leading-snug line-clamp-2">
+                              {mode.description}
+                            </p>
+                          </div>
                         </div>
-                        <div className="min-w-0 flex-1">
-                          <h4 className="text-xs font-black text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors leading-tight">
-                            {mode.title}
-                          </h4>
-                          <p className="text-[10.5px] text-slate-500 dark:text-slate-400 mt-1 leading-snug line-clamp-2">
-                            {mode.description}
-                          </p>
-                        </div>
-                      </div>
 
-                      {isSelected ? (
-                        <span className="h-6 w-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-[11px] shrink-0 sm:absolute sm:top-2.5 sm:right-2.5 shadow-xs">
-                          <Check className="h-3.5 w-3.5 stroke-[3]" />
-                        </span>
-                      ) : (
-                        <div className="h-6 w-6 rounded-full border border-slate-200 dark:border-slate-700 flex items-center justify-center shrink-0 sm:hidden">
-                          <ChevronRight className="h-3.5 w-3.5 text-slate-400" />
-                        </div>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+                        {isSelected ? (
+                          <span className="h-6 w-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-[11px] shrink-0 sm:absolute sm:top-2.5 sm:right-2.5 shadow-xs">
+                            <Check className="h-3.5 w-3.5 stroke-[3]" />
+                          </span>
+                        ) : (
+                          <div className="h-6 w-6 rounded-full border border-slate-200 dark:border-slate-700 flex items-center justify-center shrink-0 sm:hidden">
+                            <ChevronRight className="h-3.5 w-3.5 text-slate-400" />
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
 
       {/* Disclaimer Acceptance Modal */}
-      <AnimatePresence>
-        {showDisclaimer && pendingMode && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0, y: 10 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0, y: 10 }}
-              className="bg-white dark:bg-slate-900 rounded-3xl p-6 max-w-lg w-full border border-slate-100 dark:border-slate-800 shadow-2xl flex flex-col max-h-[85vh]"
-            >
-              <div className="flex items-center gap-2.5 mb-3">
-                <div className="h-9 w-9 rounded-xl bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-900/40 flex items-center justify-center shrink-0">
-                  <ShieldAlert className="h-5 w-5" />
+      {typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          {showDisclaimer && pendingMode && (
+            <div className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0, y: 10 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.95, opacity: 0, y: 10 }}
+                className="bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-6 max-w-lg w-full border border-slate-100 dark:border-slate-800 shadow-2xl flex flex-col max-h-[85vh] my-auto"
+              >
+                <div className="flex items-center gap-2.5 mb-3 shrink-0">
+                  <div className="h-9 w-9 rounded-xl bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-900/40 flex items-center justify-center shrink-0">
+                    <ShieldAlert className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-black text-slate-900 dark:text-slate-100 leading-tight">
+                      {t('disclaimer.medicalDisclaimer', 'Medical Disclaimer')}
+                    </h3>
+                    <span className="text-[10.5px] font-bold text-slate-400 dark:text-slate-500">
+                      {modesConfig.find(m => m.key === pendingMode)?.title}
+                    </span>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-base font-black text-slate-900 dark:text-slate-100 leading-tight">
-                    {t('disclaimer.medicalDisclaimer', 'Medical Disclaimer')}
-                  </h3>
-                  <span className="text-[10.5px] font-bold text-slate-400 dark:text-slate-500">
-                    {modesConfig.find(m => m.key === pendingMode)?.title}
-                  </span>
+
+                <div className="flex-1 overflow-y-auto my-3 bg-slate-50 dark:bg-slate-800/80 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 text-xs text-slate-700 dark:text-slate-300 leading-relaxed max-h-72">
+                  {getDynamicDisclaimer(pendingMode).includes('<') ? (
+                    <div
+                      className="space-y-2 [&_p]:mb-2 [&_strong]:font-bold [&_ul]:list-disc [&_ul]:pl-4 [&_li]:mb-1"
+                      dangerouslySetInnerHTML={{ __html: getDynamicDisclaimer(pendingMode) }}
+                    />
+                  ) : (
+                    <div className="whitespace-pre-wrap">{getDynamicDisclaimer(pendingMode)}</div>
+                  )}
                 </div>
-              </div>
 
-              <div className="flex-1 overflow-y-auto my-3 bg-slate-50 dark:bg-slate-800/80 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 text-xs text-slate-700 dark:text-slate-300 leading-relaxed max-h-72">
-                {getDynamicDisclaimer(pendingMode).includes('<') ? (
-                  <div
-                    className="space-y-2 [&_p]:mb-2 [&_strong]:font-bold [&_ul]:list-disc [&_ul]:pl-4 [&_li]:mb-1"
-                    dangerouslySetInnerHTML={{ __html: getDynamicDisclaimer(pendingMode) }}
-                  />
-                ) : (
-                  <div className="whitespace-pre-wrap">{getDynamicDisclaimer(pendingMode)}</div>
-                )}
-              </div>
-
-              <div className="flex space-x-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => { setShowDisclaimer(false); setPendingMode(null); }}
-                  className="flex-1 py-3 px-4 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-bold text-xs hover:bg-slate-50 dark:hover:bg-slate-800 transition-all cursor-pointer"
-                >
-                  {t('common.cancel', 'Cancel')}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleConfirmSwitch}
-                  disabled={isSaving}
-                  className="flex-1 py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md shadow-blue-600/25 transition-all cursor-pointer flex items-center justify-center gap-1.5"
-                >
-                  {isSaving ? t('common.saving', 'Switching...') : t('disclaimer.understandAndAccept', 'I Understand & Accept')}
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+                <div className="flex space-x-3 pt-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => { setShowDisclaimer(false); setPendingMode(null); }}
+                    className="flex-1 py-3 px-4 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-bold text-xs hover:bg-slate-50 dark:hover:bg-slate-800 transition-all cursor-pointer"
+                  >
+                    {t('common.cancel', 'Cancel')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleConfirmSwitch}
+                    disabled={isSaving}
+                    className="flex-1 py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md shadow-blue-600/25 transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                  >
+                    {isSaving ? t('common.saving', 'Switching...') : t('disclaimer.understandAndAccept', 'I Understand & Accept')}
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </>
   );
 };

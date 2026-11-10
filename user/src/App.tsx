@@ -1,27 +1,41 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, Suspense, lazy } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider, useToast } from './context/ToastContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { LanguageProvider, useLanguage } from './context/LanguageContext';
 import { ConsultationProvider } from './context/ConsultationContext';
 import { Login } from './pages/Login';
-import { RecommendedFoodsScreen } from './screens/RecommendedFoodsScreen';
 import { Register } from './pages/Register';
 import { NonCancerDashboard } from './pages/NonCancerDashboard';
 import { Dashboard } from './pages/Dashboard';
-import { Reports } from './pages/Reports';
-import { FoodLog } from './pages/FoodLog';
-import { Analysis } from './pages/Analysis';
-import { Profile } from './pages/Profile';
-import { Subscription } from './pages/Subscription';
-import { Legal } from './pages/Legal';
-import { Educational } from './pages/Educational';
-import { Coaching } from './pages/Coaching';
-import { BookAppointmentScreen } from './screens/Appointment/BookAppointmentScreen';
-import { ShopOrdersHistoryScreen } from './screens/Shop/ShopOrdersHistoryScreen';
-import { ShopScreen } from './screens/Shop/ShopScreen';
-import { ProductRatingScreen } from './screens/Shop/ProductRatingScreen';
-import { HelpSupportModal } from './components/HelpSupportModal';
+import { triggerHaptic } from './utils/hapticHelper';
+
+// Code-split heavy screens via React.lazy to drastically reduce initial bundle size & memory footprint
+const Reports = lazy(() => import('./pages/Reports').then(m => ({ default: m.Reports })));
+const FoodLog = lazy(() => import('./pages/FoodLog').then(m => ({ default: m.FoodLog })));
+const RecommendedFoodsScreen = lazy(() => import('./screens/RecommendedFoodsScreen').then(m => ({ default: m.RecommendedFoodsScreen })));
+const Analysis = lazy(() => import('./pages/Analysis').then(m => ({ default: m.Analysis })));
+const Profile = lazy(() => import('./pages/Profile').then(m => ({ default: m.Profile })));
+const Subscription = lazy(() => import('./pages/Subscription').then(m => ({ default: m.Subscription })));
+const Legal = lazy(() => import('./pages/Legal').then(m => ({ default: m.Legal })));
+const Educational = lazy(() => import('./pages/Educational').then(m => ({ default: m.Educational })));
+const Coaching = lazy(() => import('./pages/Coaching').then(m => ({ default: m.Coaching })));
+const BookAppointmentScreen = lazy(() => import('./screens/Appointment/BookAppointmentScreen').then(m => ({ default: m.BookAppointmentScreen })));
+const ShopOrdersHistoryScreen = lazy(() => import('./screens/Shop/ShopOrdersHistoryScreen').then(m => ({ default: m.ShopOrdersHistoryScreen })));
+const ShopScreen = lazy(() => import('./screens/Shop/ShopScreen').then(m => ({ default: m.ShopScreen })));
+const ProductRatingScreen = lazy(() => import('./screens/Shop/ProductRatingScreen').then(m => ({ default: m.ProductRatingScreen })));
+const HelpSupportModal = lazy(() => import('./components/HelpSupportModal').then(m => ({ default: m.HelpSupportModal })));
+
+const ScreenSuspenseFallback: React.FC = () => (
+  <div className="p-4 space-y-4 max-w-lg mx-auto w-full animate-pulse">
+    <div className="h-24 bg-slate-100 dark:bg-slate-800 rounded-3xl w-full" />
+    <div className="grid grid-cols-2 gap-3">
+      <div className="h-28 bg-slate-100 dark:bg-slate-800 rounded-2xl" />
+      <div className="h-28 bg-slate-100 dark:bg-slate-800 rounded-2xl" />
+    </div>
+    <div className="h-40 bg-slate-100 dark:bg-slate-800 rounded-3xl w-full" />
+  </div>
+);
 import {
   Home,
   FileText,
@@ -138,6 +152,7 @@ const MainAppContent: React.FC = () => {
   };
 
   const setActiveTab = (tab: string | ((prev: string) => string), specificOrderId?: string | null) => {
+    triggerHaptic('selection');
     const nextTab = typeof tab === 'function' ? tab(activeTab) : tab;
     _setActiveTab(nextTab);
     if (nextTab === 'Home') {
@@ -1159,63 +1174,65 @@ const MainAppContent: React.FC = () => {
 
       {/* Main Tab Screen Content Area */}
       <main className="flex-1 overflow-y-auto w-full">
-        {activeTab === 'Home' && (
-          (activeMode === 'TREATMENT')
-            ? (showCancerCGMDashboard 
-                ? <Dashboard onNavigateToTab={setActiveTab} onBackToTugOfWar={() => setShowCancerCGMDashboard(false)} />
-                : <NonCancerDashboard onNavigateToTab={setActiveTab} onGoToCGMDashboard={() => setShowCancerCGMDashboard(true)} />
-              )
-            : <NonCancerDashboard onNavigateToTab={setActiveTab} />
-        )}
-        {activeTab === 'Reports' && <Reports features={planFeatures} />}
-        {activeTab === 'Food Log' && <FoodLog features={planFeatures} onNavigateToTab={setActiveTab} />}
-        {activeTab === 'Recommended Foods' && <RecommendedFoodsScreen onBack={() => setActiveTab('Food Log')} />}
-        {activeTab === 'Analysis' && <Analysis features={planFeatures} />}
-        {activeTab === 'Profile' && <Profile onNavigateToTab={setActiveTab} />}
-        {activeTab === 'Subscription' && (
-          <Subscription 
-            onBack={() => setActiveTab('Home')} 
-            onSuccess={() => {
-              checkSubscription();
+        <Suspense fallback={<ScreenSuspenseFallback />}>
+          {activeTab === 'Home' && (
+            (activeMode === 'TREATMENT')
+              ? (showCancerCGMDashboard 
+                  ? <Dashboard onNavigateToTab={setActiveTab} onBackToTugOfWar={() => setShowCancerCGMDashboard(false)} />
+                  : <NonCancerDashboard onNavigateToTab={setActiveTab} onGoToCGMDashboard={() => setShowCancerCGMDashboard(true)} />
+                )
+              : <NonCancerDashboard onNavigateToTab={setActiveTab} />
+          )}
+          {activeTab === 'Reports' && <Reports features={planFeatures} />}
+          {activeTab === 'Food Log' && <FoodLog features={planFeatures} onNavigateToTab={setActiveTab} />}
+          {activeTab === 'Recommended Foods' && <RecommendedFoodsScreen onBack={() => setActiveTab('Food Log')} />}
+          {activeTab === 'Analysis' && <Analysis features={planFeatures} />}
+          {activeTab === 'Profile' && <Profile onNavigateToTab={setActiveTab} />}
+          {activeTab === 'Subscription' && (
+            <Subscription 
+              onBack={() => setActiveTab('Home')} 
+              onSuccess={() => {
+                checkSubscription();
+                setActiveTab('Home');
+              }}
+              isBlocking={false}
+            />
+          )}
+          {activeTab === 'Educational' && <Educational />}
+          {activeTab === 'Coaching' && <Coaching features={planFeatures} />}
+          {activeTab === 'Book Appointment' && <BookAppointmentScreen />}
+          {activeTab === 'Shop' && (
+            <ShopScreen 
+              onBack={() => setActiveTab('Home')} 
+              onOpenOrders={() => setActiveTab('Shop Orders')} 
+            />
+          )}
+          {activeTab === 'Shop Orders' && (
+            <ShopOrdersHistoryScreen 
+              initialOrderId={targetOrderId || undefined}
+              onBack={() => {
+                setTargetOrderId(null);
+                setActiveTab('Shop');
+              }}
+              onRateOrder={(orderId) => {
+                setRateOrderId(orderId);
+                setActiveTab('RateProduct');
+              }} 
+            />
+          )}
+          {activeTab === 'RateProduct' && rateOrderId && (
+            <ProductRatingScreen orderId={rateOrderId} onBack={() => {
+              const url = new URL(window.location.href);
+              url.searchParams.delete('rateOrder');
+              window.history.replaceState({}, document.title, url.pathname + url.search);
+              setRateOrderId(null);
               setActiveTab('Home');
-            }}
-            isBlocking={false}
-          />
-        )}
-        {activeTab === 'Educational' && <Educational />}
-        {activeTab === 'Coaching' && <Coaching features={planFeatures} />}
-        {activeTab === 'Book Appointment' && <BookAppointmentScreen />}
-        {activeTab === 'Shop' && (
-          <ShopScreen 
-            onBack={() => setActiveTab('Home')} 
-            onOpenOrders={() => setActiveTab('Shop Orders')} 
-          />
-        )}
-        {activeTab === 'Shop Orders' && (
-          <ShopOrdersHistoryScreen 
-            initialOrderId={targetOrderId || undefined}
-            onBack={() => {
-              setTargetOrderId(null);
-              setActiveTab('Shop');
-            }}
-            onRateOrder={(orderId) => {
-              setRateOrderId(orderId);
-              setActiveTab('RateProduct');
-            }} 
-          />
-        )}
-        {activeTab === 'RateProduct' && rateOrderId && (
-          <ProductRatingScreen orderId={rateOrderId} onBack={() => {
-            const url = new URL(window.location.href);
-            url.searchParams.delete('rateOrder');
-            window.history.replaceState({}, document.title, url.pathname + url.search);
-            setRateOrderId(null);
-            setActiveTab('Home');
-          }} />
-        )}
-        {['Terms of Service', 'Privacy Policy', 'Data Deletion', 'Disclaimer', 'Refund Policy', 'Contact Us'].includes(activeTab) && (
-          <Legal type={activeTab as any} onBack={() => setActiveTab('Profile')} />
-        )}
+            }} />
+          )}
+          {['Terms of Service', 'Privacy Policy', 'Data Deletion', 'Disclaimer', 'Refund Policy', 'Contact Us'].includes(activeTab) && (
+            <Legal type={activeTab as any} onBack={() => setActiveTab('Profile')} />
+          )}
+        </Suspense>
       </main>
 
       <GlobalAICoachPopup />

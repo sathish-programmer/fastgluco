@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 
@@ -12,12 +12,10 @@ const getEmbedUrl = (url: string) => {
   return url;
 };
 import { AdminAuthProvider, useAdminAuth } from './context/AdminAuthContext';
-import { AdminShippingPincodeConfig } from './components/AdminShippingPincodeConfig';
 import {
   Users,
   LayoutDashboard,
   Utensils,
-  LogOut,
   ShieldAlert,
   Search,
   Plus,
@@ -25,8 +23,6 @@ import {
   Edit,
   Calendar,
   Send,
-  ChevronDown,
-  ChevronRight,
   Loader2,
   CheckCircle,
   Activity,
@@ -45,7 +41,6 @@ import {
   Bot,
   ShoppingCart,
   BarChart3,
-  Settings,
   Bell,
   Sparkles,
   History,
@@ -53,7 +48,6 @@ import {
   Stethoscope,
   RefreshCw,
   Package,
-  Key,
   Crown,
   Clock,
   AlertTriangle,
@@ -73,27 +67,31 @@ import {
   XAxis, YAxis, Tooltip, ResponsiveContainer,
   AreaChart, Area, LineChart, Line
 } from 'recharts';
-import { AdminShopProducts } from './components/AdminShopProducts';
-import { AdminCancerTests } from './components/AdminCancerTests';
-import { AdminIndianCancers } from './components/AdminIndianCancers';
-import { AdminExtDashboard } from './components/AdminExtDashboard';
-import { DoctorPortal } from './components/DoctorPortal';
-import { VendorPortal } from './components/VendorPortal';
-import { AdminVendorManagement } from './components/AdminVendorManagement';
-import { AdminAmazonVendor } from './components/AdminAmazonVendor';
-import { AdminShopReports } from './components/AdminShopReports';
-import { ConsultationAnalytics } from './components/ConsultationAnalytics';
-import { AdminLabs } from './components/AdminLabs';
-import { LabPortal } from './components/LabPortal';
-import { SupportPortal } from './components/SupportPortal';
-import { AdminDailyLoggingWorkflows } from './components/AdminDailyLoggingWorkflows';
-import { AdminAskMitoTopics } from './components/AdminAskMitoTopics';
-import { AdminUserFeedback } from './components/AdminUserFeedback';
-import { AdminAppHealth } from './components/AdminAppHealth';
-import { AdminOtpLogs } from './components/AdminOtpLogs';
-import { AdminSentEmails } from './components/AdminSentEmails';
-import { OrderManagementHub } from './components/orderManagement/OrderManagementHub';
-import { RevenueAnalyticsHub } from './components/revenueAnalytics/RevenueAnalyticsHub';
+
+// Code-split heavy admin sub-portals to dramatically speed up dashboard initialization
+const AdminShippingPincodeConfig = React.lazy(() => import('./components/AdminShippingPincodeConfig').then(m => ({ default: m.AdminShippingPincodeConfig })));
+const AdminShopProducts = React.lazy(() => import('./components/AdminShopProducts').then(m => ({ default: m.AdminShopProducts })));
+const AdminCancerTests = React.lazy(() => import('./components/AdminCancerTests').then(m => ({ default: m.AdminCancerTests })));
+const AdminIndianCancers = React.lazy(() => import('./components/AdminIndianCancers').then(m => ({ default: m.AdminIndianCancers })));
+const AdminExtDashboard = React.lazy(() => import('./components/AdminExtDashboard').then(m => ({ default: m.AdminExtDashboard })));
+const DoctorPortal = React.lazy(() => import('./components/DoctorPortal').then(m => ({ default: m.DoctorPortal })));
+const VendorPortal = React.lazy(() => import('./components/VendorPortal').then(m => ({ default: m.VendorPortal })));
+const AdminVendorManagement = React.lazy(() => import('./components/AdminVendorManagement').then(m => ({ default: m.AdminVendorManagement })));
+const AdminAmazonVendor = React.lazy(() => import('./components/AdminAmazonVendor').then(m => ({ default: m.AdminAmazonVendor })));
+const AdminShopReports = React.lazy(() => import('./components/AdminShopReports').then(m => ({ default: m.AdminShopReports })));
+const ConsultationAnalytics = React.lazy(() => import('./components/ConsultationAnalytics').then(m => ({ default: m.ConsultationAnalytics })));
+const AdminLabs = React.lazy(() => import('./components/AdminLabs').then(m => ({ default: m.AdminLabs })));
+const LabPortal = React.lazy(() => import('./components/LabPortal').then(m => ({ default: m.LabPortal })));
+const SupportPortal = React.lazy(() => import('./components/SupportPortal').then(m => ({ default: m.SupportPortal })));
+const AdminDailyLoggingWorkflows = React.lazy(() => import('./components/AdminDailyLoggingWorkflows').then(m => ({ default: m.AdminDailyLoggingWorkflows })));
+const AdminAskMitoTopics = React.lazy(() => import('./components/AdminAskMitoTopics').then(m => ({ default: m.AdminAskMitoTopics })));
+const AdminUserFeedback = React.lazy(() => import('./components/AdminUserFeedback').then(m => ({ default: m.AdminUserFeedback })));
+const AdminAppHealth = React.lazy(() => import('./components/AdminAppHealth').then(m => ({ default: m.AdminAppHealth })));
+const AdminOtpLogs = React.lazy(() => import('./components/AdminOtpLogs').then(m => ({ default: m.AdminOtpLogs })));
+const AdminSentEmails = React.lazy(() => import('./components/AdminSentEmails').then(m => ({ default: m.AdminSentEmails })));
+const OrderManagementHub = React.lazy(() => import('./components/orderManagement/OrderManagementHub').then(m => ({ default: m.OrderManagementHub })));
+const RevenueAnalyticsHub = React.lazy(() => import('./components/revenueAnalytics/RevenueAnalyticsHub').then(m => ({ default: m.RevenueAnalyticsHub })));
+import { AdminSidebar } from './components/AdminSidebar';
 
 const getCategoryStyle = (score: number) => {
   if (score <= 15) return 'bg-emerald-50 text-emerald-700 border-emerald-250';
@@ -445,18 +443,64 @@ const AdminPanelContent: React.FC = () => {
   const [showRegPassword, setShowRegPassword] = useState(false);
   const [showRegConfirmPassword, setShowRegConfirmPassword] = useState(false);
 
+  // Helper to normalize view alias/sub-paths into actual render views and subpaths
+  const resolveActiveView = (view: string): { baseView: string; subPath?: string } => {
+    if (!view) return { baseView: 'dashboard' };
+    const clean = view.replace(/^#\/?/, '').split('?')[0];
+    const parts = clean.split('/');
+    const rawBase = parts[0]?.trim() || 'dashboard';
+    const sub = parts[1]?.trim();
+
+    // Alias fallbacks for backward-compatibility and deep links
+    if (rawBase === 'gateway-config' || rawBase === 'settings') {
+      return { baseView: 'payments' };
+    }
+    if (rawBase === 'invoices') {
+      return { baseView: 'revenue-transactions' };
+    }
+    if (rawBase === 'database-backup') {
+      return { baseView: 'app-health', subPath: 'telemetry' };
+    }
+    if (rawBase === 'store-overview') {
+      return { baseView: 'order-mgmt-overview' };
+    }
+    if (rawBase === 'shipping-pincodes') {
+      return { baseView: 'store-products' };
+    }
+    if (rawBase === 'support') {
+      return { baseView: 'tickets' };
+    }
+    if (rawBase === 'cancer-tests') {
+      return { baseView: 'screening-tests' };
+    }
+    if (rawBase === 'lab-portal') {
+      return { baseView: 'partner-labs' };
+    }
+    if (rawBase === 'vendor-portal') {
+      return { baseView: 'vendors-management' };
+    }
+    if (rawBase === 'ask-mito-topics') {
+      return { baseView: 'ask-mito-workflows' };
+    }
+    if (rawBase === 'daily-logging-workflows') {
+      return { baseView: 'daily-workflows' };
+    }
+
+    return { baseView: rawBase, subPath: sub };
+  };
+
   // Helper to extract initial route/view from URL (supports hash like #app-health or #app-health/crashes, or pathname)
   const getInitialAdminView = (): string => {
     try {
       if (typeof window === 'undefined') return 'dashboard';
       const hash = window.location.hash.replace(/^#\/?/, '').split('?')[0];
-      const baseView = hash.split('/')[0];
+      const { baseView } = resolveActiveView(hash);
       if (baseView && baseView.trim() !== '') {
         return baseView.trim();
       }
       const path = window.location.pathname.replace(/^\//, '').split('/')[0];
       if (path && path !== 'admin' && path !== 'index.html' && path !== '') {
-        return path;
+        return resolveActiveView(path).baseView;
       }
     } catch {
       // fallback
@@ -478,7 +522,8 @@ const AdminPanelContent: React.FC = () => {
     revenueAnalytics: true,
     orderSupport: true,
     reports: true,
-    settings: false
+    telemetry: true,
+    settings: true
   });
 
   const toggleGroup = (group: string) => {
@@ -499,7 +544,7 @@ const AdminPanelContent: React.FC = () => {
   const matchedNavPages = useMemo(() => {
     const query = globalSearchQuery.trim().toLowerCase();
     if (!query) return [];
-    return ADMIN_NAV_PAGES.filter(p => 
+    return ADMIN_NAV_PAGES.filter(p =>
       p.title.toLowerCase().includes(query) ||
       p.subtitle.toLowerCase().includes(query) ||
       p.category.toLowerCase().includes(query) ||
@@ -611,6 +656,7 @@ const AdminPanelContent: React.FC = () => {
   const [userPageSize, setUserPageSize] = useState<number>(10);
   const [userSubFilter, setUserSubFilter] = useState<string>('all');
   const [usersLoading, setUsersLoading] = useState<boolean>(false);
+  const [isLiveSyncEnabled, setIsLiveSyncEnabled] = useState<boolean>(true);
   const [subModalUser, setSubModalUser] = useState<any | null>(null);
   const [subModalMode, setSubModalMode] = useState<'manage' | 'grant' | 'cancel' | 'coupon'>('grant');
   const [subGrantPlanId, setSubGrantPlanId] = useState<string>('');
@@ -664,7 +710,7 @@ const AdminPanelContent: React.FC = () => {
           if (docsRes.ok) {
             setActiveDoctors(await docsRes.json());
           }
-        } catch (e) {}
+        } catch (e) { }
       }
       const res = await fetch(`${apiUrl}/admin/doctors/${docId}/token`, {
         method: 'POST',
@@ -715,7 +761,7 @@ const AdminPanelContent: React.FC = () => {
     }
   };
   const [labs, setLabs] = useState<any[]>([]);
-  
+
   const [patients, setPatients] = useState<any[]>([]);
   const [patientsLoading, setPatientsLoading] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState<any | null>(null);
@@ -746,7 +792,7 @@ const AdminPanelContent: React.FC = () => {
         }
       } else {
         const hash = window.location.hash.replace(/^#\/?/, '').split('?')[0];
-        const baseView = hash.split('/')[0];
+        const { baseView } = resolveActiveView(hash);
         if (baseView && baseView !== activeView) {
           setActiveView(baseView);
         }
@@ -755,7 +801,7 @@ const AdminPanelContent: React.FC = () => {
 
     const handleHashChange = () => {
       const hash = window.location.hash.replace(/^#\/?/, '').split('?')[0];
-      const baseView = hash.split('/')[0];
+      const { baseView } = resolveActiveView(hash);
       if (baseView && baseView !== activeView) {
         setActiveView(baseView);
       }
@@ -763,10 +809,10 @@ const AdminPanelContent: React.FC = () => {
 
     window.addEventListener('popstate', handlePopState);
     window.addEventListener('hashchange', handleHashChange);
-    
+
     // Ensure current hash reflects activeView on initial load without blowing away subpaths
     const currentHash = window.location.hash.replace(/^#\/?/, '').split('?')[0];
-    const currentBase = currentHash.split('/')[0];
+    const { baseView: currentBase } = resolveActiveView(currentHash);
     if (!currentBase) {
       window.history.replaceState(
         { view: activeView, selectedPatientId: selectedPatient?._id || null, selectedStainReviewId: selectedStainReview?._id || null },
@@ -774,7 +820,7 @@ const AdminPanelContent: React.FC = () => {
         `#${activeView}`
       );
     }
-    
+
     return () => {
       window.removeEventListener('popstate', handlePopState);
       window.removeEventListener('hashchange', handleHashChange);
@@ -784,7 +830,7 @@ const AdminPanelContent: React.FC = () => {
   // Synchronize URL hash whenever activeView changes
   useEffect(() => {
     const currentHash = window.location.hash.replace(/^#\/?/, '').split('?')[0];
-    const currentBase = currentHash.split('/')[0];
+    const { baseView: currentBase } = resolveActiveView(currentHash);
     if (currentBase !== activeView) {
       const subPath = currentHash.includes('/') ? currentHash.slice(currentHash.indexOf('/')) : '';
       const targetHash = subPath ? `#${activeView}${subPath}` : `#${activeView}`;
@@ -797,10 +843,13 @@ const AdminPanelContent: React.FC = () => {
   }, [activeView, selectedPatient, selectedStainReview]);
 
   const navigateToView = (viewName: string) => {
-    setActiveView(viewName);
+    const { baseView, subPath } = resolveActiveView(viewName);
+    setActiveView(baseView);
     setSelectedPatient(null);
     setSelectedStainReview(null);
-    window.history.pushState({ view: viewName, selectedPatientId: null, selectedStainReviewId: null }, '', `#${viewName}`);
+    const targetHash = subPath ? `#${baseView}/${subPath}` : `#${baseView}`;
+    window.history.pushState({ view: baseView, selectedPatientId: null, selectedStainReviewId: null }, '', targetHash);
+    window.dispatchEvent(new HashChangeEvent('hashchange'));
   };
 
   // CRUD Form states
@@ -1045,6 +1094,23 @@ const AdminPanelContent: React.FC = () => {
     }
   }, [isAuthenticated, admin]);
 
+  // Periodic Live Telemetry & Auto-Refresh Sync (every 30 seconds when enabled)
+  useEffect(() => {
+    if (!isLiveSyncEnabled || !isAuthenticated || !admin) return;
+
+    const interval = setInterval(() => {
+      if (activeView === 'users') {
+        fetchUsers(pagination.page, userPageSize, userSubFilter, searchQuery);
+      } else if (activeView === 'dashboard') {
+        fetchStats();
+      } else if (activeView.startsWith('appointments-')) {
+        fetchAdminAppointments();
+      }
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [isLiveSyncEnabled, isAuthenticated, admin, activeView, pagination.page, userPageSize, userSubFilter, searchQuery]);
+
   useEffect(() => {
     if (isAuthenticated && admin && (admin.role === 'SuperAdmin' || admin.role === 'Admin' || admin.role === 'Doctor' || admin.role === 'Editor')) {
       if (activeView === 'stain-reviews') {
@@ -1062,7 +1128,7 @@ const AdminPanelContent: React.FC = () => {
       return;
     }
     const headers = Object.keys(data[0]).join(",");
-    const rows = data.map(row => 
+    const rows = data.map(row =>
       Object.values(row).map(val => {
         const strVal = typeof val === 'object' ? JSON.stringify(val) : String(val);
         return `"${strVal.replace(/"/g, '""')}"`;
@@ -2467,12 +2533,12 @@ const AdminPanelContent: React.FC = () => {
   // RENDER SPLIT FOR AUTHENTICATION
   if (!isAuthenticated) {
     const displayedError = validationError || error;
-    
+
     // Dynamic Portal Titles based on URL
     const path = window.location.pathname.toLowerCase();
     let portalTitle = 'Management Console';
     let portalDesc = 'Sign in as Admin, Doctor, Vendor, or Lab';
-    
+
     if (path.includes('/doctor')) {
       portalTitle = 'Doctor Portal';
       portalDesc = 'Sign in to access your physician dashboard';
@@ -2725,5388 +2791,2565 @@ const AdminPanelContent: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen flex bg-slate-50">
+    <div className="h-screen flex bg-slate-50 overflow-hidden">
 
-      {/* 1. LEFT SIDEBAR PANEL */}
-      <aside className={`bg-slate-900 text-slate-300 flex flex-col justify-between shrink-0 transition-all ${sidebarCollapsed ? 'w-20' : 'w-64'}`}>
-        <div>
-          <div className="p-5 border-b border-slate-800 flex items-center justify-between gap-2 overflow-hidden">
-            <div className="flex items-center gap-2">
-              {paymentConfig?.appLogoUrl ? (
-                <img src={paymentConfig.appLogoUrl} alt="Logo" className="h-6 w-6 object-contain rounded-md shrink-0" />
-              ) : (
-                <Activity className="h-6 w-6 text-primary shrink-0" />
-              )}
-              {!sidebarCollapsed && (
-                <h1 className="text-sm font-bold text-white tracking-tight truncate">
-                  {paymentConfig?.appName || 'Mito_Reboot'} Admin
-                </h1>
-              )}
-            </div>
-            <button 
-              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-              className="text-slate-500 hover:text-white hidden md:block text-xs font-bold bg-slate-800 px-2 py-1 rounded"
-            >
-              {sidebarCollapsed ? '→' : '←'}
-            </button>
+      {/* 1. MODERN LEFT SIDEBAR PANEL */}
+      <AdminSidebar
+        sidebarCollapsed={sidebarCollapsed}
+        setSidebarCollapsed={setSidebarCollapsed}
+        activeView={activeView}
+        setActiveView={navigateToView}
+        setSearchQuery={setSearchQuery}
+        paymentConfig={paymentConfig}
+        admin={admin}
+        logout={logout}
+        openGroups={openGroups}
+        toggleGroup={toggleGroup}
+        activeDoctors={activeDoctors}
+        handleLaunchDoctorPortal={handleLaunchDoctorPortal}
+        apiUrl={apiUrl}
+        token={token}
+        setActiveDoctors={setActiveDoctors}
+        setSelectedPatient={setSelectedPatient}
+        pendingEditsCount={pendingEdits.length}
+      />
+
+      {/* 2. MAIN ADMIN VIEW AREA (Independent scroll, never affects sidebar height) */}
+      <main className="flex-1 min-w-0 h-screen overflow-y-auto px-4 sm:px-8 py-6">
+        <Suspense fallback={
+          <div className="p-8 space-y-4 animate-pulse">
+            <div className="h-16 bg-slate-100 rounded-3xl w-full" />
+            <div className="h-64 bg-slate-100 rounded-3xl w-full" />
           </div>
+        }>
 
-          <nav className="p-4 space-y-4 overflow-y-auto max-h-[calc(100vh-140px)] scrollbar-thin">
-            {/* CATEGORY: CORE */}
-            <div className="space-y-1">
-              {!sidebarCollapsed && <p className="px-4 text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-2">Core</p>}
-              
-              {/* GROUP 1: DASHBOARD */}
-              <button 
-                onClick={() => { setActiveView('dashboard'); setSearchQuery(''); }}
-                className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                  activeView === 'dashboard' ? 'bg-primary text-white shadow-md shadow-primary/20' : 'hover:bg-slate-800 text-slate-400 hover:text-white'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <LayoutDashboard className="h-4.5 w-4.5 shrink-0" />
-                  {!sidebarCollapsed && <span>Dashboard</span>}
-                </div>
-              </button>
-
-              {/* Patient Activity Menu */}
-              <button 
-                onClick={() => { setActiveView('patient-activity'); setSearchQuery(''); setSelectedPatient(null); }}
-                className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                  activeView === 'patient-activity' ? 'bg-primary text-white shadow-md shadow-primary/20' : 'hover:bg-slate-800 text-slate-400 hover:text-white'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <Activity className="h-4.5 w-4.5 shrink-0" />
-                  {!sidebarCollapsed && <span>Patient Activity</span>}
-                </div>
-              </button>
-            </div>
-
-            {/* CATEGORY: USERS & CLINICAL */}
-            <div className="space-y-1">
-              {!sidebarCollapsed && <p className="px-4 text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-2">Users & Clinical</p>}
-
-              {/* GROUP 2: USERS & STAFF */}
-              <div className="space-y-1">
-                <button 
-                  onClick={() => toggleGroup('users')}
-                  className="w-full flex items-center justify-between px-4 py-2 text-slate-400 hover:text-white transition-all"
-                >
-                  <div className="flex items-center gap-3">
-                    <Users className="h-4.5 w-4.5 shrink-0" />
-                    {!sidebarCollapsed && <span className="text-[10px] font-black uppercase tracking-wider">Users & Staff</span>}
-                  </div>
-                  {!sidebarCollapsed && (openGroups.users ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />)}
-                </button>
-                {openGroups.users && !sidebarCollapsed && (
-                  <div className="pl-6 space-y-1 border-l border-slate-800 ml-6">
-                    <button 
-                      onClick={() => { setActiveView('users'); setSearchQuery(''); }}
-                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                        activeView === 'users' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      Patients
-                    </button>
-                    <button 
-                      onClick={() => { setActiveView('otp-logs'); setSearchQuery(''); }}
-                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold flex items-center justify-between ${
-                        activeView === 'otp-logs' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      <span className="flex items-center gap-1.5">
-                        <Key className="w-3.5 h-3.5 text-amber-400" />
-                        OTP &amp; Auth Logs
-                      </span>
-                      <span className="bg-amber-500/20 text-amber-300 text-[9px] font-extrabold px-1.5 py-0.5 rounded border border-amber-500/30">
-                        Live
-                      </span>
-                    </button>
-                    <button 
-                      onClick={() => { setActiveView('sent-emails'); setSearchQuery(''); }}
-                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold flex items-center justify-between ${
-                        activeView === 'sent-emails' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      <span className="flex items-center gap-1.5">
-                        <Mail className="w-3.5 h-3.5 text-blue-400" />
-                        Sent Emails
-                      </span>
-                      <span className="bg-blue-500/20 text-blue-300 text-[9px] font-extrabold px-1.5 py-0.5 rounded border border-blue-500/30">
-                        Brevo
-                      </span>
-                    </button>
-                    <button 
-                      onClick={() => { setActiveView('pendingEdits'); setSearchQuery(''); }}
-                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                        activeView === 'pendingEdits' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      Profile Edits
-                    </button>
-                    <button 
-                      onClick={() => { setActiveView('doctors-management'); setSearchQuery(''); fetchActiveDoctors(); }}
-                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                        activeView === 'doctors-management' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      Doctors
-                    </button>
-                    <button 
-                      onClick={async () => {
-                        if (activeDoctors.length > 0) {
-                          handleLaunchDoctorPortal(activeDoctors[0]);
-                        } else {
-                          try {
-                            const res = await fetch(`${apiUrl}/admin/doctors`, {
-                              headers: { 'Authorization': `Bearer ${token}` }
-                            });
-                            if (res.ok) {
-                              const docs = await res.json();
-                              setActiveDoctors(docs);
-                              if (docs.length > 0) {
-                                handleLaunchDoctorPortal(docs[0]);
-                                return;
-                              }
-                            }
-                          } catch (e) {}
-                          setActiveView('doctors-management');
-                        }
-                      }}
-                      className="w-full text-left px-4 py-2 rounded-lg text-xs font-semibold flex items-center justify-between text-emerald-400 hover:text-emerald-300 hover:bg-slate-800 transition-colors"
-                      title="Directly access Doctor Dashboard to manage schedule, slots, and profile"
-                    >
-                      <span className="flex items-center gap-1.5">
-                        <Stethoscope className="w-3.5 h-3.5" />
-                        Doctor Portal
-                      </span>
-                      <span className="bg-emerald-500/20 text-emerald-300 text-[9px] font-extrabold px-1.5 py-0.5 rounded border border-emerald-500/30">
-                        Live
-                      </span>
-                    </button>
-                    <button 
-                      onClick={() => { setActiveView('vendors-management'); setSearchQuery(''); }}
-                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                        activeView === 'vendors-management' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      Vendors
-                    </button>
-                    <button 
-                      onClick={() => { setActiveView('amazon-vendor'); setSearchQuery(''); }}
-                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold flex items-center justify-between ${
-                        activeView === 'amazon-vendor' ? 'text-amber-300 bg-slate-800' : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      <span>Amazon Vendor</span>
-                      <span className="bg-amber-500/20 text-amber-300 text-[9px] font-extrabold px-1.5 py-0.5 rounded border border-amber-500/30">
-                        Affiliate
-                      </span>
-                    </button>
-                    <button 
-                      onClick={() => { setActiveView('partner-labs'); setSearchQuery(''); }}
-                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                        activeView === 'partner-labs' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      Lab Staff
-                    </button>
-                  </div>
-                )}
+          {/* Modern SaaS Header */}
+          <header className="mb-6 bg-white border border-slate-200 p-4 rounded-3xl flex justify-between items-center shadow-soft relative">
+            {/* Left: Breadcrumbs & Recently Used */}
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-400">
+                {['Admin', ...(activeView === 'dashboard' ? ['Dashboard'] : activeView === 'users' ? ['Users', 'Patients'] : activeView === 'pendingEdits' ? ['Users', 'Profile Edits'] : activeView === 'doctors-management' ? ['Users', 'Doctors'] : activeView === 'vendors-management' ? ['Users', 'Vendors'] : activeView.startsWith('appointments-') ? ['Appointments', activeView.replace('appointments-', '')] : activeView === 'screening-tests' ? ['Appointments', 'Screening Tests'] : activeView === 'partner-labs' ? ['Appointments', 'Partner Labs'] : activeView === 'store-products' ? ['Health Store', 'Products'] : activeView === 'store-orders' ? ['Health Store', 'Orders Routing'] : activeView === 'store-reports' ? ['Health Store', 'Sales Reports'] : activeView.startsWith('order-mgmt-') ? ['Order & Support Management', activeView.replace('order-mgmt-', '').replace('-', ' ')] : activeView.startsWith('revenue-') ? ['Revenue & Billing', activeView.replace('revenue-', '').replace('-', ' ')] : activeView === 'payments' ? ['System Settings', 'Payments & Gateway'] : activeView === 'plans' ? ['Revenue & Billing', 'Subscription Plans'] : activeView === 'coupons' ? ['Revenue & Billing', 'Coupons'] : activeView.startsWith('app-health') ? ['Telemetry & Health', 'App Health Engine'] : activeView === 'reports-analytics' ? ['Telemetry & Health', 'Reports Analytics'] : activeView === 'daily-workflows' ? ['System Settings', 'Daily Workflows'] : activeView === 'ask-mito-workflows' ? ['System Settings', 'Ask Mito AI'] : activeView === 'aicoach' ? ['System Settings', 'AI Coach'] : activeView === 'legal' ? ['System Settings', 'Legal Documents'] : activeView === 'founders' ? ['System Settings', 'Founders Section'] : activeView === 'app-user-terms' ? ['System Settings', 'App User Terms'] : [activeView])].map((part, idx, arr) => (
+                  <React.Fragment key={idx}>
+                    {idx > 0 && <span className="text-[10px]">/</span>}
+                    <span className={idx === arr.length - 1 ? 'text-slate-800 font-extrabold' : ''}>{part}</span>
+                  </React.Fragment>
+                ))}
               </div>
-
-              {/* GROUP: DENTAL / ORAL HEALTH */}
-              <div className="space-y-1">
-                <button 
-                  onClick={() => toggleGroup('dental')}
-                  className="w-full flex items-center justify-between px-4 py-2 text-slate-400 hover:text-white transition-all"
-                >
-                  <div className="flex items-center gap-3">
-                    <Sparkles className="h-4.5 w-4.5 shrink-0 text-primary" />
-                    {!sidebarCollapsed && <span className="text-[10px] font-black uppercase tracking-wider">Dental / Oral</span>}
-                  </div>
-                  {!sidebarCollapsed && (openGroups.dental ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />)}
-                </button>
-                {openGroups.dental && !sidebarCollapsed && (
-                  <div className="pl-6 space-y-1 border-l border-slate-800 ml-6">
-                    <button 
-                      onClick={() => { navigateToView('dental-consultations'); setSearchQuery(''); }}
-                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                        activeView === 'dental-consultations' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      Dental Consultations
-                    </button>
-                    <button 
-                      onClick={() => { navigateToView('stain-reviews'); setSearchQuery(''); setSelectedStainReview(null); }}
-                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold flex items-center justify-between ${
-                        activeView === 'stain-reviews' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      <span>Tobacco Stain Reviews</span>
-                      {stainReviews.filter(r => !r.reviewed).length > 0 && (
-                        <span className="bg-rose-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full shrink-0">
-                          {stainReviews.filter(r => !r.reviewed).length}
-                        </span>
-                      )}
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* GROUP 3: APPOINTMENTS */}
-              <div className="space-y-1">
-                <button 
-                  onClick={() => toggleGroup('appointments')}
-                  className="w-full flex items-center justify-between px-4 py-2 text-slate-400 hover:text-white transition-all"
-                >
-                  <div className="flex items-center gap-3">
-                    <Calendar className="h-4.5 w-4.5 shrink-0" />
-                    {!sidebarCollapsed && <span className="text-[10px] font-black uppercase tracking-wider">Appointments</span>}
-                  </div>
-                  {!sidebarCollapsed && (openGroups.appointments ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />)}
-                </button>
-                {openGroups.appointments && !sidebarCollapsed && (
-                  <div className="pl-6 space-y-1 border-l border-slate-800 ml-6">
-                    <button 
-                      onClick={() => { setActiveView('appointments-calendar'); setSearchQuery(''); }}
-                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                        activeView === 'appointments-calendar' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      Calendar
-                    </button>
-                    <button 
-                      onClick={() => { setActiveView('appointments-upcoming'); setSearchQuery(''); }}
-                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                        activeView === 'appointments-upcoming' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      Upcoming
-                    </button>
-                    <button 
-                      onClick={() => { setActiveView('appointments-completed'); setSearchQuery(''); }}
-                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                        activeView === 'appointments-completed' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      Completed
-                    </button>
-                    <button 
-                      onClick={() => { setActiveView('appointments-cancelled'); setSearchQuery(''); }}
-                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                        activeView === 'appointments-cancelled' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      Cancelled
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* GROUP: DIAGNOSTICS */}
-              <div className="space-y-1">
-                <button 
-                  onClick={() => toggleGroup('diagnostics')}
-                  className="w-full flex items-center justify-between px-4 py-2 text-slate-400 hover:text-white transition-all"
-                >
-                  <div className="flex items-center gap-3">
-                    <Activity className="h-4.5 w-4.5 shrink-0" />
-                    {!sidebarCollapsed && <span className="text-[10px] font-black uppercase tracking-wider">Diagnostics</span>}
-                  </div>
-                  {!sidebarCollapsed && (openGroups.diagnostics ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />)}
-                </button>
-                {openGroups.diagnostics && !sidebarCollapsed && (
-                  <div className="pl-6 space-y-1 border-l border-slate-800 ml-6">
-                    <button 
-                      onClick={() => { setActiveView('screening-tests'); setSearchQuery(''); }}
-                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                        activeView === 'screening-tests' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      Screening Tests
-                    </button>
-                    <button 
-                      onClick={() => { setActiveView('partner-labs'); setSearchQuery(''); }}
-                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                        activeView === 'partner-labs' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      Partner Labs
-                    </button>
-                    <button 
-                      onClick={() => { setActiveView('indian-cancers'); setSearchQuery(''); }}
-                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                        activeView === 'indian-cancers' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      Indian Cancers & Risks
-                    </button>
-                  </div>
-                )}
+              {/* Quick Recently Used Tags */}
+              <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400">
+                <span>Recent:</span>
+                <button onClick={() => setActiveView('order-mgmt-overview')} className="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 rounded text-slate-655 transition-all">Order & Support</button>
+                <button onClick={() => setActiveView('store-products')} className="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 rounded text-slate-655 transition-all">Products</button>
+                <button onClick={() => setActiveView('doctors-management')} className="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 rounded text-slate-655 transition-all">Doctors</button>
               </div>
             </div>
 
-            {/* CATEGORY: COMMERCE & METRICS */}
-            <div className="space-y-1">
-              {!sidebarCollapsed && <p className="px-4 text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-2">Commerce & Metrics</p>}
+            {/* Center/Right: Global Search, Quick Actions, Profile, Notifications */}
+            <div className="flex items-center gap-3">
 
-              {/* GROUP 4: HEALTH STORE */}
-              <div className="space-y-1">
-                <button 
-                  onClick={() => toggleGroup('store')}
-                  className="w-full flex items-center justify-between px-4 py-2 text-slate-400 hover:text-white transition-all"
+              {/* Live Telemetry & Auto-Refresh Switch */}
+              <button
+                onClick={() => setIsLiveSyncEnabled(prev => !prev)}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer shadow-2xs ${isLiveSyncEnabled
+                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                  : 'bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100'
+                  }`}
+                title={isLiveSyncEnabled ? 'Live Auto-Sync Active (every 30s) — click to pause' : 'Live Auto-Sync Paused — click to resume'}
+              >
+                <span className={`w-2 h-2 rounded-full ${isLiveSyncEnabled ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`} />
+                <span className="hidden sm:inline">{isLiveSyncEnabled ? 'Live 30s' : 'Paused'}</span>
+              </button>
+
+              {/* Search Trigger */}
+              <button
+                onClick={() => setShowGlobalSearchModal(true)}
+                className="flex items-center gap-3 px-3 py-1.5 border border-slate-200 rounded-xl text-xs text-slate-400 hover:bg-slate-50 transition-all bg-white w-48 md:w-64"
+              >
+                <Search className="h-3.5 w-3.5 text-slate-400" />
+                <span className="flex-1 text-left text-slate-400 font-semibold">Search (Ctrl+K)</span>
+              </button>
+
+              {/* Quick Actions Dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => { setActiveView('store-products'); setSearchQuery(''); }}
+                  className="px-3 py-1.5 bg-primary text-white text-xs font-bold rounded-xl shadow-soft hover:bg-primary/95 transition-all"
                 >
-                  <div className="flex items-center gap-3">
-                    <ShoppingCart className="h-4.5 w-4.5 shrink-0" />
-                    {!sidebarCollapsed && <span className="text-[10px] font-black uppercase tracking-wider">Health Store</span>}
-                  </div>
-                  {!sidebarCollapsed && (openGroups.store ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />)}
+                  + Add Product
                 </button>
-                {openGroups.store && !sidebarCollapsed && (
-                  <div className="pl-6 space-y-1 border-l border-slate-800 ml-6">
-                    <button 
-                      onClick={() => { setActiveView('store-products'); setSearchQuery(''); }}
-                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                        activeView === 'store-products' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      Products
-                    </button>
-                    <button 
-                      onClick={() => { setActiveView('vendors-management'); setSearchQuery(''); }}
-                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold flex items-center justify-between ${
-                        activeView === 'vendors-management' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      <span>Vendors</span>
-                      <span className="bg-emerald-500/20 text-emerald-400 text-[9px] font-extrabold px-1.5 py-0.5 rounded border border-emerald-500/30">
-                        Multi-Vendor
-                      </span>
-                    </button>
-                    <button 
-                      onClick={() => { setActiveView('amazon-vendor'); setSearchQuery(''); }}
-                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold flex items-center justify-between ${
-                        activeView === 'amazon-vendor' ? 'text-amber-300 bg-slate-800' : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      <span>Amazon Vendor</span>
-                      <span className="bg-amber-500/20 text-amber-300 text-[9px] font-extrabold px-1.5 py-0.5 rounded border border-amber-500/30">
-                        Affiliate
-                      </span>
-                    </button>
-                    <button 
-                      onClick={() => { setActiveView('store-orders'); setSearchQuery(''); }}
-                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                        activeView === 'store-orders' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      Orders Routing
-                    </button>
-                    <button 
-                      onClick={() => { setActiveView('store-reports'); setSearchQuery(''); }}
-                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                        activeView === 'store-reports' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      Sales Reports
-                    </button>
-                  </div>
-                )}
               </div>
 
-
-              {/* GROUP 4.5: REPORTS & ANALYTICS */}
-              <button 
+              {/* Analytics Quick Link */}
+              <button
                 onClick={() => { setActiveView('reports-analytics'); setSearchQuery(''); }}
-                className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                  activeView === 'reports-analytics' ? 'bg-primary text-white shadow-md shadow-primary/20' : 'hover:bg-slate-800 text-slate-400 hover:text-white'
-                }`}
+                title="Reports & Analytics"
+                className="p-2 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all flex items-center gap-1.5 px-3 text-xs font-bold text-slate-600"
               >
-                <div className="flex items-center gap-3">
-                  <Activity className="h-4.5 w-4.5 shrink-0" />
-                  {!sidebarCollapsed && <span>Reports & Analytics</span>}
-                </div>
+                <Activity className="h-4 w-4" />
+                <span className="hidden md:inline">Analytics</span>
               </button>
 
-              <button 
-                onClick={() => { setActiveView('consultation-analytics'); setSearchQuery(''); }}
-                className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                  activeView === 'consultation-analytics' ? 'bg-primary text-white shadow-md shadow-primary/20' : 'hover:bg-slate-800 text-slate-400 hover:text-white'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <BarChart3 className="h-4.5 w-4.5 shrink-0" />
-                  {!sidebarCollapsed && <span>Consultation Funnel</span>}
-                </div>
-              </button>
-
-              <button 
-                onClick={() => { setActiveView('app-health'); setSearchQuery(''); }}
-                className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                  activeView === 'app-health' ? 'bg-primary text-white shadow-md shadow-primary/20' : 'hover:bg-slate-800 text-slate-400 hover:text-white'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <Smartphone className="h-4.5 w-4.5 shrink-0" />
-                  {!sidebarCollapsed && <span>App Health &amp; Usage</span>}
-                </div>
-              </button>
-
-              <button 
-                onClick={() => { setActiveView('otp-logs'); setSearchQuery(''); }}
-                className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                  activeView === 'otp-logs' ? 'bg-primary text-white shadow-md shadow-primary/20' : 'hover:bg-slate-800 text-slate-400 hover:text-white'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <Key className="h-4.5 w-4.5 shrink-0 text-amber-400" />
-                  {!sidebarCollapsed && <span>OTP &amp; Auth Logs</span>}
-                </div>
-                {!sidebarCollapsed && (
-                  <span className="bg-amber-500/20 text-amber-300 text-[9px] font-black px-1.5 py-0.5 rounded border border-amber-500/30">
-                    Live
-                  </span>
-                )}
-              </button>
-
-              <button 
-                onClick={() => { setActiveView('sent-emails'); setSearchQuery(''); }}
-                className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                  activeView === 'sent-emails' ? 'bg-primary text-white shadow-md shadow-primary/20' : 'hover:bg-slate-800 text-slate-400 hover:text-white'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <Mail className="h-4.5 w-4.5 shrink-0 text-blue-400" />
-                  {!sidebarCollapsed && <span>Sent Emails</span>}
-                </div>
-                {!sidebarCollapsed && (
-                  <span className="bg-blue-500/20 text-blue-300 text-[9px] font-black px-1.5 py-0.5 rounded border border-blue-500/30">
-                    Brevo
-                  </span>
-                )}
-              </button>
-            </div>
-
-            {/* CATEGORY: REVENUE & BUSINESS ANALYTICS */}
-            <div className="space-y-1">
-              {!sidebarCollapsed && <p className="px-4 text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-2">Revenue & Analytics</p>}
-
-              <div className="space-y-1">
-                <button 
-                  onClick={() => toggleGroup('revenueAnalytics')}
-                  className="w-full flex items-center justify-between px-4 py-2 text-slate-400 hover:text-white transition-all"
+              {/* Notifications Button */}
+              <div className="relative">
+                <button
+                  onClick={() => {
+                    setShowNotificationCenter(!showNotificationCenter);
+                    // Ensure real data is loaded when opening notifications
+                    if (!stats) fetchStats();
+                  }}
+                  className="p-2 bg-slate-100 hover:bg-slate-200 rounded-xl relative transition-all"
                 >
-                  <div className="flex items-center gap-3">
-                    <TrendingUp className="h-4.5 w-4.5 shrink-0 text-emerald-400" />
-                    {!sidebarCollapsed && <span className="text-[10px] font-black uppercase tracking-wider">Revenue & Analytics</span>}
-                  </div>
-                  {!sidebarCollapsed && (openGroups.revenueAnalytics ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />)}
+                  <Bell className="h-4 w-4 text-slate-600" />
+                  {/* Only show red dot when real alerts exist */}
+                  {(stats?.pendingOrders > 0 || stats?.lowStockProducts > 0) && (
+                    <span className="absolute top-1 right-1 w-2 h-2 bg-rose-500 rounded-full animate-pulse" />
+                  )}
                 </button>
-                {openGroups.revenueAnalytics && !sidebarCollapsed && (
-                  <div className="pl-6 space-y-1 border-l border-slate-800 ml-6">
-                    <button 
-                      onClick={() => { setActiveView('revenue-overview'); setSearchQuery(''); }}
-                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                        activeView === 'revenue-overview' ? 'text-white bg-slate-800 font-bold' : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      1. Revenue Overview
-                    </button>
-                    <button 
-                      onClick={() => { setActiveView('revenue-transactions'); setSearchQuery(''); }}
-                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                        activeView === 'revenue-transactions' ? 'text-white bg-slate-800 font-bold' : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      2. All Transactions
-                    </button>
-                    <button 
-                      onClick={() => { setActiveView('revenue-subscriptions'); setSearchQuery(''); }}
-                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                        activeView === 'revenue-subscriptions' ? 'text-white bg-slate-800 font-bold' : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      3. Subscriptions
-                    </button>
-                    <button 
-                      onClick={() => { setActiveView('revenue-user-payments'); setSearchQuery(''); }}
-                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                        activeView === 'revenue-user-payments' ? 'text-white bg-slate-800 font-bold' : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      4. User Payments
-                    </button>
-                    <button 
-                      onClick={() => { setActiveView('revenue-ask-mito'); setSearchQuery(''); }}
-                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                        activeView === 'revenue-ask-mito' ? 'text-white bg-slate-800 font-bold' : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      5. Ask Mito Revenue
-                    </button>
-                    <button 
-                      onClick={() => { setActiveView('revenue-shop-sales'); setSearchQuery(''); }}
-                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                        activeView === 'revenue-shop-sales' ? 'text-white bg-slate-800 font-bold' : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      6. Shop & Product Sales
-                    </button>
-                    <button 
-                      onClick={() => { setActiveView('revenue-departments'); setSearchQuery(''); }}
-                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                        activeView === 'revenue-departments' ? 'text-white bg-slate-800 font-bold' : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      7. Department-wise Revenue
-                    </button>
-                    <button 
-                      onClick={() => { setActiveView('revenue-payment-methods'); setSearchQuery(''); }}
-                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                        activeView === 'revenue-payment-methods' ? 'text-white bg-slate-800 font-bold' : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      8. Payment Methods
-                    </button>
-                    <button 
-                      onClick={() => { setActiveView('revenue-refunds'); setSearchQuery(''); }}
-                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                        activeView === 'revenue-refunds' ? 'text-white bg-slate-800 font-bold' : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      9. Refunds &amp; Failed
-                    </button>
-                    <button 
-                      onClick={() => { setActiveView('revenue-reports'); setSearchQuery(''); }}
-                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                        activeView === 'revenue-reports' ? 'text-white bg-slate-800 font-bold' : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      10. Revenue Reports
-                    </button>
-                    <button 
-                      onClick={() => { setActiveView('revenue-settings'); setSearchQuery(''); }}
-                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                        activeView === 'revenue-settings' ? 'text-white bg-slate-800 font-bold' : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      11. Payment Settings
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
 
-            {/* CATEGORY: ORDER & SUPPORT MANAGEMENT */}
-            <div className="space-y-1">
-              {!sidebarCollapsed && <p className="px-4 text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-2">Order & Support Management</p>}
-
-              <div className="space-y-1">
-                <button 
-                  onClick={() => toggleGroup('orderSupport')}
-                  className="w-full flex items-center justify-between px-4 py-2 text-slate-400 hover:text-white transition-all"
-                >
-                  <div className="flex items-center gap-3">
-                    <Package className="h-4.5 w-4.5 shrink-0 text-primary" />
-                    {!sidebarCollapsed && <span className="text-[10px] font-black uppercase tracking-wider">Order & Support</span>}
-                  </div>
-                  {!sidebarCollapsed && (openGroups.orderSupport ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />)}
-                </button>
-                {openGroups.orderSupport && !sidebarCollapsed && (
-                  <div className="pl-6 space-y-1 border-l border-slate-800 ml-6">
-                    <button 
-                      onClick={() => { setActiveView('order-mgmt-overview'); setSearchQuery(''); }}
-                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                        activeView === 'order-mgmt-overview' ? 'text-white bg-slate-800 font-bold' : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      1. Order Overview
-                    </button>
-                    <button 
-                      onClick={() => { setActiveView('order-mgmt-orders'); setSearchQuery(''); }}
-                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                        activeView === 'order-mgmt-orders' ? 'text-white bg-slate-800 font-bold' : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      2. All Orders
-                    </button>
-                    <button 
-                      onClick={() => { setActiveView('order-mgmt-refunds'); setSearchQuery(''); }}
-                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                        activeView === 'order-mgmt-refunds' ? 'text-white bg-slate-800 font-bold' : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      3. Refunds & Cancellations
-                    </button>
-                    <button 
-                      onClick={() => { setActiveView('order-mgmt-support'); setSearchQuery(''); }}
-                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                        activeView === 'order-mgmt-support' ? 'text-white bg-slate-800 font-bold' : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      4. Customer Support Inbox
-                    </button>
-                    <button 
-                      onClick={() => { setActiveView('order-mgmt-messages'); setSearchQuery(''); }}
-                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                        activeView === 'order-mgmt-messages' ? 'text-white bg-slate-800 font-bold' : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      5. Customer Messages
-                    </button>
-                    <button 
-                      onClick={() => { setActiveView('order-mgmt-reports'); setSearchQuery(''); }}
-                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                        activeView === 'order-mgmt-reports' ? 'text-white bg-slate-800 font-bold' : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      6. Reports & Analytics
-                    </button>
-                    <button 
-                      onClick={() => { setActiveView('order-mgmt-vendors'); setSearchQuery(''); }}
-                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                        activeView === 'order-mgmt-vendors' ? 'text-white bg-slate-800 font-bold' : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      7. Vendors & Fulfilment
-                    </button>
-                    <button 
-                      onClick={() => { setActiveView('order-mgmt-settings'); setSearchQuery(''); }}
-                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                        activeView === 'order-mgmt-settings' ? 'text-white bg-slate-800 font-bold' : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      8. Order Settings & Audit
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* CATEGORY: RESOURCES & CONTENT */}
-            <div className="space-y-1">
-              {!sidebarCollapsed && <p className="px-4 text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-2">Content & Library</p>}
-
-              {/* GROUP 5: SYSTEM CONTENT */}
-              <div className="space-y-1">
-                <button 
-                  onClick={() => toggleGroup('reports')}
-                  className="w-full flex items-center justify-between px-4 py-2 text-slate-400 hover:text-white transition-all"
-                >
-                  <div className="flex items-center gap-3">
-                    <FileText className="h-4.5 w-4.5 shrink-0" />
-                    {!sidebarCollapsed && <span className="text-[10px] font-black uppercase tracking-wider">Library & Content</span>}
-                  </div>
-                  {!sidebarCollapsed && (openGroups.reports ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />)}
-                </button>
-                {openGroups.reports && !sidebarCollapsed && (
-                  <div className="pl-6 space-y-1 border-l border-slate-800 ml-6">
-                    <button 
-                      onClick={() => { setActiveView('foods'); setSearchQuery(''); }}
-                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                        activeView === 'foods' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      Food Library
-                    </button>
-                    <button 
-                      onClick={() => { setActiveView('recFoods'); setSearchQuery(''); }}
-                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                        activeView === 'recFoods' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      Recommended Foods
-                    </button>
-                    <button 
-                      onClick={() => { setActiveView('videos'); setSearchQuery(''); }}
-                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                        activeView === 'videos' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      Videos
-                    </button>
-                    <button 
-                      onClick={() => { setActiveView('guides'); setSearchQuery(''); }}
-                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                        activeView === 'guides' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      Guides
-                    </button>
-                    <button 
-                      onClick={() => { setActiveView('notifications'); setSearchQuery(''); }}
-                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                        activeView === 'notifications' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      Communications
-                    </button>
-                    <button 
-                      onClick={() => { setActiveView('faqs'); setSearchQuery(''); }}
-                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                        activeView === 'faqs' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      FAQs
-                    </button>
-                    <button 
-                      onClick={() => { setActiveView('healthInsights'); setSearchQuery(''); }}
-                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                        activeView === 'healthInsights' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      Insights
-                    </button>
-                    <button 
-                      onClick={() => { setActiveView('tickets'); setSearchQuery(''); }}
-                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold flex items-center justify-between ${
-                        activeView === 'tickets' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      <span>Support Q&A</span>
-                      {tickets.filter(t => t.status === 'Open').length > 0 && (
-                        <span className="bg-rose-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full shrink-0">
-                          {tickets.filter(t => t.status === 'Open').length}
-                        </span>
+                {/* Notification Drawer */}
+                {showNotificationCenter && (
+                  <div className="absolute right-0 mt-2 w-80 bg-white border border-slate-200 rounded-3xl shadow-xl z-50 p-4 space-y-3">
+                    <div className="flex justify-between items-center pb-2 border-b border-slate-100">
+                      <span className="text-xs font-extrabold text-slate-800">Notifications</span>
+                      <button onClick={() => setShowNotificationCenter(false)} className="text-[10px] text-primary font-bold hover:underline">Mark all read</button>
+                    </div>
+                    <div className="space-y-2 text-xs divide-y divide-slate-50">
+                      {/* Real notification: latest registered doctor */}
+                      {stats?.recentDoctor ? (
+                        <div className="pt-2">
+                          <span className="font-bold text-slate-700 block text-left">🩺 New Doctor Registered</span>
+                          <span className="text-[10px] text-slate-400 block text-left">
+                            Dr. {stats.recentDoctor.name} ({stats.recentDoctor.specialty}) has joined the clinical directory.
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="pt-2 text-slate-400 italic text-[10px]">No recent doctor registrations.</div>
                       )}
-                    </button>
-                    <button 
-                      onClick={() => { setActiveView('product-support'); setSearchQuery(''); }}
-                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                        activeView === 'product-support' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      Product Support
-                    </button>
-                    <button 
-                      onClick={() => { setActiveView('user-feedback'); setSearchQuery(''); }}
-                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold flex items-center justify-between ${
-                        activeView === 'user-feedback' ? 'text-white bg-slate-800 font-bold' : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      <span>User Feedback</span>
-                      <span className="text-[10px] text-amber-400 font-bold">⭐</span>
-                    </button>
+                      {/* Real notification: pending orders count from DB */}
+                      {stats?.pendingOrders > 0 ? (
+                        <div className="pt-2">
+                          <span className="font-bold text-slate-700 block text-left">📦 Pending Orders Alert</span>
+                          <span className="text-[10px] text-slate-400 block text-left">
+                            {stats.pendingOrders} order{stats.pendingOrders !== 1 ? 's are' : ' is'} waiting for vendor routing.
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="pt-2">
+                          <span className="font-bold text-slate-700 block text-left">✅ All Orders Fulfilled</span>
+                          <span className="text-[10px] text-slate-400 block text-left">No pending pharmacy orders at this time.</span>
+                        </div>
+                      )}
+                      {/* Low stock alert */}
+                      {stats?.lowStockProducts > 0 && (
+                        <div className="pt-2">
+                          <span className="font-bold text-amber-600 block text-left">⚠️ Low Stock Warning</span>
+                          <span className="text-[10px] text-slate-400 block text-left">
+                            {stats.lowStockProducts} product{stats.lowStockProducts !== 1 ? 's have' : ' has'} stock ≤ 5 units.
+                          </span>
+                        </div>
+                      )}
+                      {!stats && (
+                        <div className="pt-2 text-center text-slate-400 text-[10px] italic py-4">Loading notifications...</div>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
-            </div>
 
-            {/* CATEGORY: SETTINGS */}
-            <div className="space-y-1">
-              {!sidebarCollapsed && <p className="px-4 text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-2">Settings</p>}
-
-              {/* GROUP 6: SETTINGS */}
-              <div className="space-y-1">
-                <button 
-                  onClick={() => toggleGroup('settings')}
-                  className="w-full flex items-center justify-between px-4 py-2 text-slate-400 hover:text-white transition-all"
+              {/* Profile Dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+                  className="w-8 h-8 rounded-full bg-indigo-500 text-white flex items-center justify-center font-bold text-xs shadow-md border border-indigo-200"
                 >
-                  <div className="flex items-center gap-3">
-                    <Settings className="h-4.5 w-4.5 shrink-0" />
-                    {!sidebarCollapsed && <span className="text-[10px] font-black uppercase tracking-wider">System Settings</span>}
-                  </div>
-                  {!sidebarCollapsed && (openGroups.settings ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />)}
+                  {admin?.name?.charAt(0).toUpperCase()}
                 </button>
-                {openGroups.settings && !sidebarCollapsed && (
-                  <div className="pl-6 space-y-1 border-l border-slate-800 ml-6">
-                    <button 
-                      onClick={() => { setActiveView('plans'); setSearchQuery(''); }}
-                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                        activeView === 'plans' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      Subscription Plans
-                    </button>
-                    <button 
-                      onClick={() => { setActiveView('daily-workflows'); setSearchQuery(''); }}
-                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                        activeView === 'daily-workflows' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      Daily Logging Workflows
-                    </button>
-                    <button 
-                      onClick={() => { setActiveView('ask-mito-workflows'); setSearchQuery(''); }}
-                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold flex items-center justify-between ${
-                        activeView === 'ask-mito-workflows' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      <span>Ask Mito • Patient Queries</span>
-                      <span className="text-[10px] bg-blue-500/30 text-blue-300 font-bold px-1.5 py-0.5 rounded">48h</span>
-                    </button>
-                    <button 
-                      onClick={() => { setActiveView('aicoach'); setSearchQuery(''); }}
-                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                        activeView === 'aicoach' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      AI Coach
-                    </button>
-                    <button 
-                      onClick={() => { setActiveView('payments'); setSearchQuery(''); }}
-                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                        activeView === 'payments' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      Payments & Branding
-                    </button>
-                    <button 
-                      onClick={() => { setActiveView('coupons'); setSearchQuery(''); }}
-                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                        activeView === 'coupons' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      Promo Coupons
-                    </button>
-                    <button 
-                      onClick={() => { setActiveView('founders'); setSearchQuery(''); }}
-                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                        activeView === 'founders' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      Founders Section
-                    </button>
-                    <button 
-                      onClick={() => { setActiveView('legal'); setSearchQuery(''); }}
-                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                        activeView === 'legal' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      Legal Docs
-                    </button>
-                    <button 
-                      onClick={() => { setActiveView('app-user-terms'); setSearchQuery(''); }}
-                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                        activeView === 'app-user-terms' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      App User Terms
-                    </button>
+
+                {showProfileDropdown && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 p-2 space-y-1">
+                    <div className="px-3 py-2 border-b border-slate-100">
+                      <span className="block text-xs font-bold text-slate-800 truncate text-left">{admin?.name}</span>
+                      <span className="block text-[10px] text-slate-400 truncate text-left">{admin?.email}</span>
+                    </div>
+                    <button onClick={() => { setActiveView('legal'); setShowProfileDropdown(false); }} className="w-full text-left px-3 py-1.5 rounded-lg text-xs hover:bg-slate-100 font-semibold text-slate-700">Legal Docs</button>
+                    <button onClick={logout} className="w-full text-left px-3 py-1.5 rounded-lg text-xs hover:bg-rose-50 text-rose-600 font-bold">Sign Out</button>
                   </div>
                 )}
               </div>
+
             </div>
+          </header>
 
-          </nav>
-        </div>
-
-        <div className="p-4 border-t border-slate-800">
-          {!sidebarCollapsed && (
-            <div className="flex items-center justify-between mb-3 text-xs font-semibold px-2">
-              <div>
-                <span className="block text-white truncate max-w-[120px]">{admin?.name}</span>
-                <span className="text-[10px] text-slate-400 capitalize">{admin?.role}</span>
-              </div>
-            </div>
-          )}
-          <button
-            onClick={logout}
-            className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-xs font-bold text-rose-400 hover:bg-rose-950/20 transition-all"
-          >
-            <LogOut className="h-4.5 w-4.5 shrink-0" />
-            {!sidebarCollapsed && <span>Sign Out</span>}
-          </button>
-        </div>
-      </aside>
-
-      {/* 2. MAIN ADMIN VIEW AREA */}
-      <main className="flex-1 min-w-0 overflow-y-auto px-8 py-6">
-
-        {/* Modern SaaS Header */}
-        <header className="mb-6 bg-white border border-slate-200 p-4 rounded-3xl flex justify-between items-center shadow-soft relative">
-          {/* Left: Breadcrumbs & Recently Used */}
-          <div className="flex flex-col gap-1.5">
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-400">
-              {['Admin', ...(activeView === 'dashboard' ? ['Dashboard'] : activeView === 'users' ? ['Users', 'Patients'] : activeView === 'pendingEdits' ? ['Users', 'Profile Edits'] : activeView === 'doctors-management' ? ['Users', 'Doctors'] : activeView === 'vendors-management' ? ['Users', 'Vendors'] : activeView.startsWith('appointments-') ? ['Appointments', activeView.replace('appointments-', '')] : activeView === 'screening-tests' ? ['Appointments', 'Screening Tests'] : activeView === 'partner-labs' ? ['Appointments', 'Partner Labs'] : activeView === 'store-products' ? ['Health Store', 'Products'] : activeView === 'store-orders' ? ['Health Store', 'Orders Routing'] : activeView === 'store-reports' ? ['Health Store', 'Sales Reports'] : activeView.startsWith('order-mgmt-') ? ['Order & Support Management', activeView.replace('order-mgmt-', '').replace('-', ' ')] : [activeView])].map((part, idx, arr) => (
-                <React.Fragment key={idx}>
-                  {idx > 0 && <span className="text-[10px]">/</span>}
-                  <span className={idx === arr.length - 1 ? 'text-slate-800 font-extrabold' : ''}>{part}</span>
-                </React.Fragment>
-              ))}
-            </div>
-            {/* Quick Recently Used Tags */}
-            <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400">
-              <span>Recent:</span>
-              <button onClick={() => setActiveView('order-mgmt-overview')} className="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 rounded text-slate-655 transition-all">Order & Support</button>
-              <button onClick={() => setActiveView('store-products')} className="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 rounded text-slate-655 transition-all">Products</button>
-              <button onClick={() => setActiveView('doctors-management')} className="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 rounded text-slate-655 transition-all">Doctors</button>
-            </div>
-          </div>
-
-          {/* Center/Right: Global Search, Quick Actions, Profile, Notifications */}
-          <div className="flex items-center gap-4">
-            
-            {/* Search Trigger */}
-            <button 
-              onClick={() => setShowGlobalSearchModal(true)}
-              className="flex items-center gap-3 px-3 py-1.5 border border-slate-200 rounded-xl text-xs text-slate-400 hover:bg-slate-50 transition-all bg-white w-48 md:w-64"
-            >
-              <Search className="h-3.5 w-3.5 text-slate-400" />
-              <span className="flex-1 text-left text-slate-400 font-semibold">Search (Ctrl+K)</span>
-            </button>
-
-            {/* Quick Actions Dropdown */}
-            <div className="relative">
-              <button 
-                onClick={() => { setActiveView('store-products'); setSearchQuery(''); }} 
-                className="px-3 py-1.5 bg-primary text-white text-xs font-bold rounded-xl shadow-soft hover:bg-primary/95 transition-all"
-              >
-                + Add Product
-              </button>
-            </div>
-
-            {/* Analytics Quick Link */}
-            <button
-              onClick={() => { setActiveView('reports-analytics'); setSearchQuery(''); }}
-              title="Reports & Analytics"
-              className="p-2 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all flex items-center gap-1.5 px-3 text-xs font-bold text-slate-600"
-            >
-              <Activity className="h-4 w-4" />
-              <span className="hidden md:inline">Analytics</span>
-            </button>
-
-            {/* Notifications Button */}
-            <div className="relative">
-              <button 
-                onClick={() => {
-                  setShowNotificationCenter(!showNotificationCenter);
-                  // Ensure real data is loaded when opening notifications
-                  if (!stats) fetchStats();
-                }}
-                className="p-2 bg-slate-100 hover:bg-slate-200 rounded-xl relative transition-all"
-              >
-                <Bell className="h-4 w-4 text-slate-600" />
-                {/* Only show red dot when real alerts exist */}
-                {(stats?.pendingOrders > 0 || stats?.lowStockProducts > 0) && (
-                  <span className="absolute top-1 right-1 w-2 h-2 bg-rose-500 rounded-full animate-pulse" />
-                )}
-              </button>
-
-              {/* Notification Drawer */}
-              {showNotificationCenter && (
-                <div className="absolute right-0 mt-2 w-80 bg-white border border-slate-200 rounded-3xl shadow-xl z-50 p-4 space-y-3">
-                  <div className="flex justify-between items-center pb-2 border-b border-slate-100">
-                    <span className="text-xs font-extrabold text-slate-800">Notifications</span>
-                    <button onClick={() => setShowNotificationCenter(false)} className="text-[10px] text-primary font-bold hover:underline">Mark all read</button>
-                  </div>
-                  <div className="space-y-2 text-xs divide-y divide-slate-50">
-                    {/* Real notification: latest registered doctor */}
-                    {stats?.recentDoctor ? (
-                      <div className="pt-2">
-                        <span className="font-bold text-slate-700 block text-left">🩺 New Doctor Registered</span>
-                        <span className="text-[10px] text-slate-400 block text-left">
-                          Dr. {stats.recentDoctor.name} ({stats.recentDoctor.specialty}) has joined the clinical directory.
-                        </span>
-                      </div>
-                    ) : (
-                      <div className="pt-2 text-slate-400 italic text-[10px]">No recent doctor registrations.</div>
-                    )}
-                    {/* Real notification: pending orders count from DB */}
-                    {stats?.pendingOrders > 0 ? (
-                      <div className="pt-2">
-                        <span className="font-bold text-slate-700 block text-left">📦 Pending Orders Alert</span>
-                        <span className="text-[10px] text-slate-400 block text-left">
-                          {stats.pendingOrders} order{stats.pendingOrders !== 1 ? 's are' : ' is'} waiting for vendor routing.
-                        </span>
-                      </div>
-                    ) : (
-                      <div className="pt-2">
-                        <span className="font-bold text-slate-700 block text-left">✅ All Orders Fulfilled</span>
-                        <span className="text-[10px] text-slate-400 block text-left">No pending pharmacy orders at this time.</span>
-                      </div>
-                    )}
-                    {/* Low stock alert */}
-                    {stats?.lowStockProducts > 0 && (
-                      <div className="pt-2">
-                        <span className="font-bold text-amber-600 block text-left">⚠️ Low Stock Warning</span>
-                        <span className="text-[10px] text-slate-400 block text-left">
-                          {stats.lowStockProducts} product{stats.lowStockProducts !== 1 ? 's have' : ' has'} stock ≤ 5 units.
-                        </span>
-                      </div>
-                    )}
-                    {!stats && (
-                      <div className="pt-2 text-center text-slate-400 text-[10px] italic py-4">Loading notifications...</div>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Profile Dropdown */}
-            <div className="relative">
-              <button 
-                onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                className="w-8 h-8 rounded-full bg-indigo-500 text-white flex items-center justify-center font-bold text-xs shadow-md border border-indigo-200"
-              >
-                {admin?.name?.charAt(0).toUpperCase()}
-              </button>
-
-              {showProfileDropdown && (
-                <div className="absolute right-0 mt-2 w-48 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 p-2 space-y-1">
-                  <div className="px-3 py-2 border-b border-slate-100">
-                    <span className="block text-xs font-bold text-slate-800 truncate text-left">{admin?.name}</span>
-                    <span className="block text-[10px] text-slate-400 truncate text-left">{admin?.email}</span>
-                  </div>
-                  <button onClick={() => { setActiveView('legal'); setShowProfileDropdown(false); }} className="w-full text-left px-3 py-1.5 rounded-lg text-xs hover:bg-slate-100 font-semibold text-slate-700">Legal Docs</button>
-                  <button onClick={logout} className="w-full text-left px-3 py-1.5 rounded-lg text-xs hover:bg-rose-50 text-rose-600 font-bold">Sign Out</button>
-                </div>
-              )}
-            </div>
-
-          </div>
-        </header>
-
-        {/* VIEW 1: MODERN EXECUTIVE DASHBOARD */}
-        {activeView === 'dashboard' && (
-          <div className="space-y-6">
-            {/* Header / Command Center Banner */}
-            <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-soft relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-blue-50/60 via-indigo-50/30 to-transparent pointer-events-none rounded-full blur-2xl -mr-20 -mt-20" />
-              <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                <div>
-                  <div className="flex items-center gap-2.5">
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                      Live Platform Operational
-                    </span>
-                    <span className="text-xs text-slate-400 font-medium hidden sm:inline">•</span>
-                    <span className="text-xs text-slate-500 font-medium hidden sm:inline">
-                      {new Date().toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
-                    </span>
-                  </div>
-                  <h1 className="text-2xl font-black text-slate-900 tracking-tight mt-1.5 flex items-center gap-2">
-                    Executive Command Center
-                  </h1>
-                  <p className="text-xs text-slate-500 mt-1 max-w-2xl">
-                    Real-time clinical metrics, subscription revenue performance, store fulfillment, and live patient data streams across Mito Reboot.
-                  </p>
-                </div>
-
-                {/* Quick Action Navigation Buttons */}
-                <div className="flex flex-wrap items-center gap-2 pt-2 lg:pt-0">
-                  <button
-                    onClick={() => { fetchStats(); fetchPaymentStats(); }}
-                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-all cursor-pointer shadow-xs"
-                    title="Refresh Live Metrics"
-                  >
-                    <RefreshCw className="w-3.5 h-3.5" />
-                    <span>Refresh</span>
-                  </button>
-                  <button
-                    onClick={() => { setActiveView('revenue-overview'); setSearchQuery(''); }}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition-all cursor-pointer shadow-xs"
-                  >
-                    <TrendingUp className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>Revenue Analytics</span>
-                  </button>
-                  <button
-                    onClick={() => { setActiveView('users'); setSearchQuery(''); }}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-blue-800 bg-blue-50 hover:bg-blue-100 border border-blue-200 transition-all cursor-pointer shadow-xs"
-                  >
-                    <Users className="w-3.5 h-3.5 text-blue-600" />
-                    <span>Patients</span>
-                  </button>
-                  <button
-                    onClick={() => { setActiveView('doctors'); setSearchQuery(''); }}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-indigo-800 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 transition-all cursor-pointer shadow-xs"
-                  >
-                    <Stethoscope className="w-3.5 h-3.5 text-indigo-600" />
-                    <span>Doctors</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* 5-Card Modern Executive KPI Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-              {/* CARD 1: TOTAL REVENUE & COLLECTIONS */}
-              <div 
-                onClick={() => { setActiveView('revenue-overview'); setSearchQuery(''); }}
-                className="group relative bg-gradient-to-br from-emerald-50/70 via-white to-emerald-50/30 p-5 rounded-2xl border border-emerald-200/90 hover:border-emerald-400 shadow-soft hover:shadow-md transition-all cursor-pointer flex flex-col justify-between"
-              >
-                <div>
-                  <div className="flex items-center justify-between">
-                    <div className="w-9 h-9 rounded-xl bg-emerald-100/80 text-emerald-700 flex items-center justify-center shadow-xs">
-                      <TrendingUp className="w-4 h-4" />
+          {/* VIEW 1: MODERN EXECUTIVE DASHBOARD */}
+          {activeView === 'dashboard' && (
+            <div className="space-y-6">
+              {/* Header / Command Center Banner */}
+              <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-soft relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-blue-50/60 via-indigo-50/30 to-transparent pointer-events-none rounded-full blur-2xl -mr-20 -mt-20" />
+                <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                  <div>
+                    <div className="flex items-center gap-2.5">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                        Live Platform Operational
+                      </span>
+                      <span className="text-xs text-slate-400 font-medium hidden sm:inline">•</span>
+                      <span className="text-xs text-slate-500 font-medium hidden sm:inline">
+                        {new Date().toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
+                      </span>
                     </div>
-                    <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200/60">
-                      Real-Time
-                    </span>
+                    <h1 className="text-2xl font-black text-slate-900 tracking-tight mt-1.5 flex items-center gap-2">
+                      Executive Command Center
+                    </h1>
+                    <p className="text-xs text-slate-500 mt-1 max-w-2xl">
+                      Real-time clinical metrics, subscription revenue performance, store fulfillment, and live patient data streams across Mito Reboot.
+                    </p>
                   </div>
-                  <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mt-3">
-                    Total Revenue
-                  </span>
-                  <div className="text-2xl font-black text-slate-900 mt-1 tracking-tight flex items-baseline gap-1">
-                    <span>₹{Number(stats?.totalGrossRevenue || stats?.revenue || 0).toLocaleString('en-IN')}</span>
-                  </div>
-                </div>
 
-                <div className="mt-3 pt-3 border-t border-emerald-100/80 space-y-1">
-                  <div className="flex items-center justify-between text-[11px]">
-                    <span className="text-slate-500 font-medium">Collected:</span>
-                    <span className="font-bold text-emerald-700">₹{Number(stats?.totalAmountCollected || paymentStats?.totalRevenue || 0).toLocaleString('en-IN')}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-[11px]">
-                    <span className="text-slate-500 font-medium">Settled:</span>
-                    <span className="font-bold text-slate-700">₹{Number(stats?.settledToBank || 0).toLocaleString('en-IN')}</span>
-                  </div>
-                  <div className="flex items-center gap-1 text-[11px] font-bold text-emerald-700 group-hover:underline pt-1">
-                    <span>Analytics Ledger</span>
-                    <ArrowUpRight className="w-3 h-3 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-                  </div>
-                </div>
-              </div>
-
-              {/* CARD 2: ACTIVE PAID MEMBERS */}
-              <div 
-                onClick={() => { setActiveView('revenue-subscriptions'); setSearchQuery(''); }}
-                className="group relative bg-gradient-to-br from-indigo-50/70 via-white to-indigo-50/30 p-5 rounded-2xl border border-indigo-200/90 hover:border-indigo-400 shadow-soft hover:shadow-md transition-all cursor-pointer flex flex-col justify-between"
-              >
-                <div>
-                  <div className="flex items-center justify-between">
-                    <div className="w-9 h-9 rounded-xl bg-indigo-100/80 text-indigo-700 flex items-center justify-center shadow-xs">
-                      <Crown className="w-4 h-4" />
-                    </div>
-                    <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800 border border-indigo-200/60">
-                      Premium
-                    </span>
-                  </div>
-                  <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mt-3">
-                    Active Subscribers
-                  </span>
-                  <div className="text-2xl font-black text-slate-900 mt-1 tracking-tight">
-                    {stats?.activePaidSubscribers ?? paymentStats?.activeSubscribers ?? 0}
-                  </div>
-                </div>
-
-                <div className="mt-3 pt-3 border-t border-indigo-100/80 space-y-1">
-                  <div className="flex items-center justify-between text-[11px]">
-                    <span className="text-slate-500 font-medium">Paying Users:</span>
-                    <span className="font-bold text-indigo-700">{stats?.totalPayingUsers ?? 1}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-[11px]">
-                    <span className="text-slate-500 font-medium">Sub Revenue:</span>
-                    <span className="font-bold text-slate-700">₹{Number(stats?.subscriptionRevenue || stats?.totalAmountCollected || 0).toLocaleString('en-IN')}</span>
-                  </div>
-                  <div className="flex items-center gap-1 text-[11px] font-bold text-indigo-700 group-hover:underline pt-1">
-                    <span>Manage Plans</span>
-                    <ArrowUpRight className="w-3 h-3 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-                  </div>
-                </div>
-              </div>
-
-              {/* CARD 3: TOTAL PATIENTS & ENGAGEMENT */}
-              <div 
-                onClick={() => { setActiveView('users'); setSearchQuery(''); }}
-                className="group relative bg-gradient-to-br from-blue-50/70 via-white to-blue-50/30 p-5 rounded-2xl border border-blue-200/90 hover:border-blue-400 shadow-soft hover:shadow-md transition-all cursor-pointer flex flex-col justify-between"
-              >
-                <div>
-                  <div className="flex items-center justify-between">
-                    <div className="w-9 h-9 rounded-xl bg-blue-100/80 text-blue-700 flex items-center justify-center shadow-xs">
-                      <Users className="w-4 h-4" />
-                    </div>
-                    <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200/60">
-                      {stats?.activeUsers || 0} Active (7d)
-                    </span>
-                  </div>
-                  <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mt-3">
-                    Total Patients
-                  </span>
-                  <div className="text-2xl font-black text-slate-900 mt-1 tracking-tight">
-                    {stats?.totalPatients || stats?.totalUsers || 0}
-                  </div>
-                </div>
-
-                <div className="mt-3 pt-3 border-t border-blue-100/80 space-y-1">
-                  <div className="flex items-center justify-between text-[11px]">
-                    <span className="text-slate-500 font-medium">7d Active:</span>
-                    <span className="font-bold text-blue-700">{stats?.activeUsers || 0} patients</span>
-                  </div>
-                  <div className="flex items-center justify-between text-[11px]">
-                    <span className="text-slate-500 font-medium">Engagement:</span>
-                    <span className="font-bold text-slate-700">
-                      {Math.round(((stats?.activeUsers || 0) / Math.max(1, stats?.totalPatients || stats?.totalUsers || 1)) * 100)}%
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1 text-[11px] font-bold text-blue-700 group-hover:underline pt-1">
-                    <span>Patient Directory</span>
-                    <ArrowUpRight className="w-3 h-3 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-                  </div>
-                </div>
-              </div>
-
-              {/* CARD 4: CLINICAL NETWORK & VISITS */}
-              <div 
-                onClick={() => { setActiveView('doctors'); setSearchQuery(''); }}
-                className="group relative bg-gradient-to-br from-cyan-50/70 via-white to-cyan-50/30 p-5 rounded-2xl border border-cyan-200/90 hover:border-cyan-400 shadow-soft hover:shadow-md transition-all cursor-pointer flex flex-col justify-between"
-              >
-                <div>
-                  <div className="flex items-center justify-between">
-                    <div className="w-9 h-9 rounded-xl bg-cyan-100/80 text-cyan-700 flex items-center justify-center shadow-xs">
-                      <Stethoscope className="w-4 h-4" />
-                    </div>
-                    <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-cyan-100 text-cyan-800 border border-cyan-200/60">
-                      {stats?.totalDoctors || 0} Doctors
-                    </span>
-                  </div>
-                  <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mt-3">
-                    Today's Visits
-                  </span>
-                  <div className="text-2xl font-black text-slate-900 mt-1 tracking-tight">
-                    {stats?.todayAppointments || 0}
-                  </div>
-                </div>
-
-                <div className="mt-3 pt-3 border-t border-cyan-100/80 space-y-1">
-                  <div className="flex items-center justify-between text-[11px]">
-                    <span className="text-slate-500 font-medium">Doctors:</span>
-                    <span className="font-bold text-cyan-700">{stats?.totalDoctors || 0} active</span>
-                  </div>
-                  <div className="flex items-center justify-between text-[11px] truncate">
-                    <span className="text-slate-500 font-medium">Recent:</span>
-                    <span className="font-bold text-slate-700 truncate max-w-[100px]" title={stats?.recentDoctor?.name || 'Verified'}>
-                      {stats?.recentDoctor?.name || 'Dr. Active'}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1 text-[11px] font-bold text-cyan-700 group-hover:underline pt-1">
-                    <span>Clinical Network</span>
-                    <ArrowUpRight className="w-3 h-3 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-                  </div>
-                </div>
-              </div>
-
-              {/* CARD 5: STORE ORDERS & INVENTORY */}
-              <div 
-                onClick={() => { setActiveView('store-orders'); setSearchQuery(''); }}
-                className="group relative bg-gradient-to-br from-amber-50/70 via-white to-amber-50/30 p-5 rounded-2xl border border-amber-200/90 hover:border-amber-400 shadow-soft hover:shadow-md transition-all cursor-pointer flex flex-col justify-between"
-              >
-                <div>
-                  <div className="flex items-center justify-between">
-                    <div className="w-9 h-9 rounded-xl bg-amber-100/80 text-amber-700 flex items-center justify-center shadow-xs">
-                      <Package className="w-4 h-4" />
-                    </div>
-                    <span className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full border ${
-                      (stats?.lowStockProducts || 0) > 0 
-                        ? 'bg-rose-100 text-rose-800 border-rose-200/60' 
-                        : 'bg-amber-100 text-amber-800 border-amber-200/60'
-                    }`}>
-                      {(stats?.lowStockProducts || 0) > 0 ? `${stats.lowStockProducts} Low Stock` : 'Stock OK'}
-                    </span>
-                  </div>
-                  <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mt-3">
-                    Pending Orders
-                  </span>
-                  <div className="text-2xl font-black text-slate-900 mt-1 tracking-tight">
-                    {stats?.pendingOrders || 0}
-                  </div>
-                </div>
-
-                <div className="mt-3 pt-3 border-t border-amber-100/80 space-y-1">
-                  <div className="flex items-center justify-between text-[11px]">
-                    <span className="text-slate-500 font-medium">Delivered:</span>
-                    <span className="font-bold text-amber-700">{stats?.deliveredOrders || 0} fulfilled</span>
-                  </div>
-                  <div className="flex items-center justify-between text-[11px]">
-                    <span className="text-slate-500 font-medium">Vendors:</span>
-                    <span className="font-bold text-slate-700">{stats?.activeVendors || 0} active</span>
-                  </div>
-                  <div className="flex items-center gap-1 text-[11px] font-bold text-amber-700 group-hover:underline pt-1">
-                    <span>Manage Orders</span>
-                    <ArrowUpRight className="w-3 h-3 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* VISUAL ANALYTICS ROW 1: REVENUE TIMELINE & DATABASE LOG TOTALS */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              {/* Financial & Ingestion Stream (7 cols) */}
-              <div className="lg:col-span-7 bg-white p-6 rounded-3xl border border-slate-200/90 shadow-soft flex flex-col justify-between">
-                <div>
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600">
-                          <TrendingUp className="w-4 h-4" />
-                        </span>
-                        <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider">
-                          Revenue & Collections Velocity
-                        </h3>
-                      </div>
-                      <p className="text-xs text-slate-500 mt-1">
-                        Consolidated billing across Subscriptions, E-Commerce, and Consultations.
-                      </p>
-                    </div>
-
+                  {/* Quick Action Navigation Buttons */}
+                  <div className="flex flex-wrap items-center gap-2 pt-2 lg:pt-0">
+                    <button
+                      onClick={() => { fetchStats(); fetchPaymentStats(); }}
+                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-all cursor-pointer shadow-xs"
+                      title="Refresh Live Metrics"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      <span>Refresh</span>
+                    </button>
                     <button
                       onClick={() => { setActiveView('revenue-overview'); setSearchQuery(''); }}
-                      className="px-3 py-1.5 rounded-xl text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition-all cursor-pointer"
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition-all cursor-pointer shadow-xs"
                     >
-                      Full Report →
+                      <TrendingUp className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Revenue Analytics</span>
+                    </button>
+                    <button
+                      onClick={() => { setActiveView('users'); setSearchQuery(''); }}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-blue-800 bg-blue-50 hover:bg-blue-100 border border-blue-200 transition-all cursor-pointer shadow-xs"
+                    >
+                      <Users className="w-3.5 h-3.5 text-blue-600" />
+                      <span>Patients</span>
+                    </button>
+                    <button
+                      onClick={() => { setActiveView('doctors'); setSearchQuery(''); }}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-indigo-800 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 transition-all cursor-pointer shadow-xs"
+                    >
+                      <Stethoscope className="w-3.5 h-3.5 text-indigo-600" />
+                      <span>Doctors</span>
                     </button>
                   </div>
+                </div>
+              </div>
 
-                  {/* Summary Bar */}
-                  <div className="grid grid-cols-3 gap-3 my-5">
-                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Gross</span>
-                      <span className="text-base font-black text-slate-800 mt-0.5 block">
-                        ₹{Number(stats?.totalGrossRevenue || stats?.revenue || 0).toLocaleString('en-IN')}
+              {/* 5-Card Modern Executive KPI Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                {/* CARD 1: TOTAL REVENUE & COLLECTIONS */}
+                <div
+                  onClick={() => { setActiveView('revenue-overview'); setSearchQuery(''); }}
+                  className="group relative bg-gradient-to-br from-emerald-50/70 via-white to-emerald-50/30 p-5 rounded-2xl border border-emerald-200/90 hover:border-emerald-400 shadow-soft hover:shadow-md transition-all cursor-pointer flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <div className="w-9 h-9 rounded-xl bg-emerald-100/80 text-emerald-700 flex items-center justify-center shadow-xs">
+                        <TrendingUp className="w-4 h-4" />
+                      </div>
+                      <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200/60">
+                        Real-Time
                       </span>
                     </div>
-                    <div className="p-3 rounded-xl bg-emerald-50/60 border border-emerald-100">
-                      <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider block">Collected</span>
-                      <span className="text-base font-black text-emerald-700 mt-0.5 block">
-                        ₹{Number(stats?.totalAmountCollected || 0).toLocaleString('en-IN')}
-                      </span>
-                    </div>
-                    <div className="p-3 rounded-xl bg-blue-50/60 border border-blue-100">
-                      <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider block">Settled to Bank</span>
-                      <span className="text-base font-black text-blue-700 mt-0.5 block">
-                        ₹{Number(stats?.settledToBank || 0).toLocaleString('en-IN')}
-                      </span>
+                    <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mt-3">
+                      Total Revenue
+                    </span>
+                    <div className="text-2xl font-black text-slate-900 mt-1 tracking-tight flex items-baseline gap-1">
+                      <span>₹{Number(stats?.totalGrossRevenue || stats?.revenue || 0).toLocaleString('en-IN')}</span>
                     </div>
                   </div>
 
-                  {/* Chart */}
-                  <div className="h-60 w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart
-                        data={
-                          stats?.revenueTimeline && stats.revenueTimeline.length > 0
-                            ? stats.revenueTimeline.map((item: any) => ({
+                  <div className="mt-3 pt-3 border-t border-emerald-100/80 space-y-1">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-slate-500 font-medium">Collected:</span>
+                      <span className="font-bold text-emerald-700">₹{Number(stats?.totalAmountCollected || paymentStats?.totalRevenue || 0).toLocaleString('en-IN')}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-slate-500 font-medium">Settled:</span>
+                      <span className="font-bold text-slate-700">₹{Number(stats?.settledToBank || 0).toLocaleString('en-IN')}</span>
+                    </div>
+                    <div className="flex items-center gap-1 text-[11px] font-bold text-emerald-700 group-hover:underline pt-1">
+                      <span>Analytics Ledger</span>
+                      <ArrowUpRight className="w-3 h-3 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* CARD 2: ACTIVE PAID MEMBERS */}
+                <div
+                  onClick={() => { setActiveView('revenue-subscriptions'); setSearchQuery(''); }}
+                  className="group relative bg-gradient-to-br from-indigo-50/70 via-white to-indigo-50/30 p-5 rounded-2xl border border-indigo-200/90 hover:border-indigo-400 shadow-soft hover:shadow-md transition-all cursor-pointer flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <div className="w-9 h-9 rounded-xl bg-indigo-100/80 text-indigo-700 flex items-center justify-center shadow-xs">
+                        <Crown className="w-4 h-4" />
+                      </div>
+                      <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800 border border-indigo-200/60">
+                        Premium
+                      </span>
+                    </div>
+                    <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mt-3">
+                      Active Subscribers
+                    </span>
+                    <div className="text-2xl font-black text-slate-900 mt-1 tracking-tight">
+                      {stats?.activePaidSubscribers ?? paymentStats?.activeSubscribers ?? 0}
+                    </div>
+                  </div>
+
+                  <div className="mt-3 pt-3 border-t border-indigo-100/80 space-y-1">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-slate-500 font-medium">Paying Users:</span>
+                      <span className="font-bold text-indigo-700">{stats?.totalPayingUsers ?? 1}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-slate-500 font-medium">Sub Revenue:</span>
+                      <span className="font-bold text-slate-700">₹{Number(stats?.subscriptionRevenue || stats?.totalAmountCollected || 0).toLocaleString('en-IN')}</span>
+                    </div>
+                    <div className="flex items-center gap-1 text-[11px] font-bold text-indigo-700 group-hover:underline pt-1">
+                      <span>Manage Plans</span>
+                      <ArrowUpRight className="w-3 h-3 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* CARD 3: TOTAL PATIENTS & ENGAGEMENT */}
+                <div
+                  onClick={() => { setActiveView('users'); setSearchQuery(''); }}
+                  className="group relative bg-gradient-to-br from-blue-50/70 via-white to-blue-50/30 p-5 rounded-2xl border border-blue-200/90 hover:border-blue-400 shadow-soft hover:shadow-md transition-all cursor-pointer flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <div className="w-9 h-9 rounded-xl bg-blue-100/80 text-blue-700 flex items-center justify-center shadow-xs">
+                        <Users className="w-4 h-4" />
+                      </div>
+                      <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200/60">
+                        {stats?.activeUsers || 0} Active (7d)
+                      </span>
+                    </div>
+                    <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mt-3">
+                      Total Patients
+                    </span>
+                    <div className="text-2xl font-black text-slate-900 mt-1 tracking-tight">
+                      {stats?.totalPatients || stats?.totalUsers || 0}
+                    </div>
+                  </div>
+
+                  <div className="mt-3 pt-3 border-t border-blue-100/80 space-y-1">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-slate-500 font-medium">7d Active:</span>
+                      <span className="font-bold text-blue-700">{stats?.activeUsers || 0} patients</span>
+                    </div>
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-slate-500 font-medium">Engagement:</span>
+                      <span className="font-bold text-slate-700">
+                        {Math.round(((stats?.activeUsers || 0) / Math.max(1, stats?.totalPatients || stats?.totalUsers || 1)) * 100)}%
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1 text-[11px] font-bold text-blue-700 group-hover:underline pt-1">
+                      <span>Patient Directory</span>
+                      <ArrowUpRight className="w-3 h-3 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* CARD 4: CLINICAL NETWORK & VISITS */}
+                <div
+                  onClick={() => { setActiveView('doctors'); setSearchQuery(''); }}
+                  className="group relative bg-gradient-to-br from-cyan-50/70 via-white to-cyan-50/30 p-5 rounded-2xl border border-cyan-200/90 hover:border-cyan-400 shadow-soft hover:shadow-md transition-all cursor-pointer flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <div className="w-9 h-9 rounded-xl bg-cyan-100/80 text-cyan-700 flex items-center justify-center shadow-xs">
+                        <Stethoscope className="w-4 h-4" />
+                      </div>
+                      <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-cyan-100 text-cyan-800 border border-cyan-200/60">
+                        {stats?.totalDoctors || 0} Doctors
+                      </span>
+                    </div>
+                    <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mt-3">
+                      Today's Visits
+                    </span>
+                    <div className="text-2xl font-black text-slate-900 mt-1 tracking-tight">
+                      {stats?.todayAppointments || 0}
+                    </div>
+                  </div>
+
+                  <div className="mt-3 pt-3 border-t border-cyan-100/80 space-y-1">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-slate-500 font-medium">Doctors:</span>
+                      <span className="font-bold text-cyan-700">{stats?.totalDoctors || 0} active</span>
+                    </div>
+                    <div className="flex items-center justify-between text-[11px] truncate">
+                      <span className="text-slate-500 font-medium">Recent:</span>
+                      <span className="font-bold text-slate-700 truncate max-w-[100px]" title={stats?.recentDoctor?.name || 'Verified'}>
+                        {stats?.recentDoctor?.name || 'Dr. Active'}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1 text-[11px] font-bold text-cyan-700 group-hover:underline pt-1">
+                      <span>Clinical Network</span>
+                      <ArrowUpRight className="w-3 h-3 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* CARD 5: STORE ORDERS & INVENTORY */}
+                <div
+                  onClick={() => { setActiveView('store-orders'); setSearchQuery(''); }}
+                  className="group relative bg-gradient-to-br from-amber-50/70 via-white to-amber-50/30 p-5 rounded-2xl border border-amber-200/90 hover:border-amber-400 shadow-soft hover:shadow-md transition-all cursor-pointer flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <div className="w-9 h-9 rounded-xl bg-amber-100/80 text-amber-700 flex items-center justify-center shadow-xs">
+                        <Package className="w-4 h-4" />
+                      </div>
+                      <span className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full border ${(stats?.lowStockProducts || 0) > 0
+                        ? 'bg-rose-100 text-rose-800 border-rose-200/60'
+                        : 'bg-amber-100 text-amber-800 border-amber-200/60'
+                        }`}>
+                        {(stats?.lowStockProducts || 0) > 0 ? `${stats.lowStockProducts} Low Stock` : 'Stock OK'}
+                      </span>
+                    </div>
+                    <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mt-3">
+                      Pending Orders
+                    </span>
+                    <div className="text-2xl font-black text-slate-900 mt-1 tracking-tight">
+                      {stats?.pendingOrders || 0}
+                    </div>
+                  </div>
+
+                  <div className="mt-3 pt-3 border-t border-amber-100/80 space-y-1">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-slate-500 font-medium">Delivered:</span>
+                      <span className="font-bold text-amber-700">{stats?.deliveredOrders || 0} fulfilled</span>
+                    </div>
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-slate-500 font-medium">Vendors:</span>
+                      <span className="font-bold text-slate-700">{stats?.activeVendors || 0} active</span>
+                    </div>
+                    <div className="flex items-center gap-1 text-[11px] font-bold text-amber-700 group-hover:underline pt-1">
+                      <span>Manage Orders</span>
+                      <ArrowUpRight className="w-3 h-3 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* VISUAL ANALYTICS ROW 1: REVENUE TIMELINE & DATABASE LOG TOTALS */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                {/* Financial & Ingestion Stream (7 cols) */}
+                <div className="lg:col-span-7 bg-white p-6 rounded-3xl border border-slate-200/90 shadow-soft flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600">
+                            <TrendingUp className="w-4 h-4" />
+                          </span>
+                          <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider">
+                            Revenue & Collections Velocity
+                          </h3>
+                        </div>
+                        <p className="text-xs text-slate-500 mt-1">
+                          Consolidated billing across Subscriptions, E-Commerce, and Consultations.
+                        </p>
+                      </div>
+
+                      <button
+                        onClick={() => { setActiveView('revenue-overview'); setSearchQuery(''); }}
+                        className="px-3 py-1.5 rounded-xl text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition-all cursor-pointer"
+                      >
+                        Full Report →
+                      </button>
+                    </div>
+
+                    {/* Summary Bar */}
+                    <div className="grid grid-cols-3 gap-3 my-5">
+                      <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Gross</span>
+                        <span className="text-base font-black text-slate-800 mt-0.5 block">
+                          ₹{Number(stats?.totalGrossRevenue || stats?.revenue || 0).toLocaleString('en-IN')}
+                        </span>
+                      </div>
+                      <div className="p-3 rounded-xl bg-emerald-50/60 border border-emerald-100">
+                        <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider block">Collected</span>
+                        <span className="text-base font-black text-emerald-700 mt-0.5 block">
+                          ₹{Number(stats?.totalAmountCollected || 0).toLocaleString('en-IN')}
+                        </span>
+                      </div>
+                      <div className="p-3 rounded-xl bg-blue-50/60 border border-blue-100">
+                        <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider block">Settled to Bank</span>
+                        <span className="text-base font-black text-blue-700 mt-0.5 block">
+                          ₹{Number(stats?.settledToBank || 0).toLocaleString('en-IN')}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Chart */}
+                    <div className="h-60 w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart
+                          data={
+                            stats?.revenueTimeline && stats.revenueTimeline.length > 0
+                              ? stats.revenueTimeline.map((item: any) => ({
                                 date: item.date ? item.date.slice(5) : '',
                                 gross: item.gross || 0,
                                 net: item.net || 0
                               }))
-                            : [
+                              : [
                                 { date: 'Week 1', gross: Number(stats?.totalGrossRevenue || 0) * 0.2, net: Number(stats?.totalAmountCollected || 0) * 0.2 },
                                 { date: 'Week 2', gross: Number(stats?.totalGrossRevenue || 0) * 0.5, net: Number(stats?.totalAmountCollected || 0) * 0.5 },
                                 { date: 'Week 3', gross: Number(stats?.totalGrossRevenue || 0) * 0.8, net: Number(stats?.totalAmountCollected || 0) * 0.8 },
                                 { date: 'This Month', gross: Number(stats?.totalGrossRevenue || 0), net: Number(stats?.totalAmountCollected || 0) }
                               ]
-                        }
-                        margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                          }
+                          margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                        >
+                          <defs>
+                            <linearGradient id="colorGross" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="#10B981" stopOpacity={0.4} />
+                              <stop offset="95%" stopColor="#10B981" stopOpacity={0.0} />
+                            </linearGradient>
+                            <linearGradient id="colorNet" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3} />
+                              <stop offset="95%" stopColor="#3B82F6" stopOpacity={0.0} />
+                            </linearGradient>
+                          </defs>
+                          <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#94A3B8', fontWeight: 600 }} axisLine={false} tickLine={false} />
+                          <YAxis tick={{ fontSize: 11, fill: '#94A3B8', fontWeight: 600 }} axisLine={false} tickLine={false} tickFormatter={(v) => `₹${v}`} />
+                          <Tooltip
+                            contentStyle={{
+                              backgroundColor: '#0F172A',
+                              borderRadius: '12px',
+                              border: '1px solid #334155',
+                              padding: '8px 12px',
+                              boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.4)'
+                            }}
+                            itemStyle={{ color: '#FFFFFF', fontWeight: 'bold', fontSize: '12px' }}
+                            labelStyle={{ color: '#94A3B8', fontWeight: 'bold', fontSize: '12px', marginBottom: '2px' }}
+                            formatter={(value: any, name: any) => [`₹${Number(value).toLocaleString('en-IN')}`, name === 'gross' ? 'Gross Billing' : name === 'net' ? 'Net Collected' : name]}
+                          />
+                          <Area type="monotone" dataKey="gross" stroke="#10B981" strokeWidth={2.5} fillOpacity={1} fill="url(#colorGross)" name="Gross Billing" />
+                          <Area type="monotone" dataKey="net" stroke="#3B82F6" strokeWidth={2} fillOpacity={1} fill="url(#colorNet)" name="Net Collected" />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+
+                  <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                    <div className="flex items-center gap-4">
+                      <span className="flex items-center gap-1.5 font-semibold">
+                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> Gross Billing
+                      </span>
+                      <span className="flex items-center gap-1.5 font-semibold">
+                        <span className="w-2.5 h-2.5 rounded-full bg-blue-500" /> Collected Payments
+                      </span>
+                    </div>
+                    <span className="font-bold text-slate-600">
+                      {stats?.totalTransactions || 0} Transactions Recorded
+                    </span>
+                  </div>
+                </div>
+
+                {/* Health Data & Activity Totals (5 cols) */}
+                <div className="lg:col-span-5 bg-white p-6 rounded-3xl border border-slate-200/90 shadow-soft flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="p-1.5 rounded-lg bg-blue-50 text-blue-600">
+                          <Activity className="w-4 h-4" />
+                        </span>
+                        <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider">
+                          Clinical Ingestion Totals
+                        </h3>
+                      </div>
+                      <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
+                        Live Telemetry
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Continuous glucose monitoring records, food logs, and patient records stored.
+                    </p>
+
+                    <div className="h-60 mt-5">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart
+                          data={[
+                            { name: 'CGM Reports', count: stats?.reportsUploaded || 0, fill: '#3B82F6' },
+                            { name: 'Meal Logs', count: stats?.foodLogs || 0, fill: '#10B981' },
+                            { name: 'Patients', count: stats?.totalPatients || stats?.totalUsers || 0, fill: '#6366F1' }
+                          ]}
+                          margin={{ top: 15, right: 10, left: -20, bottom: 0 }}
+                        >
+                          <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#64748B', fontWeight: 600 }} axisLine={false} tickLine={false} />
+                          <YAxis tick={{ fontSize: 11, fill: '#64748B', fontWeight: 600 }} axisLine={false} tickLine={false} />
+                          <Tooltip
+                            contentStyle={{
+                              backgroundColor: '#0F172A',
+                              borderRadius: '12px',
+                              border: '1px solid #334155',
+                              padding: '8px 12px',
+                              boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.4)'
+                            }}
+                            itemStyle={{ color: '#FFFFFF', fontWeight: 'bold', fontSize: '12px' }}
+                            labelStyle={{ color: '#F8FAFC', fontWeight: 'bold', fontSize: '12px' }}
+                            formatter={(value: any, name: any) => [`${value} meals logged`, `${name}`]}
+                          />
+                          <Bar dataKey="count" radius={[10, 10, 0, 0]}>
+                            <Cell fill="#3B82F6" />
+                            <Cell fill="#10B981" />
+                            <Cell fill="#6366F1" />
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+
+                  <div className="pt-3 border-t border-slate-100 grid grid-cols-3 gap-2 text-center">
+                    <div className="p-2 rounded-xl bg-slate-50">
+                      <span className="text-[10px] font-bold text-slate-400 block uppercase">Reports</span>
+                      <span className="text-sm font-black text-blue-600">{stats?.reportsUploaded || 0}</span>
+                    </div>
+                    <div className="p-2 rounded-xl bg-slate-50">
+                      <span className="text-[10px] font-bold text-slate-400 block uppercase">Food Logs</span>
+                      <span className="text-sm font-black text-emerald-600">{stats?.foodLogs || 0}</span>
+                    </div>
+                    <div className="p-2 rounded-xl bg-slate-50">
+                      <span className="text-[10px] font-bold text-slate-400 block uppercase">Patients</span>
+                      <span className="text-sm font-black text-indigo-600">{stats?.totalPatients || stats?.totalUsers || 0}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* VISUAL ANALYTICS ROW 2: NUTRITION DISTRIBUTION & SYSTEM HEALTH */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                {/* Category distribution Pie chart (6 cols) */}
+                <div className="lg:col-span-6 bg-white p-6 rounded-3xl border border-slate-200/90 shadow-soft">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="p-1.5 rounded-lg bg-amber-50 text-amber-600">
+                        <Utensils className="w-4 h-4" />
+                      </span>
+                      <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider">
+                        Meal Nutrition Category Distribution
+                      </h3>
+                    </div>
+                    <span className="text-xs font-bold text-slate-500">
+                      {stats?.foodLogs || 0} Total Logs
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 mb-4">
+                    Dietary breakdown of foods logged by active patients across the application.
+                  </p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center">
+                    <div className="sm:col-span-6 h-56 flex justify-center items-center">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={stats?.categoryBreakdown || []}
+                            dataKey="count"
+                            nameKey="_id"
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={55}
+                            outerRadius={80}
+                            paddingAngle={3}
+                          >
+                            {(stats?.categoryBreakdown || []).map((_: any, index: number) => (
+                              <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                            ))}
+                          </Pie>
+                          <Tooltip
+                            contentStyle={{
+                              backgroundColor: '#0F172A',
+                              borderRadius: '12px',
+                              border: '1px solid #334155',
+                              padding: '8px 12px',
+                              boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.4)'
+                            }}
+                            itemStyle={{ color: '#FFFFFF', fontWeight: 'bold', fontSize: '12px' }}
+                            labelStyle={{ color: '#F8FAFC', fontWeight: 'bold', fontSize: '12px' }}
+                            formatter={(value: any, name: any) => [`${value} meals logged`, `${name}`]}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+
+                    {/* Clean side legend */}
+                    <div className="sm:col-span-6 space-y-2 max-h-56 overflow-y-auto pr-1">
+                      {(stats?.categoryBreakdown || []).map((item: any, idx: number) => {
+                        const totalMeals = (stats?.categoryBreakdown || []).reduce((acc: number, curr: any) => acc + (curr.count || 0), 0);
+                        const percent = totalMeals > 0 ? Math.round(((item.count || 0) / totalMeals) * 100) : 0;
+                        return (
+                          <div key={item._id || idx} className="flex items-center justify-between p-2 rounded-xl bg-slate-50 border border-slate-100 text-xs">
+                            <div className="flex items-center gap-2 truncate">
+                              <span
+                                className="w-3 h-3 rounded-full shrink-0"
+                                style={{ backgroundColor: PIE_COLORS[idx % PIE_COLORS.length] }}
+                              />
+                              <span className="font-semibold text-slate-700 truncate" title={item._id}>
+                                {item._id || 'General'}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <span className="font-bold text-slate-900">{item.count}</span>
+                              <span className="text-[10px] font-black px-1.5 py-0.5 rounded-md bg-white border border-slate-200 text-slate-600">
+                                {percent}%
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                {/* System Infrastructure & Operational Status (6 cols) */}
+                <div className="lg:col-span-6 bg-white p-6 rounded-3xl border border-slate-200/90 shadow-soft flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600">
+                          <CheckCircle className="w-4 h-4" />
+                        </span>
+                        <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider">
+                          Platform Infrastructure & Services
+                        </h3>
+                      </div>
+                      <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        All Operational
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-500 mb-4">
+                      Active gateway connectivity, database indexes, and background communication relays.
+                    </p>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-xs font-bold text-slate-800">MongoDB Core</span>
+                          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                        </div>
+                        <p className="text-[11px] text-slate-500">FastGluco primary cluster connected with 3 active workflows.</p>
+                      </div>
+
+                      <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-xs font-bold text-slate-800">Brevo SMTP Relay</span>
+                          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                        </div>
+                        <p className="text-[11px] text-slate-500">support@mitoreboot.in email dispatch operational.</p>
+                      </div>
+
+                      <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-xs font-bold text-slate-800">Razorpay Gateway</span>
+                          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                        </div>
+                        <p className="text-[11px] text-slate-500">Subscription and checkout webhooks verified and capturing.</p>
+                      </div>
+
+                      <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-xs font-bold text-slate-800">Firebase Auth</span>
+                          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                        </div>
+                        <p className="text-[11px] text-slate-500">Service account initialized for mobile phone verification.</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Quick module links */}
+                  <div className="mt-4 pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
+                    <span className="text-xs font-bold text-slate-600">Quick Navigation:</span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => { setActiveView('patient-activity'); setSearchQuery(''); }}
+                        className="px-2.5 py-1 rounded-lg text-xs font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 transition-all cursor-pointer"
                       >
+                        Patient Activity
+                      </button>
+                      <button
+                        onClick={() => { setActiveView('otp-telemetry'); setSearchQuery(''); }}
+                        className="px-2.5 py-1 rounded-lg text-xs font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 transition-all cursor-pointer"
+                      >
+                        OTP Logs
+                      </button>
+                      <button
+                        onClick={() => { setActiveView('revenue-transactions'); setSearchQuery(''); }}
+                        className="px-2.5 py-1 rounded-lg text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition-all cursor-pointer"
+                      >
+                        Transactions Ledger
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* VIEW: PATIENT ACTIVITY TIMELINE */}
+          {activeView === 'patient-activity' && (
+            <div className="space-y-6">
+              {!selectedPatient ? (
+                // 1. Patient Directory List View
+                <div className="space-y-4">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                      <h2 className="text-xl font-bold text-slate-800">Patient Activity Monitoring</h2>
+                      <p className="text-xs text-slate-500 mt-1">Select a patient to view their complete activity timeline across modules.</p>
+                    </div>
+                    <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                      <select
+                        value={patientStatusFilter}
+                        onChange={(e) => setPatientStatusFilter(e.target.value)}
+                        className="px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary bg-white"
+                      >
+                        <option value="all">All Statuses</option>
+                        <option value="Pending Review">Pending Review</option>
+                        <option value="Active">Active</option>
+                        <option value="New Account">New Account</option>
+                      </select>
+                      <div className="relative w-full sm:w-64">
+                        <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                          <Search className="h-4 w-4" />
+                        </span>
+                        <input
+                          type="text"
+                          value={patientSearch}
+                          onChange={(e) => setPatientSearch(e.target.value)}
+                          placeholder="Search by name, ID or email..."
+                          className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary text-sm bg-white"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {patientsLoading ? (
+                    <div className="text-center py-12 bg-white rounded-2xl border border-slate-200">
+                      <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+                      <p className="text-xs text-slate-500 mt-2">Loading patient database...</p>
+                    </div>
+                  ) : (
+                    <div className="bg-white rounded-2xl border border-slate-200 shadow-soft overflow-x-auto">
+                      <table className="min-w-full divide-y divide-slate-200">
+                        <thead className="bg-slate-50">
+                          <tr>
+                            <th className="px-6 py-3.5 text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider">Patient Name</th>
+                            <th className="px-6 py-3.5 text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider">Patient ID</th>
+                            <th className="px-6 py-3.5 text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider">Last Active</th>
+                            <th className="px-6 py-3.5 text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Logs</th>
+                            <th className="px-6 py-3.5 text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider">Tobacco Staining</th>
+                            <th className="px-6 py-3.5 text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider">Overall Status</th>
+                            <th className="px-6 py-3.5 text-right text-[10px] font-bold text-slate-400 uppercase tracking-wider">Action</th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-slate-200">
+                          {patients
+                            .filter(p => {
+                              const q = patientSearch.toLowerCase();
+                              const matchesSearch = (p.name || '').toLowerCase().includes(q) || (p.email || '').toLowerCase().includes(q) || p._id.toLowerCase().includes(q);
+                              const matchesFilter = patientStatusFilter === 'all' || p.overallStatus === patientStatusFilter;
+                              return matchesSearch && matchesFilter;
+                            })
+                            .map(p => (
+                              <tr key={p._id} className="hover:bg-slate-50/50 transition-colors">
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <div className="text-sm font-bold text-slate-800">{p.name || 'Anonymous'}</div>
+                                  <div className="text-[10px] text-slate-400">{p.email || 'No Email'}</div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-xs font-mono text-slate-500">{p._id}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-xs text-slate-600">
+                                  {new Date(p.lastActive).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })} at {new Date(p.lastActive).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-xs font-semibold text-slate-800">{p.totalLogs} logs</td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${p.tobaccoStatus === 'Yes' ? 'bg-amber-50 text-amber-600 border-amber-200' : p.tobaccoStatus === 'No' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-slate-50 text-slate-400 border-slate-200'}`}>
+                                    {p.tobaccoStatus === 'Yes' ? 'Stained' : p.tobaccoStatus === 'No' ? 'Clear' : 'No Info'}
+                                  </span>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${p.overallStatus === 'Pending Review' ? 'bg-amber-100 text-amber-800 border-amber-250' : p.overallStatus === 'Active' ? 'bg-emerald-100 text-emerald-800 border-emerald-250' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>
+                                    {p.overallStatus}
+                                  </span>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-right text-xs font-medium">
+                                  <button
+                                    onClick={() => fetchPatientTimeline(p._id)}
+                                    className="text-primary hover:text-blue-800 font-bold bg-primary/10 px-3 py-1.5 rounded-lg transition-all"
+                                  >
+                                    View Timeline
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                // 2. Individual Patient Timeline View
+                <div className="space-y-6">
+                  {/* Back Link */}
+                  <button
+                    onClick={() => {
+                      setSelectedPatient(null);
+                    }}
+                    className="flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors"
+                  >
+                    &larr; Back to Patient List
+                  </button>
+
+                  {/* Patient Summary Header */}
+                  <div className="bg-white rounded-3xl border border-slate-200 shadow-soft p-5">
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-5 border-b border-slate-100">
+                      <div>
+                        <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase">Patient Profile</span>
+                        <h2 className="text-2xl font-bold text-slate-800 mt-1">{selectedPatient.name || 'Anonymous'}</h2>
+                        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500 mt-1">
+                          <span><strong>ID:</strong> {selectedPatient._id}</span>
+                          <span><strong>Email:</strong> {selectedPatient.email || 'N/A'}</span>
+                          <span><strong>Phone:</strong> {selectedPatient.mobileNumber || 'N/A'}</span>
+                        </div>
+                      </div>
+                      <span className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full">
+                        Registered: {new Date(selectedPatient.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+
+                    {/* Summary Metric Cards */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6">
+                      <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200/50">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Status</span>
+                        <p className="text-sm font-bold text-slate-800">
+                          {patientTimeline.filter(t => t.type === 'TOBACCO_STAIN' && !t.reviewed).length > 0 ? 'Pending Review' : 'Reviewed / Up to Date'}
+                        </p>
+                      </div>
+                      <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200/50">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Total Logs</span>
+                        <p className="text-sm font-bold text-slate-800">{patientTimeline.filter(t => t.type !== 'ACCOUNT_CREATED').length} entries</p>
+                      </div>
+                      <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200/50">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Latest Stain Score</span>
+                        <p className="text-sm font-bold text-slate-800">
+                          {patientTimeline.find(t => t.type === 'TOBACCO_STAIN')?.score || 'N/A'}
+                        </p>
+                      </div>
+                      <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200/50">
+                        <span className="text-[10px] font-bold text-slate-400 tracking-wider uppercase block mb-1">Recommendations</span>
+                        <p className="text-sm font-bold text-slate-800">
+                          {patientTimeline.filter(t => t.type === 'DOCTOR_RECOMMENDATION').length} sent
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Chronological Timeline */}
+                  <div className="bg-white rounded-3xl border border-slate-200 shadow-soft p-6">
+                    <h3 className="text-base font-bold text-slate-800 mb-6 flex items-center gap-2">
+                      <History className="h-4.5 w-4.5 text-primary" /> Patient Activity Timeline
+                    </h3>
+
+                    {patientTimelineLoading ? (
+                      <div className="text-center py-12">
+                        <Loader2 className="h-6 w-6 animate-spin mx-auto text-primary" />
+                      </div>
+                    ) : (
+                      <div className="relative border-l border-slate-100 pl-6 ml-3 space-y-8">
+                        {patientTimeline.map((item, idx) => (
+                          <div key={idx} className="relative">
+                            {/* Timeline dot */}
+                            <span className={`absolute -left-[31px] top-1.5 w-2.5 h-2.5 rounded-full border-2 border-white shadow-sm ${item.type === 'TOBACCO_STAIN' ? 'bg-amber-500' :
+                              item.type === 'DENTAL_CONSULTATION' ? 'bg-indigo-500' :
+                                item.type === 'DOCTOR_RECOMMENDATION' ? 'bg-emerald-500' : 'bg-slate-400'
+                              }`} />
+
+                            {/* Timeline details */}
+                            <div>
+                              <span className="text-[10px] font-bold text-slate-400">
+                                {new Date(item.date).toLocaleString([], { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                              <h4 className="text-sm font-bold text-slate-800 mt-0.5">{item.title}</h4>
+                              <p className="text-xs text-slate-600 mt-1 leading-relaxed bg-slate-50 p-2.5 rounded-xl border border-slate-200/40">{item.description}</p>
+
+                              {/* Additional display for Tobacco Stain submissions */}
+                              {item.type === 'TOBACCO_STAIN' && (
+                                <div className="mt-3 flex items-start gap-4 p-3 bg-slate-50/50 rounded-xl border border-slate-200/50">
+                                  {item.imageUrl && (
+                                    <div
+                                      className="relative shrink-0 cursor-pointer hover:opacity-90 active:scale-95 transition-all"
+                                      onClick={() => {
+                                        setActiveView('stain-reviews');
+                                        setSelectedStainReview({
+                                          _id: item.logId,
+                                          userId: selectedPatient,
+                                          value: {
+                                            imageUrl: item.imageUrl,
+                                            score: item.score,
+                                            category: item.category,
+                                            date: item.date
+                                          }
+                                        });
+                                      }}
+                                    >
+                                      <img
+                                        src={`${apiUrl.endsWith('/api') ? apiUrl.slice(0, -4) : apiUrl}/api/admin/stain-image/${item.imageUrl.split('/').pop()}?token=${token}`}
+                                        alt="Tooth check"
+                                        className="h-16 w-16 object-cover rounded-lg border border-slate-200"
+                                      />
+                                      <span className="absolute bottom-1 right-1 bg-black/60 text-[8px] font-bold text-white px-1 rounded">View</span>
+                                    </div>
+                                  )}
+                                  <div>
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-[11px] font-bold text-slate-700">Discoloration Level: {item.score}/100</span>
+                                      <span className="text-[9px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">{item.category}</span>
+                                    </div>
+                                    <p className="text-[10px] text-slate-500 mt-1">Click the photo thumbnail to review the full details and submit clinical advice.</p>
+                                    <div className="mt-2 flex flex-wrap items-center gap-3">
+                                      <span className="text-[9px] font-bold text-slate-400">Assign Doctor:</span>
+                                      <select
+                                        value={item.assignedDoctor?._id || item.assignedDoctor || ''}
+                                        onChange={(e) => assignDoctorToReview(item.logId, e.target.value)}
+                                        className="text-[10px] bg-white border border-slate-200 rounded p-0.5 font-semibold text-slate-700 focus:outline-none"
+                                      >
+                                        <option value="">-- Unassigned --</option>
+                                        {activeDoctors.map((doc: any) => (
+                                          <option key={doc._id} value={doc._id}>
+                                            Dr. {doc.name}
+                                          </option>
+                                        ))}
+                                      </select>
+
+                                      {item.reviewed ? (
+                                        <span className="text-[9px] font-extrabold text-emerald-600">✓ Reviewed by Clinician</span>
+                                      ) : (
+                                        <button
+                                          onClick={() => {
+                                            setActiveView('stain-reviews');
+                                            setSelectedStainReview({
+                                              _id: item.logId,
+                                              userId: selectedPatient,
+                                              value: {
+                                                imageUrl: item.imageUrl,
+                                                score: item.score,
+                                                category: item.category,
+                                                date: item.date
+                                              }
+                                            });
+                                          }}
+                                          className="text-[10px] text-primary font-bold hover:underline"
+                                        >
+                                          Review & Advise
+                                        </button>
+                                      )}
+                                    </div>
+
+                                    {item.doctorNotes && (
+                                      <div className="mt-2 p-2 bg-emerald-50 border border-emerald-100 rounded-lg text-[10px]">
+                                        <span className="font-extrabold text-emerald-700 block uppercase">Clinician Notes:</span>
+                                        <p className="text-slate-700 font-semibold">{item.doctorNotes}</p>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Additional display for Lab Report bookings */}
+                              {item.type === 'LAB_REPORT' && (
+                                <div className="mt-3 p-3 bg-slate-50/50 rounded-xl border border-slate-200/50 space-y-2">
+                                  <div className="flex flex-wrap items-center gap-3">
+                                    <span className="text-[9px] font-bold text-slate-400">Assign Onboard Lab:</span>
+                                    <select
+                                      value={item.assignedLab?._id || item.assignedLab || ''}
+                                      onChange={async (e) => {
+                                        try {
+                                          const res = await fetch(`${apiUrl}/admin/lab-bookings/${item.bookingId}/assign`, {
+                                            method: 'POST',
+                                            headers: {
+                                              'Content-Type': 'application/json',
+                                              'Authorization': `Bearer ${token}`
+                                            },
+                                            body: JSON.stringify({ laboratoryId: e.target.value })
+                                          });
+                                          if (res.ok) {
+                                            if (selectedPatient) {
+                                              const resTimeline = await fetch(`${apiUrl}/admin/patients/${selectedPatient._id}/activity`, {
+                                                headers: { 'Authorization': `Bearer ${token}` }
+                                              });
+                                              if (resTimeline.ok) {
+                                                const tlData = await resTimeline.json();
+                                                setPatientTimeline(tlData.timeline || []);
+                                              }
+                                            }
+                                          } else {
+                                            alert('Failed to assign lab.');
+                                          }
+                                        } catch (err) {
+                                          console.error(err);
+                                        }
+                                      }}
+                                      className="text-[10px] bg-white border border-slate-200 rounded p-0.5 font-semibold text-slate-700 focus:outline-none"
+                                    >
+                                      <option value="">-- Unassigned --</option>
+                                      {labs.map((lab: any) => (
+                                        <option key={lab._id} value={lab._id}>
+                                          {lab.name}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </div>
+
+                                  {item.doctorNotes && (
+                                    <div className="p-2 bg-emerald-50 border border-emerald-100 rounded-lg text-[10px]">
+                                      <span className="font-extrabold text-emerald-700 block uppercase">Clinician Notes / Remarks:</span>
+                                      <p className="text-slate-700 font-semibold">{item.doctorNotes}</p>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+
+                              {/* Additional display for Doctor Recommendations */}
+                              {item.type === 'DOCTOR_RECOMMENDATION' && item.deliveryStatus && (
+                                <div className="mt-2.5 flex flex-wrap gap-2">
+                                  {Object.keys(item.deliveryStatus).map((channel) => {
+                                    const chData = item.deliveryStatus[channel];
+                                    const isDelivered = chData?.status === 'delivered';
+                                    return (
+                                      <span
+                                        key={channel}
+                                        className={`text-[9px] font-extrabold px-2 py-0.5 rounded border ${isDelivered ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-rose-50 text-rose-700 border-rose-100'}`}
+                                        title={chData?.error || ''}
+                                      >
+                                        {channel.toUpperCase()}: {isDelivered ? 'Delivered' : `Failed (${chData?.error || 'unconfigured'})`}
+                                      </span>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* VIEW: TOBACCO STAIN REVIEWS */}
+          {activeView === 'stain-reviews' && !selectedStainReview && (
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                  <h2 className="text-xl font-bold text-slate-800">Tobacco Stain Reviews</h2>
+                  <p className="text-xs text-slate-500 mt-1">Review photo-based discoloration trends and dispatch clinical recommendations.</p>
+                </div>
+
+                {/* Tabs */}
+                <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
+                  <button
+                    onClick={() => setStainFilter('all')}
+                    className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${stainFilter === 'all' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:bg-slate-50'}`}
+                  >
+                    All
+                  </button>
+                  <button
+                    onClick={() => setStainFilter('pending')}
+                    className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${stainFilter === 'pending' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:bg-slate-50'}`}
+                  >
+                    Pending Review
+                  </button>
+                  <button
+                    onClick={() => setStainFilter('reviewed')}
+                    className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${stainFilter === 'reviewed' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:bg-slate-50'}`}
+                  >
+                    Reviewed
+                  </button>
+                </div>
+              </div>
+
+              {stainReviewsLoading ? (
+                <div className="text-center py-12 bg-white rounded-2xl border border-slate-200">
+                  <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+                  <p className="text-xs text-slate-500 mt-2">Loading submissions list...</p>
+                </div>
+              ) : (
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-soft overflow-x-auto">
+                  <table className="min-w-full divide-y divide-slate-200">
+                    <thead className="bg-slate-50">
+                      <tr>
+                        <th className="px-6 py-3.5 text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider">Patient</th>
+                        <th className="px-6 py-3.5 text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider">Date Submitted</th>
+                        <th className="px-6 py-3.5 text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider">Score</th>
+                        <th className="px-6 py-3.5 text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider">Category</th>
+                        <th className="px-6 py-3.5 text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider">Review Status</th>
+                        <th className="px-6 py-3.5 text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider">Assigned Doctor</th>
+                        <th className="px-6 py-3.5 text-right text-[10px] font-bold text-slate-400 uppercase tracking-wider">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-slate-200">
+                      {stainReviews
+                        .filter(review => {
+                          if (stainFilter === 'pending') return !review.reviewed;
+                          if (stainFilter === 'reviewed') return review.reviewed;
+                          return true;
+                        })
+                        .map(review => {
+                          const patientName = review.userId?.name || 'Anonymous';
+                          const patientEmail = review.userId?.email || 'No Email';
+                          return (
+                            <tr key={review._id} className="hover:bg-slate-55 hover:bg-slate-50/50 transition-colors">
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="text-sm font-bold text-slate-800">{patientName}</div>
+                                <div className="text-[10px] text-slate-400">{patientEmail}</div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-xs text-slate-600">
+                                {new Date(review.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-xs font-bold text-slate-800">{review.value.score} / 100</td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${getCategoryStyle(review.value.score)}`}>
+                                  {review.value.category}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border ${review.reviewed ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200 animate-pulse'}`}>
+                                  {review.reviewed ? 'Reviewed' : 'Pending Review'}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <select
+                                  value={review.assignedDoctorId?._id || review.assignedDoctorId || ''}
+                                  onChange={(e) => assignDoctorToReview(review._id, e.target.value)}
+                                  className="text-xs bg-slate-50 border border-slate-200 rounded-lg p-1 font-semibold text-slate-700 focus:outline-none"
+                                >
+                                  <option value="">-- Unassigned --</option>
+                                  {activeDoctors.map((doc: any) => (
+                                    <option key={doc._id} value={doc._id}>
+                                      Dr. {doc.name} ({doc.specialty})
+                                    </option>
+                                  ))}
+                                </select>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-right text-xs font-medium">
+                                <button
+                                  onClick={() => setSelectedStainReview(review)}
+                                  className="text-primary hover:text-blue-800 font-bold bg-primary/10 px-3 py-1.5 rounded-lg"
+                                >
+                                  {review.reviewed ? 'View details' : 'Review & Advise'}
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* TOBACCO STAIN DETAIL REVIEW PANEL */}
+          {activeView === 'stain-reviews' && selectedStainReview && (
+            <div className="space-y-6">
+              {/* Back Button */}
+              <button
+                onClick={() => {
+                  setSelectedStainReview(null);
+                }}
+                className="flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors"
+              >
+                &larr; Back to Reviews List
+              </button>
+
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                {/* Left Column: Image viewer and patient details */}
+                <div className="lg:col-span-7 space-y-6">
+                  <div className="bg-white rounded-3xl border border-slate-200 shadow-soft p-5">
+                    <div className="flex justify-between items-center pb-4 mb-4 border-b border-slate-100">
+                      <div>
+                        <span className="text-[9px] font-bold text-slate-400 tracking-wider uppercase">Patient Detail</span>
+                        <h3 className="text-lg font-bold text-slate-800 mt-0.5">{selectedStainReview.userId?.name || 'Anonymous'}</h3>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-[9px] font-bold text-slate-400 block">Uploaded On</span>
+                        <span className="text-xs font-semibold text-slate-700">{new Date(selectedStainReview.timestamp).toLocaleString()}</span>
+                      </div>
+                    </div>
+
+                    {/* Visual Image Viewer with absolute markers */}
+                    <div className="flex justify-center bg-slate-900 rounded-2xl overflow-hidden relative border border-slate-200">
+                      <div className="relative inline-block max-w-full">
+                        <img
+                          src={selectedStainReview.value.imageUrl.startsWith('http')
+                            ? selectedStainReview.value.imageUrl
+                            : `${apiUrl.endsWith('/api') ? apiUrl.slice(0, -4) : apiUrl}/api/admin/stain-image/${selectedStainReview.value.imageUrl.split('/').pop()}?token=${token}`}
+                          alt="Patient teeth discoloration"
+                          className="max-h-[400px] w-auto object-contain rounded-xl"
+                          style={{ width: `${selectedStainReview.value.canvasWidth || 300}px` }}
+                        />
+                        {selectedStainReview.value.enamelPoint && (
+                          <div
+                            className="absolute w-6 h-6 border-2 border-emerald-500 rounded-full flex items-center justify-center -translate-x-1/2 -translate-y-1/2 bg-emerald-500/30 text-[10px] font-extrabold text-emerald-800 shadow-lg"
+                            style={{
+                              left: `${(selectedStainReview.value.enamelPoint.x / (selectedStainReview.value.canvasWidth || 300)) * 100}%`,
+                              top: `${(selectedStainReview.value.enamelPoint.y / (selectedStainReview.value.canvasHeight || 300)) * 100}%`
+                            }}
+                          >
+                            E
+                          </div>
+                        )}
+                        {selectedStainReview.value.stainPoint && (
+                          <div
+                            className="absolute w-6 h-6 border-2 border-amber-600 rounded-full flex items-center justify-center -translate-x-1/2 -translate-y-1/2 bg-amber-650/30 bg-amber-600/30 text-[10px] font-extrabold text-amber-800 shadow-lg"
+                            style={{
+                              left: `${(selectedStainReview.value.stainPoint.x / (selectedStainReview.value.canvasWidth || 300)) * 100}%`,
+                              top: `${(selectedStainReview.value.stainPoint.y / (selectedStainReview.value.canvasHeight || 300)) * 100}%`
+                            }}
+                          >
+                            S
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Color details */}
+                    <div className="flex gap-4 justify-center mt-4">
+                      {selectedStainReview.value.enamelColor && (
+                        <div className="flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-200 shadow-sm text-[10px] font-bold text-slate-600">
+                          <span className="w-3.5 h-3.5 rounded-full border border-slate-350 shadow-inner" style={{ backgroundColor: `rgb(${selectedStainReview.value.enamelColor.r}, ${selectedStainReview.value.enamelColor.g}, ${selectedStainReview.value.enamelColor.b})` }} />
+                          Enamel Color Reference
+                        </div>
+                      )}
+                      {selectedStainReview.value.stainColor && (
+                        <div className="flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-200 shadow-sm text-[10px] font-bold text-slate-600">
+                          <span className="w-3.5 h-3.5 rounded-full border border-slate-350 shadow-inner" style={{ backgroundColor: `rgb(${selectedStainReview.value.stainColor.r}, ${selectedStainReview.value.stainColor.g}, ${selectedStainReview.value.stainColor.b})` }} />
+                          Stained Color Reference
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Column: Recommendation Form and Trend Analytics */}
+                <div className="lg:col-span-5 space-y-6">
+                  <div className="bg-white rounded-3xl border border-slate-200 shadow-soft p-5">
+                    <span className="text-[10px] font-bold text-slate-400 tracking-wider uppercase">Score Placement</span>
+                    <div className="flex items-center gap-3 mt-1.5 mb-4">
+                      <span className="text-3xl font-bold text-slate-800">{selectedStainReview.value.score} / 100</span>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${getCategoryStyle(selectedStainReview.value.score)}`}>
+                        {selectedStainReview.value.category}
+                      </span>
+                    </div>
+
+                    {/* Indicator slider */}
+                    <div className="relative w-full h-2 bg-slate-100 rounded-full flex overflow-hidden">
+                      <div className="h-full bg-emerald-500" style={{ width: '15%' }} />
+                      <div className="h-full bg-yellow-400" style={{ width: '20%' }} />
+                      <div className="h-full bg-amber-500" style={{ width: '25%' }} />
+                      <div className="h-full bg-rose-500" style={{ width: '40%' }} />
+                    </div>
+                    <div className="relative w-full h-3 mb-4">
+                      <div
+                        className="absolute -top-3 w-3 h-3 bg-slate-800 border border-white rounded-full shadow-md -translate-x-1/2 transition-all duration-300"
+                        style={{ left: `${selectedStainReview.value.score}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Patient Trend Chart (Recharts Area Chart) */}
+                  {selectedStainReview.userId?._id && (
+                    <StainTrendChart patientId={selectedStainReview.userId._id} />
+                  )}
+
+                  {/* Doctor Recommendation Form */}
+                  <div className="bg-white rounded-3xl border border-slate-200 shadow-soft p-5">
+                    <h4 className="font-bold text-slate-800 text-sm mb-3">Add Doctor Recommendation</h4>
+
+                    {selectedStainReview.reviewed ? (
+                      <div className="bg-emerald-50 border border-emerald-250 p-4 rounded-2xl text-emerald-800 text-xs leading-relaxed border-emerald-200">
+                        <strong>✓ Already Reviewed</strong>
+                        <p className="mt-1">This stain reading has already been reviewed by a clinician. Additional recommendations can be sent directly through the patient activity page.</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        <div>
+                          <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Clinical Advice / Notes</label>
+                          <textarea
+                            rows={4}
+                            value={recommendationText}
+                            onChange={(e) => setRecommendationText(e.target.value)}
+                            placeholder="Provide custom advice, cleaning intervals, or notes for the patient..."
+                            className="w-full border border-slate-200 rounded-xl p-3 text-xs focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-slate-50"
+                          />
+                        </div>
+
+                        {/* Delivery Notification options */}
+                        <div>
+                          <label className="text-[10px] font-bold text-slate-400 uppercase block mb-2">Delivery Channels</label>
+                          <div className="flex flex-col gap-2 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                            <label className="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={notificationChannels.email}
+                                onChange={(e) => setNotificationChannels(prev => ({ ...prev, email: e.target.checked }))}
+                                className="rounded border-slate-300 text-primary focus:ring-primary"
+                              />
+                              Email Address
+                            </label>
+                            <label className="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={notificationChannels.sms}
+                                onChange={(e) => setNotificationChannels(prev => ({ ...prev, sms: e.target.checked }))}
+                                className="rounded border-slate-300 text-primary focus:ring-primary"
+                              />
+                              SMS Text Message
+                            </label>
+                            <label className="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={notificationChannels.push}
+                                onChange={(e) => setNotificationChannels(prev => ({ ...prev, push: e.target.checked }))}
+                                className="rounded border-slate-300 text-primary focus:ring-primary"
+                              />
+                              App Push Notification
+                            </label>
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => submitRecommendation(selectedStainReview._id)}
+                          disabled={recommendationSending}
+                          className="w-full py-2.5 bg-primary hover:bg-primary-dark text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                        >
+                          {recommendationSending ? (
+                            <>
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              <span>Processing Recommendation...</span>
+                            </>
+                          ) : (
+                            <span>Send Recommendation</span>
+                          )}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* VIEW 2: USER BASE MANAGEMENT */}
+          {activeView === 'users' && (
+            <div className="space-y-4">
+              {/* Top Toolbar: Title, Total Badge, Search, Subscription Filter & Page Size */}
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200 shadow-soft">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <h2 className="text-xl font-bold text-slate-800">Patient Directory</h2>
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-indigo-50 text-indigo-700 border border-indigo-200 shadow-2xs">
+                    <Users className="w-3.5 h-3.5 text-indigo-600" />
+                    <span>Total: {pagination.total} patients</span>
+                  </span>
+                  {usersLoading && (
+                    <span className="inline-flex items-center gap-1 text-xs text-slate-400 font-semibold animate-pulse">
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
+                      <span>Loading...</span>
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2.5">
+                  {/* Subscription Status Filter */}
+                  <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5">
+                    <Filter className="w-3.5 h-3.5 text-slate-400" />
+                    <span className="text-[11px] font-bold text-slate-500 uppercase">Sub:</span>
+                    <select
+                      value={userSubFilter}
+                      onChange={(e) => {
+                        const newFilter = e.target.value;
+                        setUserSubFilter(newFilter);
+                        fetchUsers(1, userPageSize, newFilter, searchQuery);
+                      }}
+                      className="bg-transparent text-xs font-bold text-slate-700 focus:outline-none cursor-pointer"
+                    >
+                      <option value="all">All Subscriptions</option>
+                      <option value="active">👑 Active Paid</option>
+                      <option value="trialing">⚡ Free Trial (Active)</option>
+                      <option value="trial_expired">⏳ Trial Expired</option>
+                      <option value="cancelled">⚠️ Cancelled</option>
+                      <option value="none">👤 Free Users (No Sub)</option>
+                      <option value="deleted">🗑️ Deleted (30d Quarantine)</option>
+                    </select>
+                  </div>
+
+                  {/* Page Size Selector */}
+                  <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5">
+                    <span className="text-[11px] font-bold text-slate-500 uppercase">Rows:</span>
+                    <select
+                      value={userPageSize}
+                      onChange={(e) => {
+                        const newSize = parseInt(e.target.value, 10);
+                        setUserPageSize(newSize);
+                        fetchUsers(1, newSize, userSubFilter, searchQuery);
+                      }}
+                      className="bg-transparent text-xs font-bold text-slate-700 focus:outline-none cursor-pointer"
+                    >
+                      <option value={10}>10 / page</option>
+                      <option value={25}>25 / page</option>
+                      <option value={50}>50 / page</option>
+                      <option value={100}>100 / page</option>
+                    </select>
+                  </div>
+
+                  {/* Search Bar */}
+                  <div className="relative w-full sm:w-64 flex items-center">
+                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 pointer-events-none">
+                      <Search className="h-4 w-4" />
+                    </span>
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleSearchUsers(searchQuery, userSubFilter, userPageSize)}
+                      placeholder="Search by name/email/phone..."
+                      className="w-full pl-9 pr-8 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary text-xs font-medium bg-slate-50 focus:bg-white transition-all"
+                    />
+                    {searchQuery && (
+                      <button
+                        onClick={() => {
+                          setSearchQuery('');
+                          handleSearchUsers('', userSubFilter, userPageSize);
+                        }}
+                        className="absolute right-2 text-slate-400 hover:text-slate-600 p-0.5"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Export CSV Button */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const exportRows = users.map(u => ({
+                        Name: u.name || 'N/A',
+                        Email: u.email || 'N/A',
+                        Mobile: u.mobileNumber || 'N/A',
+                        Role: u.role || 'user',
+                        SubscriptionStatus: u.subscription?.status || 'none',
+                        SubscriptionPlan: u.subscription?.planId?.name || 'N/A',
+                        JoinedDate: u.createdAt ? new Date(u.createdAt).toISOString().split('T')[0] : 'N/A'
+                      }));
+                      exportToCSV(exportRows, 'patients_directory');
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl border border-slate-200 transition-all cursor-pointer shadow-2xs active:scale-95 shrink-0"
+                    title="Export current patient list to CSV"
+                  >
+                    <Download className="w-3.5 h-3.5 text-slate-600" />
+                    <span>Export CSV</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleSearchUsers(searchQuery, userSubFilter, userPageSize)}
+                    className="px-3.5 py-2 bg-primary hover:bg-primary-dark text-white rounded-xl text-xs font-bold transition-all shadow-xs"
+                  >
+                    Search
+                  </button>
+                </div>
+              </div>
+
+              {/* Table */}
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-soft overflow-x-auto">
+                <table className="min-w-full divide-y divide-slate-200">
+                  <thead className="bg-slate-50 text-slate-400 text-xs font-bold uppercase tracking-wider text-left">
+                    <tr>
+                      <th className="px-5 py-3.5">Name &amp; Contact</th>
+                      <th className="px-5 py-3.5">Account Status</th>
+                      <th className="px-5 py-3.5">Subscription Status</th>
+                      <th className="px-5 py-3.5">Daily Target</th>
+                      <th className="px-5 py-3.5">Goal</th>
+                      <th className="px-5 py-3.5 text-center">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 text-xs font-semibold text-slate-700">
+                    {users.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="text-center py-12 text-slate-400">
+                          <Users className="w-8 h-8 mx-auto mb-2 text-slate-300" />
+                          <p className="font-bold">No patients found matching query or filters.</p>
+                          <p className="text-[11px] text-slate-400 mt-0.5">Try clearing your search or selecting 'All Subscriptions'.</p>
+                        </td>
+                      </tr>
+                    ) : (
+                      users.map((u) => {
+                        const subSummary = u.subscriptionSummary || { status: 'none', statusLabel: 'Free User', remainingText: '' };
+                        return (
+                          <tr key={u._id} className="hover:bg-slate-50/60 transition-colors">
+                            <td className="px-5 py-3.5">
+                              <button
+                                onClick={() => fetchUserActivity(u._id)}
+                                className="hover:underline hover:text-primary text-left font-bold text-slate-900 block"
+                              >
+                                {u.name || 'Unnamed Patient'}
+                              </button>
+                              <span className="text-[11px] text-slate-400 block font-normal">{u.email}</span>
+                              {(u.mobileNumber || u.phoneNumber) && (
+                                <span className="text-[10px] text-slate-400 block font-normal">{u.mobileNumber || u.phoneNumber}</span>
+                              )}
+                            </td>
+                            <td className="px-5 py-3.5">
+                              {u.isDeleted ? (
+                                <div className="inline-flex flex-col items-start gap-0.5">
+                                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-rose-50 text-rose-700 border border-rose-200">
+                                    Deleted (30d Grace)
+                                  </span>
+                                  {u.deletionScheduledFor && (
+                                    <span className="text-[10px] text-slate-400 font-medium">
+                                      {Math.max(0, Math.ceil((new Date(u.deletionScheduledFor).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))}d left
+                                    </span>
+                                  )}
+                                </div>
+                              ) : u.isBlocked ? (
+                                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-rose-50 text-danger border border-rose-100">
+                                  Blocked
+                                </span>
+                              ) : (
+                                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-50 text-success border border-emerald-100">
+                                  Active
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-5 py-3.5">
+                              {subSummary.status === 'active' ? (
+                                <div className="inline-flex flex-col items-start gap-0.5">
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                    <Crown className="w-3 h-3 text-amber-500 fill-amber-400" />
+                                    <span>Active Paid</span>
+                                  </span>
+                                  <span className="text-[10px] text-slate-400 font-medium">
+                                    {subSummary.remainingText ? subSummary.remainingText : 'Annual Plan'}
+                                  </span>
+                                </div>
+                              ) : subSummary.status === 'trialing' ? (
+                                <div className="inline-flex flex-col items-start gap-0.5">
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-50 text-amber-800 border border-amber-200">
+                                    <Sparkles className="w-3 h-3 text-amber-500" />
+                                    <span>Free Trial</span>
+                                  </span>
+                                  <span className="text-[10px] text-amber-600 font-semibold">
+                                    {subSummary.remainingText || '48h Trial'}
+                                  </span>
+                                </div>
+                              ) : subSummary.status === 'trial_expired' ? (
+                                <div className="inline-flex flex-col items-start gap-0.5">
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-orange-50 text-orange-700 border border-orange-200">
+                                    <Clock className="w-3 h-3 text-orange-500" />
+                                    <span>Trial Expired</span>
+                                  </span>
+                                  <span className="text-[10px] text-slate-400 font-medium">No active plan</span>
+                                </div>
+                              ) : subSummary.status === 'cancelled_active' || subSummary.status === 'cancelled' ? (
+                                <div className="inline-flex flex-col items-start gap-0.5">
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-rose-50 text-rose-700 border border-rose-200">
+                                    <AlertTriangle className="w-3 h-3 text-rose-500" />
+                                    <span>Cancelled</span>
+                                  </span>
+                                  {subSummary.remainingText && (
+                                    <span className="text-[10px] text-slate-400 font-medium">
+                                      Active until {subSummary.remainingText}
+                                    </span>
+                                  )}
+                                </div>
+                              ) : subSummary.status === 'expired' ? (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-500 border border-slate-200">
+                                  Expired
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 text-slate-400 border border-slate-200">
+                                  Free User
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-5 py-3.5 text-slate-600">
+                              {u.dailyCalorieTarget ? `${u.dailyCalorieTarget} kcal` : '--'}
+                            </td>
+                            <td className="px-5 py-3.5 font-medium text-slate-500">
+                              {u.goal ? u.goal.replace('-', ' ') : '--'}
+                            </td>
+                            <td className="px-5 py-3.5 text-center">
+                              <div className="flex justify-center items-center gap-1.5 flex-wrap">
+                                <button
+                                  onClick={() => fetchUserActivity(u._id)}
+                                  className="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all flex items-center space-x-1"
+                                  title="View Patient Details & Logs"
+                                >
+                                  <Activity className="h-3.5 w-3.5" />
+                                  <span>Details</span>
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setSubModalUser(u);
+                                    setSubModalMode('manage');
+                                    setSubGrantDurationDays(365);
+                                    setSubGrantKind('paid');
+                                    setSubGrantNote('');
+                                    setSubCancelImmediate(false);
+                                    setSubCancelReason('');
+                                    if (plans.length === 0) fetchPlans();
+                                  }}
+                                  className="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200/80 transition-all flex items-center space-x-1"
+                                  title="Manage or Grant Subscription"
+                                >
+                                  <CreditCard className="h-3.5 w-3.5 text-indigo-600" />
+                                  <span>Sub</span>
+                                </button>
+                                <button
+                                  onClick={() => handleToggleUserBlock(u._id, u.isBlocked)}
+                                  className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center space-x-1 ${u.isBlocked
+                                    ? 'bg-green-50 hover:bg-green-100 text-success border border-green-200'
+                                    : 'bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200'
+                                    }`}
+                                >
+                                  {u.isBlocked ? (
+                                    <>
+                                      <UserCheck className="h-3.5 w-3.5" />
+                                      <span>Unblock</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <UserX className="h-3.5 w-3.5" />
+                                      <span>Block</span>
+                                    </>
+                                  )}
+                                </button>
+                                {u.isDeleted && (
+                                  <button
+                                    onClick={() => handleRestoreUser(u._id, u.name || u.email)}
+                                    className="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 transition-all flex items-center space-x-1"
+                                    title="Revoke Deletion & Restore Patient Account"
+                                  >
+                                    <RotateCcw className="h-3.5 w-3.5" />
+                                    <span>Restore</span>
+                                  </button>
+                                )}
+                                <button
+                                  onClick={() => handleDeleteUser(u._id)}
+                                  className="px-2 py-1.5 rounded-lg text-xs font-bold transition-all text-red-600 hover:bg-red-50"
+                                  title="Delete User"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Comprehensive Pagination Controls */}
+              <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-soft flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div className="text-xs font-bold text-slate-500">
+                  {pagination.total > 0 ? (
+                    <span>
+                      Showing <span className="text-slate-800">{(pagination.page - 1) * pagination.limit + 1}</span> to{' '}
+                      <span className="text-slate-800">{Math.min(pagination.page * pagination.limit, pagination.total)}</span> of{' '}
+                      <span className="text-primary font-black">{pagination.total}</span> patients
+                    </span>
+                  ) : (
+                    <span>Total: 0 patients</span>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <button
+                    disabled={pagination.page <= 1 || usersLoading}
+                    onClick={() => fetchUsers(1, userPageSize, userSubFilter, searchQuery)}
+                    className="px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-xs font-bold text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                    title="First Page"
+                  >
+                    &laquo; First
+                  </button>
+                  <button
+                    disabled={pagination.page <= 1 || usersLoading}
+                    onClick={() => fetchUsers(pagination.page - 1, userPageSize, userSubFilter, searchQuery)}
+                    className="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-xs font-bold text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                  >
+                    &lsaquo; Prev
+                  </button>
+
+                  {/* Page Jump indicator */}
+                  <div className="px-3 py-1.5 bg-primary/10 border border-primary/20 rounded-lg text-xs font-black text-primary">
+                    Page {pagination.page} of {Math.max(1, pagination.pages)}
+                  </div>
+
+                  <button
+                    disabled={pagination.page >= pagination.pages || usersLoading}
+                    onClick={() => fetchUsers(pagination.page + 1, userPageSize, userSubFilter, searchQuery)}
+                    className="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-xs font-bold text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                  >
+                    Next &rsaquo;
+                  </button>
+                  <button
+                    disabled={pagination.page >= pagination.pages || usersLoading}
+                    onClick={() => fetchUsers(pagination.pages, userPageSize, userSubFilter, searchQuery)}
+                    className="px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-xs font-bold text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                    title="Last Page"
+                  >
+                    Last &raquo;
+                  </button>
+                </div>
+              </div>
+
+            </div>
+          )}
+
+          {/* PENDING EDITS VIEW */}
+          {activeView === 'pendingEdits' && (
+            <div className="space-y-4">
+              <h2 className="text-xl font-bold text-slate-800">Pending Profile Edits</h2>
+              {pendingEdits.length === 0 ? (
+                <div className="bg-white p-8 rounded-2xl border border-slate-200 text-center text-slate-500 font-semibold shadow-soft">
+                  No pending profile edits to review.
+                </div>
+              ) : (
+                <div className="grid gap-4">
+                  {pendingEdits.map((u) => (
+                    <div key={u._id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-soft">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h3 className="font-bold text-lg text-slate-800">{u.name}</h3>
+                          <p className="text-sm text-slate-500 mb-4">{u.email}</p>
+
+                          <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                            <h4 className="text-xs font-bold uppercase text-slate-400 mb-2">Requested Changes:</h4>
+                            <pre className="text-xs text-slate-700 whitespace-pre-wrap font-mono">
+                              {JSON.stringify(u.pendingProfileEdits, null, 2)}
+                            </pre>
+                          </div>
+                        </div>
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => handleApproveEdit(u._id)}
+                            className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white font-bold rounded-lg text-sm transition-colors"
+                          >
+                            Approve
+                          </button>
+                          <button
+                            onClick={() => handleRejectEdit(u._id)}
+                            className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-bold rounded-lg text-sm transition-colors"
+                          >
+                            Reject
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* DOCTORS MANAGEMENT VIEW */}
+          {activeView === 'doctors-management' && (
+            <AdminExtDashboard apiUrl={apiUrl} token={token} defaultTab="doctors" onLaunchDoctorPortal={handleLaunchDoctorPortal} />
+          )}
+
+          {/* VENDORS MANAGEMENT VIEW */}
+          {activeView === 'vendors-management' && (
+            <AdminVendorManagement apiUrl={apiUrl} token={token || ''} />
+          )}
+
+          {/* AMAZON VENDOR & AFFILIATE MANAGEMENT VIEW */}
+          {activeView === 'amazon-vendor' && (
+            <AdminAmazonVendor apiUrl={apiUrl} token={token || ''} />
+          )}
+
+          {/* HEALTH STORE PRODUCTS VIEW */}
+          {activeView === 'store-products' && (
+            <div className="space-y-6">
+              {paymentConfig && (
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
+                  <h3 className="text-lg font-bold text-slate-800">Shop & Warehouse Configuration</h3>
+
+                  {/* Global Fees */}
+                  <div className="grid grid-cols-3 gap-6">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Shop GST (%)</label>
+                      <input
+                        type="number" min="0" max="100" required
+                        value={paymentConfig.shopGstPercentage !== undefined ? paymentConfig.shopGstPercentage : 18}
+                        onChange={(e) => setPaymentConfig({ ...paymentConfig, shopGstPercentage: parseInt(e.target.value) || 0 })}
+                        placeholder="18" className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold bg-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Shop Global Discount (%)</label>
+                      <input
+                        type="number" min="0" max="100" required
+                        value={paymentConfig.shopDiscountPercentage !== undefined ? paymentConfig.shopDiscountPercentage : 0}
+                        onChange={(e) => setPaymentConfig({ ...paymentConfig, shopDiscountPercentage: parseInt(e.target.value) || 0 })}
+                        placeholder="0" className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold bg-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Shipping Fee (Global Base Fallback)</label>
+                      <input
+                        type="number" min="0" step="0.01" required
+                        value={paymentConfig.shopShippingFee !== undefined ? paymentConfig.shopShippingFee : 0}
+                        onChange={(e) => setPaymentConfig({ ...paymentConfig, shopShippingFee: parseFloat(e.target.value) || 0 })}
+                        placeholder="0" className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold bg-white"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Warehouse Origin Location Settings */}
+                  <div className="border-t border-slate-100 pt-4 space-y-3">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-indigo-600">Store / Warehouse Origin Location (For Distance Calculations)</span>
+                    <div className="grid grid-cols-4 gap-4">
+                      <div className="col-span-2">
+                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Warehouse Address</label>
+                        <input
+                          type="text"
+                          value={paymentConfig.storeOriginAddress || 'MitoReboot Central Warehouse, Bangalore'}
+                          onChange={(e) => setPaymentConfig({ ...paymentConfig, storeOriginAddress: e.target.value })}
+                          placeholder="Warehouse Address"
+                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold bg-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Origin Pincode</label>
+                        <input
+                          type="text"
+                          value={paymentConfig.storeOriginPincode || '560001'}
+                          onChange={(e) => setPaymentConfig({ ...paymentConfig, storeOriginPincode: e.target.value })}
+                          placeholder="560001"
+                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold bg-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Unconfigured Pincodes Mode</label>
+                        <select
+                          value={paymentConfig.unconfiguredPincodeFallback || 'GLOBAL_FALLBACK'}
+                          onChange={(e) => setPaymentConfig({ ...paymentConfig, unconfiguredPincodeFallback: e.target.value as any })}
+                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 bg-white"
+                        >
+                          <option value="GLOBAL_FALLBACK">🟡 Global Fallback (Use Global Base Fee)</option>
+                          <option value="STRICT">🔴 Strict Mode (Only Listed Pincodes Serviceable)</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Origin Latitude</label>
+                        <input
+                          type="number" step="0.000001"
+                          value={paymentConfig.storeOriginLat !== undefined ? paymentConfig.storeOriginLat : 12.9716}
+                          onChange={(e) => setPaymentConfig({ ...paymentConfig, storeOriginLat: parseFloat(e.target.value) || 12.9716 })}
+                          placeholder="12.9716"
+                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold bg-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Origin Longitude</label>
+                        <input
+                          type="number" step="0.000001"
+                          value={paymentConfig.storeOriginLon !== undefined ? paymentConfig.storeOriginLon : 77.5946}
+                          onChange={(e) => setPaymentConfig({ ...paymentConfig, storeOriginLon: parseFloat(e.target.value) || 77.5946 })}
+                          placeholder="77.5946"
+                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold bg-white"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Global Distance Tier Configuration */}
+                    <div className="border-t border-slate-100 pt-3 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-indigo-600">Global Default Distance Tiers (Inherited by all pincodes without custom tiers)</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const current = paymentConfig.globalDistanceRanges || [
+                              { minDistanceKm: 0, maxDistanceKm: 5, shippingCharge: 40, estimatedDeliveryTime: 'Same Day Delivery (2-4 hrs)' },
+                              { minDistanceKm: 5, maxDistanceKm: 15, shippingCharge: 75, estimatedDeliveryTime: '24 Hours Delivery' }
+                            ];
+                            const last = current[current.length - 1];
+                            const newMin = last ? last.maxDistanceKm : 0;
+                            const newMax = newMin + 10;
+                            const newFee = last ? last.shippingCharge + 30 : 50;
+                            setPaymentConfig({
+                              ...paymentConfig,
+                              globalDistanceRanges: [...current, { minDistanceKm: newMin, maxDistanceKm: newMax, shippingCharge: newFee, estimatedDeliveryTime: '2-4 Days' }]
+                            });
+                          }}
+                          className="text-[10px] font-bold text-indigo-600 hover:underline cursor-pointer"
+                        >
+                          + Add Global Tier
+                        </button>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        {(paymentConfig.globalDistanceRanges || [
+                          { minDistanceKm: 0, maxDistanceKm: 5, shippingCharge: 40, estimatedDeliveryTime: 'Same Day Delivery (2-4 hrs)' },
+                          { minDistanceKm: 5, maxDistanceKm: 15, shippingCharge: 75, estimatedDeliveryTime: '24 Hours Delivery' },
+                          { minDistanceKm: 15, maxDistanceKm: 30, shippingCharge: 120, estimatedDeliveryTime: '2-3 Business Days' }
+                        ]).map((range: any, idx: number) => (
+                          <div key={idx} className="bg-slate-50 border border-slate-200 p-2 rounded-xl grid grid-cols-12 gap-2 items-center text-xs font-semibold">
+                            <div className="col-span-3 flex items-center gap-1">
+                              <input
+                                type="number" min="0" value={range.minDistanceKm}
+                                onChange={(e) => {
+                                  const updated = [...(paymentConfig.globalDistanceRanges || [])];
+                                  updated[idx] = { ...updated[idx], minDistanceKm: parseFloat(e.target.value) || 0 };
+                                  setPaymentConfig({ ...paymentConfig, globalDistanceRanges: updated });
+                                }}
+                                className="w-full px-2 py-1 border border-slate-200 rounded-lg text-xs bg-white"
+                              />
+                              <span>-</span>
+                              <input
+                                type="number" min="0" value={range.maxDistanceKm}
+                                onChange={(e) => {
+                                  const updated = [...(paymentConfig.globalDistanceRanges || [])];
+                                  updated[idx] = { ...updated[idx], maxDistanceKm: parseFloat(e.target.value) || 0 };
+                                  setPaymentConfig({ ...paymentConfig, globalDistanceRanges: updated });
+                                }}
+                                className="w-full px-2 py-1 border border-slate-200 rounded-lg text-xs bg-white"
+                              />
+                              <span className="text-[10px] text-slate-400">km</span>
+                            </div>
+
+                            <div className="col-span-3">
+                              <input
+                                type="number" min="0" value={range.shippingCharge}
+                                onChange={(e) => {
+                                  const updated = [...(paymentConfig.globalDistanceRanges || [])];
+                                  updated[idx] = { ...updated[idx], shippingCharge: parseFloat(e.target.value) || 0 };
+                                  setPaymentConfig({ ...paymentConfig, globalDistanceRanges: updated });
+                                }}
+                                placeholder="Fee ₹"
+                                className="w-full px-2 py-1 border border-slate-200 rounded-lg text-xs font-bold text-emerald-700 bg-white"
+                              />
+                            </div>
+
+                            <div className="col-span-5">
+                              <input
+                                type="text" value={range.estimatedDeliveryTime}
+                                onChange={(e) => {
+                                  const updated = [...(paymentConfig.globalDistanceRanges || [])];
+                                  updated[idx] = { ...updated[idx], estimatedDeliveryTime: e.target.value };
+                                  setPaymentConfig({ ...paymentConfig, globalDistanceRanges: updated });
+                                }}
+                                placeholder="Delivery Estimate"
+                                className="w-full px-2 py-1 border border-slate-200 rounded-lg text-xs bg-white"
+                              />
+                            </div>
+
+                            <div className="col-span-1 text-right">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const updated = (paymentConfig.globalDistanceRanges || []).filter((_: any, i: number) => i !== idx);
+                                  setPaymentConfig({ ...paymentConfig, globalDistanceRanges: updated });
+                                }}
+                                className="text-rose-500 hover:text-rose-700 font-bold p-1 cursor-pointer"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 flex justify-end">
+                    <button onClick={(e) => { e.preventDefault(); handleConfigSubmit(e); }} className="bg-primary text-white px-5 py-2 rounded-xl text-sm font-bold shadow-soft hover:bg-primary-dark transition-all">Save Shop Config</button>
+                  </div>
+                </div>
+              )}
+
+              {/* Pincode & Distance Shipping Management Dashboard */}
+              <AdminShippingPincodeConfig apiUrl={apiUrl} token={token || ''} />
+
+              <AdminShopProducts apiUrl={apiUrl} token={token} />
+            </div>
+          )}
+
+          {/* HEALTH STORE ORDERS VIEW */}
+          {activeView === 'store-orders' && (
+            <AdminExtDashboard apiUrl={apiUrl} token={token} defaultTab="orders" />
+          )}
+
+          {/* ORDER & SUPPORT MANAGEMENT MODULE */}
+          {activeView.startsWith('order-mgmt-') && (
+            <OrderManagementHub
+              key={activeView}
+              apiUrl={apiUrl}
+              token={token || ''}
+              adminRole={admin?.role || 'Admin'}
+              initialTab={
+                activeView === 'order-mgmt-overview' ? 'overview' :
+                  activeView === 'order-mgmt-orders' ? 'orders' :
+                    activeView === 'order-mgmt-refunds' ? 'refunds' :
+                      activeView === 'order-mgmt-support' ? 'support' :
+                        activeView === 'order-mgmt-messages' ? 'messages' :
+                          activeView === 'order-mgmt-reports' ? 'reports' :
+                            activeView === 'order-mgmt-vendors' ? 'vendors' :
+                              activeView === 'order-mgmt-settings' ? 'settings' : 'overview'
+              }
+              onNavigateTab={(tab) => {
+                setActiveView(`order-mgmt-${tab}`);
+              }}
+            />
+          )}
+
+          {/* HEALTH STORE REPORTS VIEW */}
+          {activeView === 'store-reports' && (
+            <AdminShopReports apiUrl={apiUrl} token={token || ''} />
+          )}
+
+          {/* USER FEEDBACK & RATINGS VIEW */}
+          {activeView === 'user-feedback' && (
+            <AdminUserFeedback apiUrl={apiUrl} token={token || ''} />
+          )}
+
+          {/* CONSULTATION ANALYTICS VIEW */}
+          {activeView === 'consultation-analytics' && (
+            <ConsultationAnalytics apiUrl={apiUrl} token={token || ''} />
+          )}
+
+          {/* APP HEALTH & USAGE VIEW */}
+          {(activeView === 'app-health' || activeView.startsWith('app-health')) && (
+            <AdminAppHealth apiUrl={apiUrl} token={token || ''} />
+          )}
+
+          {/* OTP & AUTH LOGS VIEW */}
+          {activeView === 'otp-logs' && (
+            <AdminOtpLogs apiUrl={apiUrl} token={token || ''} />
+          )}
+
+          {/* SENT EMAILS VIEW */}
+          {activeView === 'sent-emails' && (
+            <AdminSentEmails apiUrl={apiUrl} token={token || ''} />
+          )}
+
+          {/* REVENUE & BUSINESS ANALYTICS MODULE */}
+          {(activeView.startsWith('revenue-') || activeView === 'revenue-analytics') && (
+            <RevenueAnalyticsHub
+              apiUrl={apiUrl}
+              token={token || ''}
+              initialSubmenu={
+                activeView === 'revenue-overview' ? 'overview' :
+                  activeView === 'revenue-transactions' ? 'transactions' :
+                    activeView === 'revenue-subscriptions' ? 'subscriptions' :
+                      activeView === 'revenue-user-payments' ? 'user-payments' :
+                        activeView === 'revenue-ask-mito' ? 'ask-mito' :
+                          activeView === 'revenue-shop-sales' ? 'shop-sales' :
+                            activeView === 'revenue-departments' ? 'departments' :
+                              activeView === 'revenue-payment-methods' ? 'payment-methods' :
+                                activeView === 'revenue-refunds' ? 'refunds-failed' :
+                                  activeView === 'revenue-reports' ? 'reports' :
+                                    activeView === 'revenue-settings' ? 'settings' : 'overview'
+              }
+              onOpenOrder={() => {
+                setActiveView('store-orders');
+              }}
+              onOpenUser={(userId) => {
+                fetchUserActivity(userId);
+              }}
+            />
+          )}
+
+          {/* REPORTS & ANALYTICS VIEW */}
+          {activeView === 'reports-analytics' && (
+            <div className="space-y-6">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                    System Reports & Analytics
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                      Live Realtime
+                    </span>
+                  </h2>
+                  <p className="text-xs text-slate-500 mt-1">Cross-platform clinical activity and store transaction streams from production database</p>
+                </div>
+
+                <button
+                  onClick={fetchReportsAnalytics}
+                  disabled={reportsAnalyticsLoading}
+                  className="self-start md:self-auto flex items-center gap-2 px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-600 shadow-sm transition-all"
+                >
+                  <RefreshCw className={`h-3.5 w-3.5 ${reportsAnalyticsLoading ? 'animate-spin text-primary' : ''}`} />
+                  <span>{reportsAnalyticsLoading ? 'Updating...' : 'Refresh Live Data'}</span>
+                </button>
+              </div>
+
+              {/* Quick Metrics Bar */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-soft">
+                  <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">6-Month Revenue</span>
+                  <p className="text-xl font-bold text-slate-800 mt-1">
+                    ₹{(reportsAnalytics?.revenueTrends || []).reduce((acc: number, r: any) => acc + (r.revenue || 0), 0).toLocaleString('en-IN')}
+                  </p>
+                  <span className="text-[10px] text-slate-400">Delivered store orders</span>
+                </div>
+                <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-soft">
+                  <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">6-Month Orders</span>
+                  <p className="text-xl font-bold text-emerald-600 mt-1">
+                    {(reportsAnalytics?.monthlyOrders || []).reduce((acc: number, r: any) => acc + (r.orders || 0), 0)}
+                  </p>
+                  <span className="text-[10px] text-slate-400">Total store purchases</span>
+                </div>
+                <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-soft">
+                  <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">This Week Appointments</span>
+                  <p className="text-xl font-bold text-indigo-600 mt-1">
+                    {(reportsAnalytics?.weeklyAppointments || []).reduce((acc: number, a: any) => acc + (a.completed || 0) + (a.pending || 0), 0)}
+                  </p>
+                  <span className="text-[10px] text-slate-400">Completed & active consultations</span>
+                </div>
+                <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-soft">
+                  <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Integrated Vendors</span>
+                  <p className="text-xl font-bold text-purple-600 mt-1">
+                    {(reportsAnalytics?.vendorEfficiency || []).length}
+                  </p>
+                  <span className="text-[10px] text-slate-400">Active fulfillment partners</span>
+                </div>
+              </div>
+
+              {/* Graphs Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Chart 1: Revenue Trends */}
+                <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-soft">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-sm font-bold text-slate-700">Revenue Trends (Last 6 Months)</h3>
+                    <span className="text-[11px] font-semibold text-slate-400">₹ Realtime</span>
+                  </div>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={reportsAnalytics?.revenueTrends || []}>
                         <defs>
-                          <linearGradient id="colorGross" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#10B981" stopOpacity={0.4} />
-                            <stop offset="95%" stopColor="#10B981" stopOpacity={0.0} />
-                          </linearGradient>
-                          <linearGradient id="colorNet" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3} />
-                            <stop offset="95%" stopColor="#3B82F6" stopOpacity={0.0} />
+                          <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#2563EB" stopOpacity={0.8} />
+                            <stop offset="95%" stopColor="#2563EB" stopOpacity={0} />
                           </linearGradient>
                         </defs>
-                        <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#94A3B8', fontWeight: 600 }} axisLine={false} tickLine={false} />
-                        <YAxis tick={{ fontSize: 11, fill: '#94A3B8', fontWeight: 600 }} axisLine={false} tickLine={false} tickFormatter={(v) => `₹${v}`} />
-                        <Tooltip
-                          contentStyle={{ 
-                            backgroundColor: '#0F172A', 
-                            borderRadius: '12px', 
-                            border: '1px solid #334155', 
-                            padding: '8px 12px',
-                            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.4)' 
-                          }}
-                          itemStyle={{ color: '#FFFFFF', fontWeight: 'bold', fontSize: '12px' }}
-                          labelStyle={{ color: '#94A3B8', fontWeight: 'bold', fontSize: '12px', marginBottom: '2px' }}
-                          formatter={(value: any, name: any) => [`₹${Number(value).toLocaleString('en-IN')}`, name === 'gross' ? 'Gross Billing' : name === 'net' ? 'Net Collected' : name]}
-                        />
-                        <Area type="monotone" dataKey="gross" stroke="#10B981" strokeWidth={2.5} fillOpacity={1} fill="url(#colorGross)" name="Gross Billing" />
-                        <Area type="monotone" dataKey="net" stroke="#3B82F6" strokeWidth={2} fillOpacity={1} fill="url(#colorNet)" name="Net Collected" />
+                        <XAxis dataKey="month" stroke="#94A3B8" fontSize={11} />
+                        <YAxis stroke="#94A3B8" fontSize={11} />
+                        <Tooltip formatter={(val: any) => [`₹${val}`, 'Revenue']} />
+                        <Area type="monotone" dataKey="revenue" stroke="#2563EB" fillOpacity={1} fill="url(#colorRevenue)" />
                       </AreaChart>
                     </ResponsiveContainer>
                   </div>
                 </div>
 
-                <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-                  <div className="flex items-center gap-4">
-                    <span className="flex items-center gap-1.5 font-semibold">
-                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> Gross Billing
-                    </span>
-                    <span className="flex items-center gap-1.5 font-semibold">
-                      <span className="w-2.5 h-2.5 rounded-full bg-blue-500" /> Collected Payments
-                    </span>
+                {/* Chart 2: Orders Count */}
+                <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-soft">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-sm font-bold text-slate-700">Monthly Orders Volume</h3>
+                    <span className="text-[11px] font-semibold text-slate-400">Realtime Count</span>
                   </div>
-                  <span className="font-bold text-slate-600">
-                    {stats?.totalTransactions || 0} Transactions Recorded
-                  </span>
-                </div>
-              </div>
-
-              {/* Health Data & Activity Totals (5 cols) */}
-              <div className="lg:col-span-5 bg-white p-6 rounded-3xl border border-slate-200/90 shadow-soft flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="p-1.5 rounded-lg bg-blue-50 text-blue-600">
-                        <Activity className="w-4 h-4" />
-                      </span>
-                      <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider">
-                        Clinical Ingestion Totals
-                      </h3>
-                    </div>
-                    <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
-                      Live Telemetry
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-500 mt-1">
-                    Continuous glucose monitoring records, food logs, and patient records stored.
-                  </p>
-
-                  <div className="h-60 mt-5">
+                  <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart 
-                        data={[
-                          { name: 'CGM Reports', count: stats?.reportsUploaded || 0, fill: '#3B82F6' },
-                          { name: 'Meal Logs', count: stats?.foodLogs || 0, fill: '#10B981' },
-                          { name: 'Patients', count: stats?.totalPatients || stats?.totalUsers || 0, fill: '#6366F1' }
-                        ]}
-                        margin={{ top: 15, right: 10, left: -20, bottom: 0 }}
-                      >
-                        <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#64748B', fontWeight: 600 }} axisLine={false} tickLine={false} />
-                        <YAxis tick={{ fontSize: 11, fill: '#64748B', fontWeight: 600 }} axisLine={false} tickLine={false} />
-                        <Tooltip
-                          contentStyle={{ 
-                            backgroundColor: '#0F172A', 
-                            borderRadius: '12px', 
-                            border: '1px solid #334155', 
-                            padding: '8px 12px',
-                            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.4)' 
-                          }}
-                          itemStyle={{ color: '#FFFFFF', fontWeight: 'bold', fontSize: '12px' }}
-                          labelStyle={{ color: '#F8FAFC', fontWeight: 'bold', fontSize: '12px' }}
-                          formatter={(value: any, name: any) => [`${value} meals logged`, `${name}`]}
-                        />
-                        <Bar dataKey="count" radius={[10, 10, 0, 0]}>
-                          <Cell fill="#3B82F6" />
-                          <Cell fill="#10B981" />
-                          <Cell fill="#6366F1" />
-                        </Bar>
+                      <BarChart data={reportsAnalytics?.monthlyOrders || []}>
+                        <XAxis dataKey="month" stroke="#94A3B8" fontSize={11} />
+                        <YAxis stroke="#94A3B8" fontSize={11} allowDecimals={false} />
+                        <Tooltip formatter={(val: any) => [val, 'Orders']} />
+                        <Bar dataKey="orders" fill="#14B8A6" radius={[4, 4, 0, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
                 </div>
 
-                <div className="pt-3 border-t border-slate-100 grid grid-cols-3 gap-2 text-center">
-                  <div className="p-2 rounded-xl bg-slate-50">
-                    <span className="text-[10px] font-bold text-slate-400 block uppercase">Reports</span>
-                    <span className="text-sm font-black text-blue-600">{stats?.reportsUploaded || 0}</span>
+                {/* Chart 3: Appointment Trends */}
+                <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-soft">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-sm font-bold text-slate-700">Weekly Appointment Status Trends</h3>
+                    <span className="text-[11px] font-semibold text-slate-400">Current Week</span>
                   </div>
-                  <div className="p-2 rounded-xl bg-slate-50">
-                    <span className="text-[10px] font-bold text-slate-400 block uppercase">Food Logs</span>
-                    <span className="text-sm font-black text-emerald-600">{stats?.foodLogs || 0}</span>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={reportsAnalytics?.weeklyAppointments || []}>
+                        <XAxis dataKey="day" stroke="#94A3B8" fontSize={11} />
+                        <YAxis stroke="#94A3B8" fontSize={11} allowDecimals={false} />
+                        <Tooltip />
+                        <Line type="monotone" dataKey="completed" name="Completed" stroke="#10B981" strokeWidth={2} />
+                        <Line type="monotone" dataKey="cancelled" name="Cancelled" stroke="#EF4444" strokeWidth={2} />
+                        <Line type="monotone" dataKey="pending" name="Pending" stroke="#F59E0B" strokeWidth={2} />
+                      </LineChart>
+                    </ResponsiveContainer>
                   </div>
-                  <div className="p-2 rounded-xl bg-slate-50">
-                    <span className="text-[10px] font-bold text-slate-400 block uppercase">Patients</span>
-                    <span className="text-sm font-black text-indigo-600">{stats?.totalPatients || stats?.totalUsers || 0}</span>
+                </div>
+
+                {/* Chart 4: Vendor Performance */}
+                <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-soft">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-sm font-bold text-slate-700">Partner Vendor Efficiency (%)</h3>
+                    <span className="text-[11px] font-semibold text-slate-400">Live Partners</span>
+                  </div>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={reportsAnalytics?.vendorEfficiency || []}>
+                        <XAxis dataKey="name" stroke="#94A3B8" fontSize={11} />
+                        <YAxis stroke="#94A3B8" fontSize={11} domain={[0, 100]} />
+                        <Tooltip formatter={(val: any) => [`${val}%`, 'Efficiency']} />
+                        <Bar dataKey="efficiency" fill="#8B5CF6" radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
                   </div>
                 </div>
               </div>
             </div>
+          )}
 
-            {/* VISUAL ANALYTICS ROW 2: NUTRITION DISTRIBUTION & SYSTEM HEALTH */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              {/* Category distribution Pie chart (6 cols) */}
-              <div className="lg:col-span-6 bg-white p-6 rounded-3xl border border-slate-200/90 shadow-soft">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <span className="p-1.5 rounded-lg bg-amber-50 text-amber-600">
-                      <Utensils className="w-4 h-4" />
-                    </span>
-                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider">
-                      Meal Nutrition Category Distribution
-                    </h3>
-                  </div>
-                  <span className="text-xs font-bold text-slate-500">
-                    {stats?.foodLogs || 0} Total Logs
-                  </span>
+          {/* SCREENING TESTS VIEW */}
+          {activeView === 'screening-tests' && (
+            <AdminCancerTests apiUrl={apiUrl} token={token} />
+          )}
+
+          {activeView === 'partner-labs' && (
+            <AdminLabs apiUrl={apiUrl} token={token} />
+          )}
+
+          {activeView === 'indian-cancers' && (
+            <AdminIndianCancers apiUrl={apiUrl} token={token} />
+          )}
+
+          {/* APPOINTMENTS CALENDAR VIEW */}
+          {activeView === 'appointments-calendar' && (
+            <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-6">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="text-base font-bold text-slate-800">Clinical Bookings Calendar</h2>
+                  <p className="text-xs text-slate-400 mt-0.5">Visual scheduler tracker (Monthly, Weekly, Daily)</p>
                 </div>
-                <p className="text-xs text-slate-500 mb-4">
-                  Dietary breakdown of foods logged by active patients across the application.
-                </p>
+                <div className="flex gap-2 bg-slate-100 p-1 rounded-xl border border-slate-200">
+                  {(['month', 'week', 'day'] as const).map(tab => (
+                    <button
+                      key={tab}
+                      onClick={() => setCalendarTab(tab)}
+                      className={`px-3 py-1 rounded-lg text-xs font-bold capitalize transition-all ${calendarTab === tab ? 'bg-primary text-white shadow' : 'text-slate-500 hover:text-slate-800'
+                        }`}
+                    >
+                      {tab}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={() => exportToCSV(allAppointments, 'appointments_calendar')}
+                  className="px-3 py-1.5 bg-slate-900 text-white rounded-xl text-xs font-bold transition-all shadow-sm hover:bg-slate-800"
+                >
+                  Export CSV
+                </button>
+              </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center">
-                  <div className="sm:col-span-6 h-56 flex justify-center items-center">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={stats?.categoryBreakdown || []}
-                          dataKey="count"
-                          nameKey="_id"
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={55}
-                          outerRadius={80}
-                          paddingAngle={3}
-                        >
-                          {(stats?.categoryBreakdown || []).map((_: any, index: number) => (
-                            <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
-                          ))}
-                        </Pie>
-                        <Tooltip
-                          contentStyle={{ 
-                            backgroundColor: '#0F172A', 
-                            borderRadius: '12px', 
-                            border: '1px solid #334155', 
-                            padding: '8px 12px',
-                            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.4)' 
-                          }}
-                          itemStyle={{ color: '#FFFFFF', fontWeight: 'bold', fontSize: '12px' }}
-                          labelStyle={{ color: '#F8FAFC', fontWeight: 'bold', fontSize: '12px' }}
-                          formatter={(value: any, name: any) => [`${value} meals logged`, `${name}`]}
-                        />
-                      </PieChart>
-                    </ResponsiveContainer>
+              {/* MONTH VIEW */}
+              {calendarTab === 'month' && (
+                <>
+                  <div className="grid grid-cols-7 gap-2 text-center text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 border-b border-slate-100 pb-2">
+                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                      <div key={day} className="py-2">{day}</div>
+                    ))}
                   </div>
-
-                  {/* Clean side legend */}
-                  <div className="sm:col-span-6 space-y-2 max-h-56 overflow-y-auto pr-1">
-                    {(stats?.categoryBreakdown || []).map((item: any, idx: number) => {
-                      const totalMeals = (stats?.categoryBreakdown || []).reduce((acc: number, curr: any) => acc + (curr.count || 0), 0);
-                      const percent = totalMeals > 0 ? Math.round(((item.count || 0) / totalMeals) * 100) : 0;
+                  <div className="grid grid-cols-7 gap-2">
+                    {Array.from({ length: 35 }).map((_, idx) => {
+                      const dayNum = (idx % 31) + 1;
+                      const dateStr = `2026-07-${dayNum < 10 ? '0' + dayNum : dayNum}`;
+                      const dayAppts = allAppointments.filter(a => a.date === dateStr);
                       return (
-                        <div key={item._id || idx} className="flex items-center justify-between p-2 rounded-xl bg-slate-50 border border-slate-100 text-xs">
-                          <div className="flex items-center gap-2 truncate">
-                            <span 
-                              className="w-3 h-3 rounded-full shrink-0" 
-                              style={{ backgroundColor: PIE_COLORS[idx % PIE_COLORS.length] }} 
-                            />
-                            <span className="font-semibold text-slate-700 truncate" title={item._id}>
-                              {item._id || 'General'}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2 shrink-0">
-                            <span className="font-bold text-slate-900">{item.count}</span>
-                            <span className="text-[10px] font-black px-1.5 py-0.5 rounded-md bg-white border border-slate-200 text-slate-600">
-                              {percent}%
-                            </span>
+                        <div key={idx} className="border border-slate-100 rounded-2xl p-2.5 min-h-[95px] bg-slate-50/50 flex flex-col justify-between hover:border-slate-350 transition-all">
+                          <span className="text-[10px] font-black text-slate-400 self-start">{dayNum}</span>
+                          <div className="space-y-1 overflow-y-auto max-h-[55px] scrollbar-none">
+                            {dayAppts.map(appt => (
+                              <div
+                                key={appt._id}
+                                className={`p-1 rounded text-[9px] font-bold text-left truncate leading-tight ${appt.status === 'confirmed' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' :
+                                  appt.status === 'completed' ? 'bg-blue-50 text-blue-600 border border-blue-100' :
+                                    appt.status === 'cancelled' ? 'bg-rose-50 text-rose-600 border-rose-100' :
+                                      'bg-amber-50 text-amber-600 border border-amber-100'
+                                  }`}
+                              >
+                                {appt.time} - {appt.userId?.name}
+                              </div>
+                            ))}
                           </div>
                         </div>
                       );
                     })}
                   </div>
-                </div>
-              </div>
-
-              {/* System Infrastructure & Operational Status (6 cols) */}
-              <div className="lg:col-span-6 bg-white p-6 rounded-3xl border border-slate-200/90 shadow-soft flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <span className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600">
-                        <CheckCircle className="w-4 h-4" />
-                      </span>
-                      <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider">
-                        Platform Infrastructure & Services
-                      </h3>
-                    </div>
-                    <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                      All Operational
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-500 mb-4">
-                    Active gateway connectivity, database indexes, and background communication relays.
-                  </p>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
-                      <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-xs font-bold text-slate-800">MongoDB Core</span>
-                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                      </div>
-                      <p className="text-[11px] text-slate-500">FastGluco primary cluster connected with 3 active workflows.</p>
-                    </div>
-
-                    <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
-                      <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-xs font-bold text-slate-800">Brevo SMTP Relay</span>
-                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                      </div>
-                      <p className="text-[11px] text-slate-500">support@mitoreboot.in email dispatch operational.</p>
-                    </div>
-
-                    <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
-                      <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-xs font-bold text-slate-800">Razorpay Gateway</span>
-                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                      </div>
-                      <p className="text-[11px] text-slate-500">Subscription and checkout webhooks verified and capturing.</p>
-                    </div>
-
-                    <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
-                      <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-xs font-bold text-slate-800">Firebase Auth</span>
-                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                      </div>
-                      <p className="text-[11px] text-slate-500">Service account initialized for mobile phone verification.</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Quick module links */}
-                <div className="mt-4 pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
-                  <span className="text-xs font-bold text-slate-600">Quick Navigation:</span>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => { setActiveView('patient-activity'); setSearchQuery(''); }}
-                      className="px-2.5 py-1 rounded-lg text-xs font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 transition-all cursor-pointer"
-                    >
-                      Patient Activity
-                    </button>
-                    <button
-                      onClick={() => { setActiveView('otp-telemetry'); setSearchQuery(''); }}
-                      className="px-2.5 py-1 rounded-lg text-xs font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 transition-all cursor-pointer"
-                    >
-                      OTP Logs
-                    </button>
-                    <button
-                      onClick={() => { setActiveView('revenue-transactions'); setSearchQuery(''); }}
-                      className="px-2.5 py-1 rounded-lg text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition-all cursor-pointer"
-                    >
-                      Transactions Ledger
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* VIEW: PATIENT ACTIVITY TIMELINE */}
-        {activeView === 'patient-activity' && (
-          <div className="space-y-6">
-            {!selectedPatient ? (
-              // 1. Patient Directory List View
-              <div className="space-y-4">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                  <div>
-                    <h2 className="text-xl font-bold text-slate-800">Patient Activity Monitoring</h2>
-                    <p className="text-xs text-slate-500 mt-1">Select a patient to view their complete activity timeline across modules.</p>
-                  </div>
-                  <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                    <select
-                      value={patientStatusFilter}
-                      onChange={(e) => setPatientStatusFilter(e.target.value)}
-                      className="px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary bg-white"
-                    >
-                      <option value="all">All Statuses</option>
-                      <option value="Pending Review">Pending Review</option>
-                      <option value="Active">Active</option>
-                      <option value="New Account">New Account</option>
-                    </select>
-                    <div className="relative w-full sm:w-64">
-                      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
-                        <Search className="h-4 w-4" />
-                      </span>
-                      <input
-                        type="text"
-                        value={patientSearch}
-                        onChange={(e) => setPatientSearch(e.target.value)}
-                        placeholder="Search by name, ID or email..."
-                        className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary text-sm bg-white"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {patientsLoading ? (
-                  <div className="text-center py-12 bg-white rounded-2xl border border-slate-200">
-                    <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
-                    <p className="text-xs text-slate-500 mt-2">Loading patient database...</p>
-                  </div>
-                ) : (
-                  <div className="bg-white rounded-2xl border border-slate-200 shadow-soft overflow-x-auto">
-                    <table className="min-w-full divide-y divide-slate-200">
-                      <thead className="bg-slate-50">
-                        <tr>
-                          <th className="px-6 py-3.5 text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider">Patient Name</th>
-                          <th className="px-6 py-3.5 text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider">Patient ID</th>
-                          <th className="px-6 py-3.5 text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider">Last Active</th>
-                          <th className="px-6 py-3.5 text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Logs</th>
-                          <th className="px-6 py-3.5 text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider">Tobacco Staining</th>
-                          <th className="px-6 py-3.5 text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider">Overall Status</th>
-                          <th className="px-6 py-3.5 text-right text-[10px] font-bold text-slate-400 uppercase tracking-wider">Action</th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-slate-200">
-                        {patients
-                          .filter(p => {
-                            const q = patientSearch.toLowerCase();
-                            const matchesSearch = (p.name || '').toLowerCase().includes(q) || (p.email || '').toLowerCase().includes(q) || p._id.toLowerCase().includes(q);
-                            const matchesFilter = patientStatusFilter === 'all' || p.overallStatus === patientStatusFilter;
-                            return matchesSearch && matchesFilter;
-                          })
-                          .map(p => (
-                            <tr key={p._id} className="hover:bg-slate-50/50 transition-colors">
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <div className="text-sm font-bold text-slate-800">{p.name || 'Anonymous'}</div>
-                                <div className="text-[10px] text-slate-400">{p.email || 'No Email'}</div>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-xs font-mono text-slate-500">{p._id}</td>
-                              <td className="px-6 py-4 whitespace-nowrap text-xs text-slate-600">
-                                {new Date(p.lastActive).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })} at {new Date(p.lastActive).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-xs font-semibold text-slate-800">{p.totalLogs} logs</td>
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${p.tobaccoStatus === 'Yes' ? 'bg-amber-50 text-amber-600 border-amber-200' : p.tobaccoStatus === 'No' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-slate-50 text-slate-400 border-slate-200'}`}>
-                                  {p.tobaccoStatus === 'Yes' ? 'Stained' : p.tobaccoStatus === 'No' ? 'Clear' : 'No Info'}
-                                </span>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${p.overallStatus === 'Pending Review' ? 'bg-amber-100 text-amber-800 border-amber-250' : p.overallStatus === 'Active' ? 'bg-emerald-100 text-emerald-800 border-emerald-250' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>
-                                  {p.overallStatus}
-                                </span>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-right text-xs font-medium">
-                                <button
-                                  onClick={() => fetchPatientTimeline(p._id)}
-                                  className="text-primary hover:text-blue-800 font-bold bg-primary/10 px-3 py-1.5 rounded-lg transition-all"
-                                >
-                                  View Timeline
-                                </button>
-                              </td>
-                            </tr>
-                          ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
-            ) : (
-              // 2. Individual Patient Timeline View
-              <div className="space-y-6">
-                {/* Back Link */}
-                <button
-                  onClick={() => {
-                    setSelectedPatient(null);
-                  }}
-                  className="flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors"
-                >
-                  &larr; Back to Patient List
-                </button>
-
-                {/* Patient Summary Header */}
-                <div className="bg-white rounded-3xl border border-slate-200 shadow-soft p-5">
-                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-5 border-b border-slate-100">
-                    <div>
-                      <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase">Patient Profile</span>
-                      <h2 className="text-2xl font-bold text-slate-800 mt-1">{selectedPatient.name || 'Anonymous'}</h2>
-                      <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500 mt-1">
-                        <span><strong>ID:</strong> {selectedPatient._id}</span>
-                        <span><strong>Email:</strong> {selectedPatient.email || 'N/A'}</span>
-                        <span><strong>Phone:</strong> {selectedPatient.mobileNumber || 'N/A'}</span>
-                      </div>
-                    </div>
-                    <span className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full">
-                      Registered: {new Date(selectedPatient.createdAt).toLocaleDateString()}
-                    </span>
-                  </div>
-
-                  {/* Summary Metric Cards */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6">
-                    <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200/50">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Status</span>
-                      <p className="text-sm font-bold text-slate-800">
-                        {patientTimeline.filter(t => t.type === 'TOBACCO_STAIN' && !t.reviewed).length > 0 ? 'Pending Review' : 'Reviewed / Up to Date'}
-                      </p>
-                    </div>
-                    <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200/50">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Total Logs</span>
-                      <p className="text-sm font-bold text-slate-800">{patientTimeline.filter(t => t.type !== 'ACCOUNT_CREATED').length} entries</p>
-                    </div>
-                    <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200/50">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Latest Stain Score</span>
-                      <p className="text-sm font-bold text-slate-800">
-                        {patientTimeline.find(t => t.type === 'TOBACCO_STAIN')?.score || 'N/A'}
-                      </p>
-                    </div>
-                    <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200/50">
-                      <span className="text-[10px] font-bold text-slate-400 tracking-wider uppercase block mb-1">Recommendations</span>
-                      <p className="text-sm font-bold text-slate-800">
-                        {patientTimeline.filter(t => t.type === 'DOCTOR_RECOMMENDATION').length} sent
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Chronological Timeline */}
-                <div className="bg-white rounded-3xl border border-slate-200 shadow-soft p-6">
-                  <h3 className="text-base font-bold text-slate-800 mb-6 flex items-center gap-2">
-                    <History className="h-4.5 w-4.5 text-primary" /> Patient Activity Timeline
-                  </h3>
-
-                  {patientTimelineLoading ? (
-                    <div className="text-center py-12">
-                      <Loader2 className="h-6 w-6 animate-spin mx-auto text-primary" />
-                    </div>
-                  ) : (
-                    <div className="relative border-l border-slate-100 pl-6 ml-3 space-y-8">
-                      {patientTimeline.map((item, idx) => (
-                        <div key={idx} className="relative">
-                          {/* Timeline dot */}
-                          <span className={`absolute -left-[31px] top-1.5 w-2.5 h-2.5 rounded-full border-2 border-white shadow-sm ${
-                            item.type === 'TOBACCO_STAIN' ? 'bg-amber-500' :
-                            item.type === 'DENTAL_CONSULTATION' ? 'bg-indigo-500' :
-                            item.type === 'DOCTOR_RECOMMENDATION' ? 'bg-emerald-500' : 'bg-slate-400'
-                          }`} />
-
-                          {/* Timeline details */}
-                          <div>
-                            <span className="text-[10px] font-bold text-slate-400">
-                              {new Date(item.date).toLocaleString([], { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                            </span>
-                            <h4 className="text-sm font-bold text-slate-800 mt-0.5">{item.title}</h4>
-                            <p className="text-xs text-slate-600 mt-1 leading-relaxed bg-slate-50 p-2.5 rounded-xl border border-slate-200/40">{item.description}</p>
-
-                            {/* Additional display for Tobacco Stain submissions */}
-                            {item.type === 'TOBACCO_STAIN' && (
-                              <div className="mt-3 flex items-start gap-4 p-3 bg-slate-50/50 rounded-xl border border-slate-200/50">
-                                {item.imageUrl && (
-                                  <div 
-                                    className="relative shrink-0 cursor-pointer hover:opacity-90 active:scale-95 transition-all"
-                                    onClick={() => {
-                                      setActiveView('stain-reviews');
-                                      setSelectedStainReview({
-                                        _id: item.logId,
-                                        userId: selectedPatient,
-                                        value: {
-                                          imageUrl: item.imageUrl,
-                                          score: item.score,
-                                          category: item.category,
-                                          date: item.date
-                                        }
-                                      });
-                                    }}
-                                  >
-                                    <img
-                                      src={`${apiUrl.endsWith('/api') ? apiUrl.slice(0, -4) : apiUrl}/api/admin/stain-image/${item.imageUrl.split('/').pop()}?token=${token}`}
-                                      alt="Tooth check"
-                                      className="h-16 w-16 object-cover rounded-lg border border-slate-200"
-                                    />
-                                    <span className="absolute bottom-1 right-1 bg-black/60 text-[8px] font-bold text-white px-1 rounded">View</span>
-                                  </div>
-                                )}
-                                <div>
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-[11px] font-bold text-slate-700">Discoloration Level: {item.score}/100</span>
-                                    <span className="text-[9px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">{item.category}</span>
-                                  </div>
-                                  <p className="text-[10px] text-slate-500 mt-1">Click the photo thumbnail to review the full details and submit clinical advice.</p>
-                                  <div className="mt-2 flex flex-wrap items-center gap-3">
-                                    <span className="text-[9px] font-bold text-slate-400">Assign Doctor:</span>
-                                    <select
-                                      value={item.assignedDoctor?._id || item.assignedDoctor || ''}
-                                      onChange={(e) => assignDoctorToReview(item.logId, e.target.value)}
-                                      className="text-[10px] bg-white border border-slate-200 rounded p-0.5 font-semibold text-slate-700 focus:outline-none"
-                                    >
-                                      <option value="">-- Unassigned --</option>
-                                      {activeDoctors.map((doc: any) => (
-                                        <option key={doc._id} value={doc._id}>
-                                          Dr. {doc.name}
-                                        </option>
-                                      ))}
-                                    </select>
-                                    
-                                    {item.reviewed ? (
-                                      <span className="text-[9px] font-extrabold text-emerald-600">✓ Reviewed by Clinician</span>
-                                    ) : (
-                                      <button
-                                        onClick={() => {
-                                          setActiveView('stain-reviews');
-                                          setSelectedStainReview({
-                                            _id: item.logId,
-                                            userId: selectedPatient,
-                                            value: {
-                                              imageUrl: item.imageUrl,
-                                              score: item.score,
-                                              category: item.category,
-                                              date: item.date
-                                            }
-                                          });
-                                        }}
-                                        className="text-[10px] text-primary font-bold hover:underline"
-                                      >
-                                        Review & Advise
-                                      </button>
-                                    )}
-                                  </div>
-
-                                  {item.doctorNotes && (
-                                    <div className="mt-2 p-2 bg-emerald-50 border border-emerald-100 rounded-lg text-[10px]">
-                                      <span className="font-extrabold text-emerald-700 block uppercase">Clinician Notes:</span>
-                                      <p className="text-slate-700 font-semibold">{item.doctorNotes}</p>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Additional display for Lab Report bookings */}
-                            {item.type === 'LAB_REPORT' && (
-                              <div className="mt-3 p-3 bg-slate-50/50 rounded-xl border border-slate-200/50 space-y-2">
-                                <div className="flex flex-wrap items-center gap-3">
-                                  <span className="text-[9px] font-bold text-slate-400">Assign Onboard Lab:</span>
-                                  <select
-                                    value={item.assignedLab?._id || item.assignedLab || ''}
-                                    onChange={async (e) => {
-                                      try {
-                                        const res = await fetch(`${apiUrl}/admin/lab-bookings/${item.bookingId}/assign`, {
-                                          method: 'POST',
-                                          headers: {
-                                            'Content-Type': 'application/json',
-                                            'Authorization': `Bearer ${token}`
-                                          },
-                                          body: JSON.stringify({ laboratoryId: e.target.value })
-                                        });
-                                        if (res.ok) {
-                                          if (selectedPatient) {
-                                            const resTimeline = await fetch(`${apiUrl}/admin/patients/${selectedPatient._id}/activity`, {
-                                              headers: { 'Authorization': `Bearer ${token}` }
-                                            });
-                                            if (resTimeline.ok) {
-                                              const tlData = await resTimeline.json();
-                                              setPatientTimeline(tlData.timeline || []);
-                                            }
-                                          }
-                                        } else {
-                                          alert('Failed to assign lab.');
-                                        }
-                                      } catch (err) {
-                                        console.error(err);
-                                      }
-                                    }}
-                                    className="text-[10px] bg-white border border-slate-200 rounded p-0.5 font-semibold text-slate-700 focus:outline-none"
-                                  >
-                                    <option value="">-- Unassigned --</option>
-                                    {labs.map((lab: any) => (
-                                      <option key={lab._id} value={lab._id}>
-                                        {lab.name}
-                                      </option>
-                                    ))}
-                                  </select>
-                                </div>
-
-                                {item.doctorNotes && (
-                                  <div className="p-2 bg-emerald-50 border border-emerald-100 rounded-lg text-[10px]">
-                                    <span className="font-extrabold text-emerald-700 block uppercase">Clinician Notes / Remarks:</span>
-                                    <p className="text-slate-700 font-semibold">{item.doctorNotes}</p>
-                                  </div>
-                                )}
-                              </div>
-                            )}
-
-                            {/* Additional display for Doctor Recommendations */}
-                            {item.type === 'DOCTOR_RECOMMENDATION' && item.deliveryStatus && (
-                              <div className="mt-2.5 flex flex-wrap gap-2">
-                                {Object.keys(item.deliveryStatus).map((channel) => {
-                                  const chData = item.deliveryStatus[channel];
-                                  const isDelivered = chData?.status === 'delivered';
-                                  return (
-                                    <span
-                                      key={channel}
-                                      className={`text-[9px] font-extrabold px-2 py-0.5 rounded border ${isDelivered ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-rose-50 text-rose-700 border-rose-100'}`}
-                                      title={chData?.error || ''}
-                                    >
-                                      {channel.toUpperCase()}: {isDelivered ? 'Delivered' : `Failed (${chData?.error || 'unconfigured'})`}
-                                    </span>
-                                  );
-                                })}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* VIEW: TOBACCO STAIN REVIEWS */}
-        {activeView === 'stain-reviews' && !selectedStainReview && (
-          <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-              <div>
-                <h2 className="text-xl font-bold text-slate-800">Tobacco Stain Reviews</h2>
-                <p className="text-xs text-slate-500 mt-1">Review photo-based discoloration trends and dispatch clinical recommendations.</p>
-              </div>
-
-              {/* Tabs */}
-              <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
-                <button
-                  onClick={() => setStainFilter('all')}
-                  className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${stainFilter === 'all' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:bg-slate-50'}`}
-                >
-                  All
-                </button>
-                <button
-                  onClick={() => setStainFilter('pending')}
-                  className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${stainFilter === 'pending' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:bg-slate-50'}`}
-                >
-                  Pending Review
-                </button>
-                <button
-                  onClick={() => setStainFilter('reviewed')}
-                  className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${stainFilter === 'reviewed' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:bg-slate-50'}`}
-                >
-                  Reviewed
-                </button>
-              </div>
-            </div>
-
-            {stainReviewsLoading ? (
-              <div className="text-center py-12 bg-white rounded-2xl border border-slate-200">
-                <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
-                <p className="text-xs text-slate-500 mt-2">Loading submissions list...</p>
-              </div>
-            ) : (
-              <div className="bg-white rounded-2xl border border-slate-200 shadow-soft overflow-x-auto">
-                <table className="min-w-full divide-y divide-slate-200">
-                  <thead className="bg-slate-50">
-                    <tr>
-                      <th className="px-6 py-3.5 text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider">Patient</th>
-                      <th className="px-6 py-3.5 text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider">Date Submitted</th>
-                      <th className="px-6 py-3.5 text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider">Score</th>
-                      <th className="px-6 py-3.5 text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider">Category</th>
-                      <th className="px-6 py-3.5 text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider">Review Status</th>
-                      <th className="px-6 py-3.5 text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider">Assigned Doctor</th>
-                      <th className="px-6 py-3.5 text-right text-[10px] font-bold text-slate-400 uppercase tracking-wider">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-slate-200">
-                    {stainReviews
-                      .filter(review => {
-                        if (stainFilter === 'pending') return !review.reviewed;
-                        if (stainFilter === 'reviewed') return review.reviewed;
-                        return true;
-                      })
-                      .map(review => {
-                        const patientName = review.userId?.name || 'Anonymous';
-                        const patientEmail = review.userId?.email || 'No Email';
-                        return (
-                          <tr key={review._id} className="hover:bg-slate-55 hover:bg-slate-50/50 transition-colors">
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="text-sm font-bold text-slate-800">{patientName}</div>
-                              <div className="text-[10px] text-slate-400">{patientEmail}</div>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-xs text-slate-600">
-                              {new Date(review.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-xs font-bold text-slate-800">{review.value.score} / 100</td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${getCategoryStyle(review.value.score)}`}>
-                                {review.value.category}
-                              </span>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border ${review.reviewed ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200 animate-pulse'}`}>
-                                {review.reviewed ? 'Reviewed' : 'Pending Review'}
-                              </span>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <select
-                                value={review.assignedDoctorId?._id || review.assignedDoctorId || ''}
-                                onChange={(e) => assignDoctorToReview(review._id, e.target.value)}
-                                className="text-xs bg-slate-50 border border-slate-200 rounded-lg p-1 font-semibold text-slate-700 focus:outline-none"
-                              >
-                                <option value="">-- Unassigned --</option>
-                                {activeDoctors.map((doc: any) => (
-                                  <option key={doc._id} value={doc._id}>
-                                    Dr. {doc.name} ({doc.specialty})
-                                  </option>
-                                ))}
-                              </select>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-right text-xs font-medium">
-                              <button
-                                onClick={() => setSelectedStainReview(review)}
-                                className="text-primary hover:text-blue-800 font-bold bg-primary/10 px-3 py-1.5 rounded-lg"
-                              >
-                                {review.reviewed ? 'View details' : 'Review & Advise'}
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* TOBACCO STAIN DETAIL REVIEW PANEL */}
-        {activeView === 'stain-reviews' && selectedStainReview && (
-          <div className="space-y-6">
-            {/* Back Button */}
-            <button
-              onClick={() => {
-                setSelectedStainReview(null);
-              }}
-              className="flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors"
-            >
-              &larr; Back to Reviews List
-            </button>
-
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              {/* Left Column: Image viewer and patient details */}
-              <div className="lg:col-span-7 space-y-6">
-                <div className="bg-white rounded-3xl border border-slate-200 shadow-soft p-5">
-                  <div className="flex justify-between items-center pb-4 mb-4 border-b border-slate-100">
-                    <div>
-                      <span className="text-[9px] font-bold text-slate-400 tracking-wider uppercase">Patient Detail</span>
-                      <h3 className="text-lg font-bold text-slate-800 mt-0.5">{selectedStainReview.userId?.name || 'Anonymous'}</h3>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-[9px] font-bold text-slate-400 block">Uploaded On</span>
-                      <span className="text-xs font-semibold text-slate-700">{new Date(selectedStainReview.timestamp).toLocaleString()}</span>
-                    </div>
-                  </div>
-
-                  {/* Visual Image Viewer with absolute markers */}
-                  <div className="flex justify-center bg-slate-900 rounded-2xl overflow-hidden relative border border-slate-200">
-                    <div className="relative inline-block max-w-full">
-                      <img
-                        src={selectedStainReview.value.imageUrl.startsWith('http') 
-                          ? selectedStainReview.value.imageUrl 
-                          : `${apiUrl.endsWith('/api') ? apiUrl.slice(0, -4) : apiUrl}/api/admin/stain-image/${selectedStainReview.value.imageUrl.split('/').pop()}?token=${token}`}
-                        alt="Patient teeth discoloration"
-                        className="max-h-[400px] w-auto object-contain rounded-xl"
-                        style={{ width: `${selectedStainReview.value.canvasWidth || 300}px` }}
-                      />
-                      {selectedStainReview.value.enamelPoint && (
-                        <div
-                          className="absolute w-6 h-6 border-2 border-emerald-500 rounded-full flex items-center justify-center -translate-x-1/2 -translate-y-1/2 bg-emerald-500/30 text-[10px] font-extrabold text-emerald-800 shadow-lg"
-                          style={{
-                            left: `${(selectedStainReview.value.enamelPoint.x / (selectedStainReview.value.canvasWidth || 300)) * 100}%`,
-                            top: `${(selectedStainReview.value.enamelPoint.y / (selectedStainReview.value.canvasHeight || 300)) * 100}%`
-                          }}
-                        >
-                          E
-                        </div>
-                      )}
-                      {selectedStainReview.value.stainPoint && (
-                        <div
-                          className="absolute w-6 h-6 border-2 border-amber-600 rounded-full flex items-center justify-center -translate-x-1/2 -translate-y-1/2 bg-amber-650/30 bg-amber-600/30 text-[10px] font-extrabold text-amber-800 shadow-lg"
-                          style={{
-                            left: `${(selectedStainReview.value.stainPoint.x / (selectedStainReview.value.canvasWidth || 300)) * 100}%`,
-                            top: `${(selectedStainReview.value.stainPoint.y / (selectedStainReview.value.canvasHeight || 300)) * 100}%`
-                          }}
-                        >
-                          S
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Color details */}
-                  <div className="flex gap-4 justify-center mt-4">
-                    {selectedStainReview.value.enamelColor && (
-                      <div className="flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-200 shadow-sm text-[10px] font-bold text-slate-600">
-                        <span className="w-3.5 h-3.5 rounded-full border border-slate-350 shadow-inner" style={{ backgroundColor: `rgb(${selectedStainReview.value.enamelColor.r}, ${selectedStainReview.value.enamelColor.g}, ${selectedStainReview.value.enamelColor.b})` }} />
-                        Enamel Color Reference
-                      </div>
-                    )}
-                    {selectedStainReview.value.stainColor && (
-                      <div className="flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-200 shadow-sm text-[10px] font-bold text-slate-600">
-                        <span className="w-3.5 h-3.5 rounded-full border border-slate-350 shadow-inner" style={{ backgroundColor: `rgb(${selectedStainReview.value.stainColor.r}, ${selectedStainReview.value.stainColor.g}, ${selectedStainReview.value.stainColor.b})` }} />
-                        Stained Color Reference
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Right Column: Recommendation Form and Trend Analytics */}
-              <div className="lg:col-span-5 space-y-6">
-                <div className="bg-white rounded-3xl border border-slate-200 shadow-soft p-5">
-                  <span className="text-[10px] font-bold text-slate-400 tracking-wider uppercase">Score Placement</span>
-                  <div className="flex items-center gap-3 mt-1.5 mb-4">
-                    <span className="text-3xl font-bold text-slate-800">{selectedStainReview.value.score} / 100</span>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${getCategoryStyle(selectedStainReview.value.score)}`}>
-                      {selectedStainReview.value.category}
-                    </span>
-                  </div>
-
-                  {/* Indicator slider */}
-                  <div className="relative w-full h-2 bg-slate-100 rounded-full flex overflow-hidden">
-                    <div className="h-full bg-emerald-500" style={{ width: '15%' }} />
-                    <div className="h-full bg-yellow-400" style={{ width: '20%' }} />
-                    <div className="h-full bg-amber-500" style={{ width: '25%' }} />
-                    <div className="h-full bg-rose-500" style={{ width: '40%' }} />
-                  </div>
-                  <div className="relative w-full h-3 mb-4">
-                    <div
-                      className="absolute -top-3 w-3 h-3 bg-slate-800 border border-white rounded-full shadow-md -translate-x-1/2 transition-all duration-300"
-                      style={{ left: `${selectedStainReview.value.score}%` }}
-                    />
-                  </div>
-                </div>
-
-                {/* Patient Trend Chart (Recharts Area Chart) */}
-                {selectedStainReview.userId?._id && (
-                  <StainTrendChart patientId={selectedStainReview.userId._id} />
-                )}
-
-                {/* Doctor Recommendation Form */}
-                <div className="bg-white rounded-3xl border border-slate-200 shadow-soft p-5">
-                  <h4 className="font-bold text-slate-800 text-sm mb-3">Add Doctor Recommendation</h4>
-
-                  {selectedStainReview.reviewed ? (
-                    <div className="bg-emerald-50 border border-emerald-250 p-4 rounded-2xl text-emerald-800 text-xs leading-relaxed border-emerald-200">
-                      <strong>✓ Already Reviewed</strong>
-                      <p className="mt-1">This stain reading has already been reviewed by a clinician. Additional recommendations can be sent directly through the patient activity page.</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      <div>
-                        <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Clinical Advice / Notes</label>
-                        <textarea
-                          rows={4}
-                          value={recommendationText}
-                          onChange={(e) => setRecommendationText(e.target.value)}
-                          placeholder="Provide custom advice, cleaning intervals, or notes for the patient..."
-                          className="w-full border border-slate-200 rounded-xl p-3 text-xs focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-slate-50"
-                        />
-                      </div>
-
-                      {/* Delivery Notification options */}
-                      <div>
-                        <label className="text-[10px] font-bold text-slate-400 uppercase block mb-2">Delivery Channels</label>
-                        <div className="flex flex-col gap-2 bg-slate-50 p-3 rounded-xl border border-slate-200">
-                          <label className="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={notificationChannels.email}
-                              onChange={(e) => setNotificationChannels(prev => ({ ...prev, email: e.target.checked }))}
-                              className="rounded border-slate-300 text-primary focus:ring-primary"
-                            />
-                            Email Address
-                          </label>
-                          <label className="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={notificationChannels.sms}
-                              onChange={(e) => setNotificationChannels(prev => ({ ...prev, sms: e.target.checked }))}
-                              className="rounded border-slate-300 text-primary focus:ring-primary"
-                            />
-                            SMS Text Message
-                          </label>
-                          <label className="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={notificationChannels.push}
-                              onChange={(e) => setNotificationChannels(prev => ({ ...prev, push: e.target.checked }))}
-                              className="rounded border-slate-300 text-primary focus:ring-primary"
-                            />
-                            App Push Notification
-                          </label>
-                        </div>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => submitRecommendation(selectedStainReview._id)}
-                        disabled={recommendationSending}
-                        className="w-full py-2.5 bg-primary hover:bg-primary-dark text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all disabled:opacity-50"
-                      >
-                        {recommendationSending ? (
-                          <>
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                            <span>Processing Recommendation...</span>
-                          </>
-                        ) : (
-                          <span>Send Recommendation</span>
-                        )}
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* VIEW 2: USER BASE MANAGEMENT */}
-        {activeView === 'users' && (
-          <div className="space-y-4">
-            {/* Top Toolbar: Title, Total Badge, Search, Subscription Filter & Page Size */}
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200 shadow-soft">
-              <div className="flex items-center gap-3 flex-wrap">
-                <h2 className="text-xl font-bold text-slate-800">Patient Directory</h2>
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-indigo-50 text-indigo-700 border border-indigo-200 shadow-2xs">
-                  <Users className="w-3.5 h-3.5 text-indigo-600" />
-                  <span>Total: {pagination.total} patients</span>
-                </span>
-                {usersLoading && (
-                  <span className="inline-flex items-center gap-1 text-xs text-slate-400 font-semibold animate-pulse">
-                    <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
-                    <span>Loading...</span>
-                  </span>
-                )}
-              </div>
-
-              <div className="flex flex-wrap items-center gap-2.5">
-                {/* Subscription Status Filter */}
-                <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5">
-                  <Filter className="w-3.5 h-3.5 text-slate-400" />
-                  <span className="text-[11px] font-bold text-slate-500 uppercase">Sub:</span>
-                  <select
-                    value={userSubFilter}
-                    onChange={(e) => {
-                      const newFilter = e.target.value;
-                      setUserSubFilter(newFilter);
-                      fetchUsers(1, userPageSize, newFilter, searchQuery);
-                    }}
-                    className="bg-transparent text-xs font-bold text-slate-700 focus:outline-none cursor-pointer"
-                  >
-                    <option value="all">All Subscriptions</option>
-                    <option value="active">👑 Active Paid</option>
-                    <option value="trialing">⚡ Free Trial (Active)</option>
-                    <option value="trial_expired">⏳ Trial Expired</option>
-                    <option value="cancelled">⚠️ Cancelled</option>
-                    <option value="none">👤 Free Users (No Sub)</option>
-                    <option value="deleted">🗑️ Deleted (30d Quarantine)</option>
-                  </select>
-                </div>
-
-                {/* Page Size Selector */}
-                <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5">
-                  <span className="text-[11px] font-bold text-slate-500 uppercase">Rows:</span>
-                  <select
-                    value={userPageSize}
-                    onChange={(e) => {
-                      const newSize = parseInt(e.target.value, 10);
-                      setUserPageSize(newSize);
-                      fetchUsers(1, newSize, userSubFilter, searchQuery);
-                    }}
-                    className="bg-transparent text-xs font-bold text-slate-700 focus:outline-none cursor-pointer"
-                  >
-                    <option value={10}>10 / page</option>
-                    <option value={25}>25 / page</option>
-                    <option value={50}>50 / page</option>
-                    <option value={100}>100 / page</option>
-                  </select>
-                </div>
-
-                {/* Search Bar */}
-                <div className="relative w-full sm:w-64 flex items-center">
-                  <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 pointer-events-none">
-                    <Search className="h-4 w-4" />
-                  </span>
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSearchUsers(searchQuery, userSubFilter, userPageSize)}
-                    placeholder="Search by name/email/phone..."
-                    className="w-full pl-9 pr-8 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary text-xs font-medium bg-slate-50 focus:bg-white transition-all"
-                  />
-                  {searchQuery && (
-                    <button
-                      onClick={() => {
-                        setSearchQuery('');
-                        handleSearchUsers('', userSubFilter, userPageSize);
-                      }}
-                      className="absolute right-2 text-slate-400 hover:text-slate-600 p-0.5"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </div>
-
-                <button
-                  onClick={() => handleSearchUsers(searchQuery, userSubFilter, userPageSize)}
-                  className="px-3.5 py-2 bg-primary hover:bg-primary-dark text-white rounded-xl text-xs font-bold transition-all shadow-xs"
-                >
-                  Search
-                </button>
-              </div>
-            </div>
-
-            {/* Table */}
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-soft overflow-x-auto">
-              <table className="min-w-full divide-y divide-slate-200">
-                <thead className="bg-slate-50 text-slate-400 text-xs font-bold uppercase tracking-wider text-left">
-                  <tr>
-                    <th className="px-5 py-3.5">Name &amp; Contact</th>
-                    <th className="px-5 py-3.5">Account Status</th>
-                    <th className="px-5 py-3.5">Subscription Status</th>
-                    <th className="px-5 py-3.5">Daily Target</th>
-                    <th className="px-5 py-3.5">Goal</th>
-                    <th className="px-5 py-3.5 text-center">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 text-xs font-semibold text-slate-700">
-                  {users.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="text-center py-12 text-slate-400">
-                        <Users className="w-8 h-8 mx-auto mb-2 text-slate-300" />
-                        <p className="font-bold">No patients found matching query or filters.</p>
-                        <p className="text-[11px] text-slate-400 mt-0.5">Try clearing your search or selecting 'All Subscriptions'.</p>
-                      </td>
-                    </tr>
-                  ) : (
-                    users.map((u) => {
-                      const subSummary = u.subscriptionSummary || { status: 'none', statusLabel: 'Free User', remainingText: '' };
-                      return (
-                        <tr key={u._id} className="hover:bg-slate-50/60 transition-colors">
-                          <td className="px-5 py-3.5">
-                            <button
-                              onClick={() => fetchUserActivity(u._id)}
-                              className="hover:underline hover:text-primary text-left font-bold text-slate-900 block"
-                            >
-                              {u.name || 'Unnamed Patient'}
-                            </button>
-                            <span className="text-[11px] text-slate-400 block font-normal">{u.email}</span>
-                            {(u.mobileNumber || u.phoneNumber) && (
-                              <span className="text-[10px] text-slate-400 block font-normal">{u.mobileNumber || u.phoneNumber}</span>
-                            )}
-                          </td>
-                          <td className="px-5 py-3.5">
-                            {u.isDeleted ? (
-                              <div className="inline-flex flex-col items-start gap-0.5">
-                                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-rose-50 text-rose-700 border border-rose-200">
-                                  Deleted (30d Grace)
-                                </span>
-                                {u.deletionScheduledFor && (
-                                  <span className="text-[10px] text-slate-400 font-medium">
-                                    {Math.max(0, Math.ceil((new Date(u.deletionScheduledFor).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))}d left
-                                  </span>
-                                )}
-                              </div>
-                            ) : u.isBlocked ? (
-                              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-rose-50 text-danger border border-rose-100">
-                                Blocked
-                              </span>
-                            ) : (
-                              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-50 text-success border border-emerald-100">
-                                Active
-                              </span>
-                            )}
-                          </td>
-                          <td className="px-5 py-3.5">
-                            {subSummary.status === 'active' ? (
-                              <div className="inline-flex flex-col items-start gap-0.5">
-                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                  <Crown className="w-3 h-3 text-amber-500 fill-amber-400" />
-                                  <span>Active Paid</span>
-                                </span>
-                                <span className="text-[10px] text-slate-400 font-medium">
-                                  {subSummary.remainingText ? subSummary.remainingText : 'Annual Plan'}
-                                </span>
-                              </div>
-                            ) : subSummary.status === 'trialing' ? (
-                              <div className="inline-flex flex-col items-start gap-0.5">
-                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-50 text-amber-800 border border-amber-200">
-                                  <Sparkles className="w-3 h-3 text-amber-500" />
-                                  <span>Free Trial</span>
-                                </span>
-                                <span className="text-[10px] text-amber-600 font-semibold">
-                                  {subSummary.remainingText || '48h Trial'}
-                                </span>
-                              </div>
-                            ) : subSummary.status === 'trial_expired' ? (
-                              <div className="inline-flex flex-col items-start gap-0.5">
-                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-orange-50 text-orange-700 border border-orange-200">
-                                  <Clock className="w-3 h-3 text-orange-500" />
-                                  <span>Trial Expired</span>
-                                </span>
-                                <span className="text-[10px] text-slate-400 font-medium">No active plan</span>
-                              </div>
-                            ) : subSummary.status === 'cancelled_active' || subSummary.status === 'cancelled' ? (
-                              <div className="inline-flex flex-col items-start gap-0.5">
-                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-rose-50 text-rose-700 border border-rose-200">
-                                  <AlertTriangle className="w-3 h-3 text-rose-500" />
-                                  <span>Cancelled</span>
-                                </span>
-                                {subSummary.remainingText && (
-                                  <span className="text-[10px] text-slate-400 font-medium">
-                                    Active until {subSummary.remainingText}
-                                  </span>
-                                )}
-                              </div>
-                            ) : subSummary.status === 'expired' ? (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-500 border border-slate-200">
-                                Expired
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 text-slate-400 border border-slate-200">
-                                Free User
-                              </span>
-                            )}
-                          </td>
-                          <td className="px-5 py-3.5 text-slate-600">
-                            {u.dailyCalorieTarget ? `${u.dailyCalorieTarget} kcal` : '--'}
-                          </td>
-                          <td className="px-5 py-3.5 font-medium text-slate-500">
-                            {u.goal ? u.goal.replace('-', ' ') : '--'}
-                          </td>
-                          <td className="px-5 py-3.5 text-center">
-                            <div className="flex justify-center items-center gap-1.5 flex-wrap">
-                              <button
-                                onClick={() => fetchUserActivity(u._id)}
-                                className="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all flex items-center space-x-1"
-                                title="View Patient Details & Logs"
-                              >
-                                <Activity className="h-3.5 w-3.5" />
-                                <span>Details</span>
-                              </button>
-                              <button
-                                onClick={() => {
-                                  setSubModalUser(u);
-                                  setSubModalMode('manage');
-                                  setSubGrantDurationDays(365);
-                                  setSubGrantKind('paid');
-                                  setSubGrantNote('');
-                                  setSubCancelImmediate(false);
-                                  setSubCancelReason('');
-                                  if (plans.length === 0) fetchPlans();
-                                }}
-                                className="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200/80 transition-all flex items-center space-x-1"
-                                title="Manage or Grant Subscription"
-                              >
-                                <CreditCard className="h-3.5 w-3.5 text-indigo-600" />
-                                <span>Sub</span>
-                              </button>
-                              <button
-                                onClick={() => handleToggleUserBlock(u._id, u.isBlocked)}
-                                className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center space-x-1 ${
-                                  u.isBlocked
-                                    ? 'bg-green-50 hover:bg-green-100 text-success border border-green-200'
-                                    : 'bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200'
-                                }`}
-                              >
-                                {u.isBlocked ? (
-                                  <>
-                                    <UserCheck className="h-3.5 w-3.5" />
-                                    <span>Unblock</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <UserX className="h-3.5 w-3.5" />
-                                    <span>Block</span>
-                                  </>
-                                )}
-                              </button>
-                              {u.isDeleted && (
-                                <button
-                                  onClick={() => handleRestoreUser(u._id, u.name || u.email)}
-                                  className="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 transition-all flex items-center space-x-1"
-                                  title="Revoke Deletion & Restore Patient Account"
-                                >
-                                  <RotateCcw className="h-3.5 w-3.5" />
-                                  <span>Restore</span>
-                                </button>
-                              )}
-                              <button
-                                onClick={() => handleDeleteUser(u._id)}
-                                className="px-2 py-1.5 rounded-lg text-xs font-bold transition-all text-red-600 hover:bg-red-50"
-                                title="Delete User"
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Comprehensive Pagination Controls */}
-            <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-soft flex flex-col sm:flex-row items-center justify-between gap-3">
-              <div className="text-xs font-bold text-slate-500">
-                {pagination.total > 0 ? (
-                  <span>
-                    Showing <span className="text-slate-800">{(pagination.page - 1) * pagination.limit + 1}</span> to{' '}
-                    <span className="text-slate-800">{Math.min(pagination.page * pagination.limit, pagination.total)}</span> of{' '}
-                    <span className="text-primary font-black">{pagination.total}</span> patients
-                  </span>
-                ) : (
-                  <span>Total: 0 patients</span>
-                )}
-              </div>
-
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <button
-                  disabled={pagination.page <= 1 || usersLoading}
-                  onClick={() => fetchUsers(1, userPageSize, userSubFilter, searchQuery)}
-                  className="px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-xs font-bold text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-                  title="First Page"
-                >
-                  &laquo; First
-                </button>
-                <button
-                  disabled={pagination.page <= 1 || usersLoading}
-                  onClick={() => fetchUsers(pagination.page - 1, userPageSize, userSubFilter, searchQuery)}
-                  className="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-xs font-bold text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-                >
-                  &lsaquo; Prev
-                </button>
-
-                {/* Page Jump indicator */}
-                <div className="px-3 py-1.5 bg-primary/10 border border-primary/20 rounded-lg text-xs font-black text-primary">
-                  Page {pagination.page} of {Math.max(1, pagination.pages)}
-                </div>
-
-                <button
-                  disabled={pagination.page >= pagination.pages || usersLoading}
-                  onClick={() => fetchUsers(pagination.page + 1, userPageSize, userSubFilter, searchQuery)}
-                  className="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-xs font-bold text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-                >
-                  Next &rsaquo;
-                </button>
-                <button
-                  disabled={pagination.page >= pagination.pages || usersLoading}
-                  onClick={() => fetchUsers(pagination.pages, userPageSize, userSubFilter, searchQuery)}
-                  className="px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-xs font-bold text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-                  title="Last Page"
-                >
-                  Last &raquo;
-                </button>
-              </div>
-            </div>
-
-          </div>
-        )}
-
-        {/* PENDING EDITS VIEW */}
-        {activeView === 'pendingEdits' && (
-          <div className="space-y-4">
-            <h2 className="text-xl font-bold text-slate-800">Pending Profile Edits</h2>
-            {pendingEdits.length === 0 ? (
-              <div className="bg-white p-8 rounded-2xl border border-slate-200 text-center text-slate-500 font-semibold shadow-soft">
-                No pending profile edits to review.
-              </div>
-            ) : (
-              <div className="grid gap-4">
-                {pendingEdits.map((u) => (
-                  <div key={u._id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-soft">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="font-bold text-lg text-slate-800">{u.name}</h3>
-                        <p className="text-sm text-slate-500 mb-4">{u.email}</p>
-                        
-                        <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
-                          <h4 className="text-xs font-bold uppercase text-slate-400 mb-2">Requested Changes:</h4>
-                          <pre className="text-xs text-slate-700 whitespace-pre-wrap font-mono">
-                            {JSON.stringify(u.pendingProfileEdits, null, 2)}
-                          </pre>
-                        </div>
-                      </div>
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={() => handleApproveEdit(u._id)}
-                          className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white font-bold rounded-lg text-sm transition-colors"
-                        >
-                          Approve
-                        </button>
-                        <button
-                          onClick={() => handleRejectEdit(u._id)}
-                          className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-bold rounded-lg text-sm transition-colors"
-                        >
-                          Reject
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* DOCTORS MANAGEMENT VIEW */}
-        {activeView === 'doctors-management' && (
-          <AdminExtDashboard apiUrl={apiUrl} token={token} defaultTab="doctors" onLaunchDoctorPortal={handleLaunchDoctorPortal} />
-        )}
-
-        {/* VENDORS MANAGEMENT VIEW */}
-        {activeView === 'vendors-management' && (
-          <AdminVendorManagement apiUrl={apiUrl} token={token || ''} />
-        )}
-
-        {/* AMAZON VENDOR & AFFILIATE MANAGEMENT VIEW */}
-        {activeView === 'amazon-vendor' && (
-          <AdminAmazonVendor apiUrl={apiUrl} token={token || ''} />
-        )}
-
-        {/* HEALTH STORE PRODUCTS VIEW */}
-        {activeView === 'store-products' && (
-          <div className="space-y-6">
-            {paymentConfig && (
-              <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
-                <h3 className="text-lg font-bold text-slate-800">Shop & Warehouse Configuration</h3>
-                
-                {/* Global Fees */}
-                <div className="grid grid-cols-3 gap-6">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Shop GST (%)</label>
-                    <input
-                      type="number" min="0" max="100" required
-                      value={paymentConfig.shopGstPercentage !== undefined ? paymentConfig.shopGstPercentage : 18}
-                      onChange={(e) => setPaymentConfig({ ...paymentConfig, shopGstPercentage: parseInt(e.target.value) || 0 })}
-                      placeholder="18" className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold bg-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Shop Global Discount (%)</label>
-                    <input
-                      type="number" min="0" max="100" required
-                      value={paymentConfig.shopDiscountPercentage !== undefined ? paymentConfig.shopDiscountPercentage : 0}
-                      onChange={(e) => setPaymentConfig({ ...paymentConfig, shopDiscountPercentage: parseInt(e.target.value) || 0 })}
-                      placeholder="0" className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold bg-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Shipping Fee (Global Base Fallback)</label>
-                    <input
-                      type="number" min="0" step="0.01" required
-                      value={paymentConfig.shopShippingFee !== undefined ? paymentConfig.shopShippingFee : 0}
-                      onChange={(e) => setPaymentConfig({ ...paymentConfig, shopShippingFee: parseFloat(e.target.value) || 0 })}
-                      placeholder="0" className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold bg-white"
-                    />
-                  </div>
-                </div>
-
-                {/* Warehouse Origin Location Settings */}
-                <div className="border-t border-slate-100 pt-4 space-y-3">
-                  <span className="text-[10px] font-black uppercase tracking-wider text-indigo-600">Store / Warehouse Origin Location (For Distance Calculations)</span>
-                  <div className="grid grid-cols-4 gap-4">
-                    <div className="col-span-2">
-                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Warehouse Address</label>
-                      <input
-                        type="text"
-                        value={paymentConfig.storeOriginAddress || 'MitoReboot Central Warehouse, Bangalore'}
-                        onChange={(e) => setPaymentConfig({ ...paymentConfig, storeOriginAddress: e.target.value })}
-                        placeholder="Warehouse Address"
-                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold bg-white"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Origin Pincode</label>
-                      <input
-                        type="text"
-                        value={paymentConfig.storeOriginPincode || '560001'}
-                        onChange={(e) => setPaymentConfig({ ...paymentConfig, storeOriginPincode: e.target.value })}
-                        placeholder="560001"
-                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold bg-white"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Unconfigured Pincodes Mode</label>
-                      <select
-                        value={paymentConfig.unconfiguredPincodeFallback || 'GLOBAL_FALLBACK'}
-                        onChange={(e) => setPaymentConfig({ ...paymentConfig, unconfiguredPincodeFallback: e.target.value as any })}
-                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 bg-white"
-                      >
-                        <option value="GLOBAL_FALLBACK">🟡 Global Fallback (Use Global Base Fee)</option>
-                        <option value="STRICT">🔴 Strict Mode (Only Listed Pincodes Serviceable)</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Origin Latitude</label>
-                      <input
-                        type="number" step="0.000001"
-                        value={paymentConfig.storeOriginLat !== undefined ? paymentConfig.storeOriginLat : 12.9716}
-                        onChange={(e) => setPaymentConfig({ ...paymentConfig, storeOriginLat: parseFloat(e.target.value) || 12.9716 })}
-                        placeholder="12.9716"
-                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold bg-white"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Origin Longitude</label>
-                      <input
-                        type="number" step="0.000001"
-                        value={paymentConfig.storeOriginLon !== undefined ? paymentConfig.storeOriginLon : 77.5946}
-                        onChange={(e) => setPaymentConfig({ ...paymentConfig, storeOriginLon: parseFloat(e.target.value) || 77.5946 })}
-                        placeholder="77.5946"
-                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold bg-white"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Global Distance Tier Configuration */}
-                  <div className="border-t border-slate-100 pt-3 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-black uppercase tracking-wider text-indigo-600">Global Default Distance Tiers (Inherited by all pincodes without custom tiers)</span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const current = paymentConfig.globalDistanceRanges || [
-                            { minDistanceKm: 0, maxDistanceKm: 5, shippingCharge: 40, estimatedDeliveryTime: 'Same Day Delivery (2-4 hrs)' },
-                            { minDistanceKm: 5, maxDistanceKm: 15, shippingCharge: 75, estimatedDeliveryTime: '24 Hours Delivery' }
-                          ];
-                          const last = current[current.length - 1];
-                          const newMin = last ? last.maxDistanceKm : 0;
-                          const newMax = newMin + 10;
-                          const newFee = last ? last.shippingCharge + 30 : 50;
-                          setPaymentConfig({
-                            ...paymentConfig,
-                            globalDistanceRanges: [...current, { minDistanceKm: newMin, maxDistanceKm: newMax, shippingCharge: newFee, estimatedDeliveryTime: '2-4 Days' }]
-                          });
-                        }}
-                        className="text-[10px] font-bold text-indigo-600 hover:underline cursor-pointer"
-                      >
-                        + Add Global Tier
-                      </button>
-                    </div>
-
-                    <div className="space-y-1.5">
-                      {(paymentConfig.globalDistanceRanges || [
-                        { minDistanceKm: 0, maxDistanceKm: 5, shippingCharge: 40, estimatedDeliveryTime: 'Same Day Delivery (2-4 hrs)' },
-                        { minDistanceKm: 5, maxDistanceKm: 15, shippingCharge: 75, estimatedDeliveryTime: '24 Hours Delivery' },
-                        { minDistanceKm: 15, maxDistanceKm: 30, shippingCharge: 120, estimatedDeliveryTime: '2-3 Business Days' }
-                      ]).map((range: any, idx: number) => (
-                        <div key={idx} className="bg-slate-50 border border-slate-200 p-2 rounded-xl grid grid-cols-12 gap-2 items-center text-xs font-semibold">
-                          <div className="col-span-3 flex items-center gap-1">
-                            <input
-                              type="number" min="0" value={range.minDistanceKm}
-                              onChange={(e) => {
-                                const updated = [...(paymentConfig.globalDistanceRanges || [])];
-                                updated[idx] = { ...updated[idx], minDistanceKm: parseFloat(e.target.value) || 0 };
-                                setPaymentConfig({ ...paymentConfig, globalDistanceRanges: updated });
-                              }}
-                              className="w-full px-2 py-1 border border-slate-200 rounded-lg text-xs bg-white"
-                            />
-                            <span>-</span>
-                            <input
-                              type="number" min="0" value={range.maxDistanceKm}
-                              onChange={(e) => {
-                                const updated = [...(paymentConfig.globalDistanceRanges || [])];
-                                updated[idx] = { ...updated[idx], maxDistanceKm: parseFloat(e.target.value) || 0 };
-                                setPaymentConfig({ ...paymentConfig, globalDistanceRanges: updated });
-                              }}
-                              className="w-full px-2 py-1 border border-slate-200 rounded-lg text-xs bg-white"
-                            />
-                            <span className="text-[10px] text-slate-400">km</span>
-                          </div>
-
-                          <div className="col-span-3">
-                            <input
-                              type="number" min="0" value={range.shippingCharge}
-                              onChange={(e) => {
-                                const updated = [...(paymentConfig.globalDistanceRanges || [])];
-                                updated[idx] = { ...updated[idx], shippingCharge: parseFloat(e.target.value) || 0 };
-                                setPaymentConfig({ ...paymentConfig, globalDistanceRanges: updated });
-                              }}
-                              placeholder="Fee ₹"
-                              className="w-full px-2 py-1 border border-slate-200 rounded-lg text-xs font-bold text-emerald-700 bg-white"
-                            />
-                          </div>
-
-                          <div className="col-span-5">
-                            <input
-                              type="text" value={range.estimatedDeliveryTime}
-                              onChange={(e) => {
-                                const updated = [...(paymentConfig.globalDistanceRanges || [])];
-                                updated[idx] = { ...updated[idx], estimatedDeliveryTime: e.target.value };
-                                setPaymentConfig({ ...paymentConfig, globalDistanceRanges: updated });
-                              }}
-                              placeholder="Delivery Estimate"
-                              className="w-full px-2 py-1 border border-slate-200 rounded-lg text-xs bg-white"
-                            />
-                          </div>
-
-                          <div className="col-span-1 text-right">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const updated = (paymentConfig.globalDistanceRanges || []).filter((_: any, i: number) => i !== idx);
-                                setPaymentConfig({ ...paymentConfig, globalDistanceRanges: updated });
-                              }}
-                              className="text-rose-500 hover:text-rose-700 font-bold p-1 cursor-pointer"
-                            >
-                              ✕
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-4 flex justify-end">
-                  <button onClick={(e) => { e.preventDefault(); handleConfigSubmit(e); }} className="bg-primary text-white px-5 py-2 rounded-xl text-sm font-bold shadow-soft hover:bg-primary-dark transition-all">Save Shop Config</button>
-                </div>
-              </div>
-            )}
-
-            {/* Pincode & Distance Shipping Management Dashboard */}
-            <AdminShippingPincodeConfig apiUrl={apiUrl} token={token || ''} />
-
-            <AdminShopProducts apiUrl={apiUrl} token={token} />
-          </div>
-        )}
-
-        {/* HEALTH STORE ORDERS VIEW */}
-        {activeView === 'store-orders' && (
-          <AdminExtDashboard apiUrl={apiUrl} token={token} defaultTab="orders" />
-        )}
-
-        {/* ORDER & SUPPORT MANAGEMENT MODULE */}
-        {activeView.startsWith('order-mgmt-') && (
-          <OrderManagementHub
-            key={activeView}
-            apiUrl={apiUrl}
-            token={token || ''}
-            adminRole={admin?.role || 'Admin'}
-            initialTab={
-              activeView === 'order-mgmt-overview' ? 'overview' :
-              activeView === 'order-mgmt-orders' ? 'orders' :
-              activeView === 'order-mgmt-refunds' ? 'refunds' :
-              activeView === 'order-mgmt-support' ? 'support' :
-              activeView === 'order-mgmt-messages' ? 'messages' :
-              activeView === 'order-mgmt-reports' ? 'reports' :
-              activeView === 'order-mgmt-vendors' ? 'vendors' :
-              activeView === 'order-mgmt-settings' ? 'settings' : 'overview'
-            }
-            onNavigateTab={(tab) => {
-              setActiveView(`order-mgmt-${tab}`);
-            }}
-          />
-        )}
-
-        {/* HEALTH STORE REPORTS VIEW */}
-        {activeView === 'store-reports' && (
-          <AdminShopReports apiUrl={apiUrl} token={token || ''} />
-        )}
-
-        {/* USER FEEDBACK & RATINGS VIEW */}
-        {activeView === 'user-feedback' && (
-          <AdminUserFeedback apiUrl={apiUrl} token={token || ''} />
-        )}
-
-        {/* CONSULTATION ANALYTICS VIEW */}
-        {activeView === 'consultation-analytics' && (
-          <ConsultationAnalytics apiUrl={apiUrl} token={token || ''} />
-        )}
-
-        {/* APP HEALTH & USAGE VIEW */}
-        {activeView === 'app-health' && (
-          <AdminAppHealth apiUrl={apiUrl} token={token || ''} />
-        )}
-
-        {/* OTP & AUTH LOGS VIEW */}
-        {activeView === 'otp-logs' && (
-          <AdminOtpLogs apiUrl={apiUrl} token={token || ''} />
-        )}
-
-        {/* SENT EMAILS VIEW */}
-        {activeView === 'sent-emails' && (
-          <AdminSentEmails apiUrl={apiUrl} token={token || ''} />
-        )}
-
-        {/* REVENUE & BUSINESS ANALYTICS MODULE */}
-        {(activeView.startsWith('revenue-') || activeView === 'revenue-analytics') && (
-          <RevenueAnalyticsHub
-            apiUrl={apiUrl}
-            token={token || ''}
-            initialSubmenu={
-              activeView === 'revenue-overview' ? 'overview' :
-              activeView === 'revenue-transactions' ? 'transactions' :
-              activeView === 'revenue-subscriptions' ? 'subscriptions' :
-              activeView === 'revenue-user-payments' ? 'user-payments' :
-              activeView === 'revenue-ask-mito' ? 'ask-mito' :
-              activeView === 'revenue-shop-sales' ? 'shop-sales' :
-              activeView === 'revenue-departments' ? 'departments' :
-              activeView === 'revenue-payment-methods' ? 'payment-methods' :
-              activeView === 'revenue-refunds' ? 'refunds-failed' :
-              activeView === 'revenue-reports' ? 'reports' :
-              activeView === 'revenue-settings' ? 'settings' : 'overview'
-            }
-            onOpenOrder={() => {
-              setActiveView('store-orders');
-            }}
-            onOpenUser={(userId) => {
-              fetchUserActivity(userId);
-            }}
-          />
-        )}
-
-        {/* REPORTS & ANALYTICS VIEW */}
-        {activeView === 'reports-analytics' && (
-          <div className="space-y-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div>
-                <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-                  System Reports & Analytics
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                    Live Realtime
-                  </span>
-                </h2>
-                <p className="text-xs text-slate-500 mt-1">Cross-platform clinical activity and store transaction streams from production database</p>
-              </div>
-
-              <button
-                onClick={fetchReportsAnalytics}
-                disabled={reportsAnalyticsLoading}
-                className="self-start md:self-auto flex items-center gap-2 px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-600 shadow-sm transition-all"
-              >
-                <RefreshCw className={`h-3.5 w-3.5 ${reportsAnalyticsLoading ? 'animate-spin text-primary' : ''}`} />
-                <span>{reportsAnalyticsLoading ? 'Updating...' : 'Refresh Live Data'}</span>
-              </button>
-            </div>
-
-            {/* Quick Metrics Bar */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-soft">
-                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">6-Month Revenue</span>
-                <p className="text-xl font-bold text-slate-800 mt-1">
-                  ₹{(reportsAnalytics?.revenueTrends || []).reduce((acc: number, r: any) => acc + (r.revenue || 0), 0).toLocaleString('en-IN')}
-                </p>
-                <span className="text-[10px] text-slate-400">Delivered store orders</span>
-              </div>
-              <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-soft">
-                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">6-Month Orders</span>
-                <p className="text-xl font-bold text-emerald-600 mt-1">
-                  {(reportsAnalytics?.monthlyOrders || []).reduce((acc: number, r: any) => acc + (r.orders || 0), 0)}
-                </p>
-                <span className="text-[10px] text-slate-400">Total store purchases</span>
-              </div>
-              <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-soft">
-                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">This Week Appointments</span>
-                <p className="text-xl font-bold text-indigo-600 mt-1">
-                  {(reportsAnalytics?.weeklyAppointments || []).reduce((acc: number, a: any) => acc + (a.completed || 0) + (a.pending || 0), 0)}
-                </p>
-                <span className="text-[10px] text-slate-400">Completed & active consultations</span>
-              </div>
-              <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-soft">
-                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Integrated Vendors</span>
-                <p className="text-xl font-bold text-purple-600 mt-1">
-                  {(reportsAnalytics?.vendorEfficiency || []).length}
-                </p>
-                <span className="text-[10px] text-slate-400">Active fulfillment partners</span>
-              </div>
-            </div>
-
-            {/* Graphs Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Chart 1: Revenue Trends */}
-              <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-soft">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-bold text-slate-700">Revenue Trends (Last 6 Months)</h3>
-                  <span className="text-[11px] font-semibold text-slate-400">₹ Realtime</span>
-                </div>
-                <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={reportsAnalytics?.revenueTrends || []}>
-                      <defs>
-                        <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#2563EB" stopOpacity={0.8}/>
-                          <stop offset="95%" stopColor="#2563EB" stopOpacity={0}/>
-                        </linearGradient>
-                      </defs>
-                      <XAxis dataKey="month" stroke="#94A3B8" fontSize={11} />
-                      <YAxis stroke="#94A3B8" fontSize={11} />
-                      <Tooltip formatter={(val: any) => [`₹${val}`, 'Revenue']} />
-                      <Area type="monotone" dataKey="revenue" stroke="#2563EB" fillOpacity={1} fill="url(#colorRevenue)" />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-
-              {/* Chart 2: Orders Count */}
-              <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-soft">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-bold text-slate-700">Monthly Orders Volume</h3>
-                  <span className="text-[11px] font-semibold text-slate-400">Realtime Count</span>
-                </div>
-                <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={reportsAnalytics?.monthlyOrders || []}>
-                      <XAxis dataKey="month" stroke="#94A3B8" fontSize={11} />
-                      <YAxis stroke="#94A3B8" fontSize={11} allowDecimals={false} />
-                      <Tooltip formatter={(val: any) => [val, 'Orders']} />
-                      <Bar dataKey="orders" fill="#14B8A6" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-
-              {/* Chart 3: Appointment Trends */}
-              <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-soft">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-bold text-slate-700">Weekly Appointment Status Trends</h3>
-                  <span className="text-[11px] font-semibold text-slate-400">Current Week</span>
-                </div>
-                <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={reportsAnalytics?.weeklyAppointments || []}>
-                      <XAxis dataKey="day" stroke="#94A3B8" fontSize={11} />
-                      <YAxis stroke="#94A3B8" fontSize={11} allowDecimals={false} />
-                      <Tooltip />
-                      <Line type="monotone" dataKey="completed" name="Completed" stroke="#10B981" strokeWidth={2} />
-                      <Line type="monotone" dataKey="cancelled" name="Cancelled" stroke="#EF4444" strokeWidth={2} />
-                      <Line type="monotone" dataKey="pending" name="Pending" stroke="#F59E0B" strokeWidth={2} />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-
-              {/* Chart 4: Vendor Performance */}
-              <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-soft">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-bold text-slate-700">Partner Vendor Efficiency (%)</h3>
-                  <span className="text-[11px] font-semibold text-slate-400">Live Partners</span>
-                </div>
-                <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={reportsAnalytics?.vendorEfficiency || []}>
-                      <XAxis dataKey="name" stroke="#94A3B8" fontSize={11} />
-                      <YAxis stroke="#94A3B8" fontSize={11} domain={[0, 100]} />
-                      <Tooltip formatter={(val: any) => [`${val}%`, 'Efficiency']} />
-                      <Bar dataKey="efficiency" fill="#8B5CF6" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* SCREENING TESTS VIEW */}
-        {activeView === 'screening-tests' && (
-          <AdminCancerTests apiUrl={apiUrl} token={token} />
-        )}
-        
-        {activeView === 'partner-labs' && (
-          <AdminLabs apiUrl={apiUrl} token={token} />
-        )}
-
-        {activeView === 'indian-cancers' && (
-          <AdminIndianCancers apiUrl={apiUrl} token={token} />
-        )}
-
-        {/* APPOINTMENTS CALENDAR VIEW */}
-        {activeView === 'appointments-calendar' && (
-          <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-6">
-            <div className="flex justify-between items-center">
-              <div>
-                <h2 className="text-base font-bold text-slate-800">Clinical Bookings Calendar</h2>
-                <p className="text-xs text-slate-400 mt-0.5">Visual scheduler tracker (Monthly, Weekly, Daily)</p>
-              </div>
-              <div className="flex gap-2 bg-slate-100 p-1 rounded-xl border border-slate-200">
-                {(['month', 'week', 'day'] as const).map(tab => (
-                  <button 
-                    key={tab}
-                    onClick={() => setCalendarTab(tab)}
-                    className={`px-3 py-1 rounded-lg text-xs font-bold capitalize transition-all ${
-                      calendarTab === tab ? 'bg-primary text-white shadow' : 'text-slate-500 hover:text-slate-800'
-                    }`}
-                  >
-                    {tab}
-                  </button>
-                ))}
-              </div>
-              <button 
-                onClick={() => exportToCSV(allAppointments, 'appointments_calendar')}
-                className="px-3 py-1.5 bg-slate-900 text-white rounded-xl text-xs font-bold transition-all shadow-sm hover:bg-slate-800"
-              >
-                Export CSV
-              </button>
-            </div>
-
-            {/* MONTH VIEW */}
-            {calendarTab === 'month' && (
-              <>
-                <div className="grid grid-cols-7 gap-2 text-center text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 border-b border-slate-100 pb-2">
-                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                    <div key={day} className="py-2">{day}</div>
-                  ))}
-                </div>
-                <div className="grid grid-cols-7 gap-2">
-                  {Array.from({ length: 35 }).map((_, idx) => {
-                    const dayNum = (idx % 31) + 1;
-                    const dateStr = `2026-07-${dayNum < 10 ? '0' + dayNum : dayNum}`;
+                </>
+              )}
+
+              {/* WEEK VIEW */}
+              {calendarTab === 'week' && (
+                <div className="grid grid-cols-7 gap-4">
+                  {['Mon 13', 'Tue 14', 'Wed 15', 'Thu 16', 'Fri 17', 'Sat 18', 'Sun 19'].map((day, idx) => {
+                    const dateStr = `2026-07-${13 + idx}`;
                     const dayAppts = allAppointments.filter(a => a.date === dateStr);
                     return (
-                      <div key={idx} className="border border-slate-100 rounded-2xl p-2.5 min-h-[95px] bg-slate-50/50 flex flex-col justify-between hover:border-slate-350 transition-all">
-                        <span className="text-[10px] font-black text-slate-400 self-start">{dayNum}</span>
-                        <div className="space-y-1 overflow-y-auto max-h-[55px] scrollbar-none">
+                      <div key={day} className="border border-slate-200 rounded-2xl p-4 bg-slate-50/40 min-h-[300px] flex flex-col gap-2">
+                        <span className="text-xs font-bold text-slate-800 text-center pb-2 border-b border-slate-100">{day}</span>
+                        <div className="flex-1 space-y-2 overflow-y-auto max-h-[250px] scrollbar-none">
                           {dayAppts.map(appt => (
-                            <div 
+                            <div
                               key={appt._id}
-                              className={`p-1 rounded text-[9px] font-bold text-left truncate leading-tight ${
-                                appt.status === 'confirmed' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' :
+                              className={`p-2 rounded-xl text-[10px] font-bold border flex flex-col gap-1 ${appt.status === 'confirmed' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' :
                                 appt.status === 'completed' ? 'bg-blue-50 text-blue-600 border border-blue-100' :
-                                appt.status === 'cancelled' ? 'bg-rose-50 text-rose-600 border-rose-100' :
-                                'bg-amber-50 text-amber-600 border border-amber-100'
-                              }`}
+                                  appt.status === 'cancelled' ? 'bg-rose-50 text-rose-600 border-rose-100' :
+                                    'bg-amber-50 text-amber-600 border border-amber-100'
+                                }`}
                             >
-                              {appt.time} - {appt.userId?.name}
+                              <span>🕒 {appt.time}</span>
+                              <span className="truncate">{appt.userId?.name}</span>
                             </div>
                           ))}
+                          {dayAppts.length === 0 && <span className="text-[10px] text-slate-400 italic block text-center mt-10">No visits</span>}
                         </div>
                       </div>
                     );
                   })}
                 </div>
-              </>
-            )}
+              )}
 
-            {/* WEEK VIEW */}
-            {calendarTab === 'week' && (
-              <div className="grid grid-cols-7 gap-4">
-                {['Mon 13', 'Tue 14', 'Wed 15', 'Thu 16', 'Fri 17', 'Sat 18', 'Sun 19'].map((day, idx) => {
-                  const dateStr = `2026-07-${13 + idx}`;
-                  const dayAppts = allAppointments.filter(a => a.date === dateStr);
-                  return (
-                    <div key={day} className="border border-slate-200 rounded-2xl p-4 bg-slate-50/40 min-h-[300px] flex flex-col gap-2">
-                      <span className="text-xs font-bold text-slate-800 text-center pb-2 border-b border-slate-100">{day}</span>
-                      <div className="flex-1 space-y-2 overflow-y-auto max-h-[250px] scrollbar-none">
-                        {dayAppts.map(appt => (
-                          <div 
-                            key={appt._id} 
-                            className={`p-2 rounded-xl text-[10px] font-bold border flex flex-col gap-1 ${
-                              appt.status === 'confirmed' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' :
-                              appt.status === 'completed' ? 'bg-blue-50 text-blue-600 border border-blue-100' :
-                              appt.status === 'cancelled' ? 'bg-rose-50 text-rose-600 border-rose-100' :
-                              'bg-amber-50 text-amber-600 border border-amber-100'
-                            }`}
-                          >
-                            <span>🕒 {appt.time}</span>
-                            <span className="truncate">{appt.userId?.name}</span>
-                          </div>
-                        ))}
-                        {dayAppts.length === 0 && <span className="text-[10px] text-slate-400 italic block text-center mt-10">No visits</span>}
+              {/* DAY VIEW */}
+              {calendarTab === 'day' && (
+                <div className="space-y-2 border border-slate-100 rounded-3xl p-4 bg-slate-50/20 max-h-[400px] overflow-y-auto">
+                  {['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00'].map(hour => {
+                    const hourAppts = allAppointments.filter(a => a.date === '2026-07-15' && a.time.startsWith(hour.split(':')[0]));
+                    return (
+                      <div key={hour} className="flex gap-4 items-center py-2.5 border-b border-slate-100">
+                        <span className="text-xs font-bold text-slate-400 w-16">{hour}</span>
+                        <div className="flex-1 flex gap-2 overflow-x-auto">
+                          {hourAppts.map(appt => (
+                            <div
+                              key={appt._id}
+                              className={`px-3 py-1.5 rounded-xl text-xs font-bold border flex items-center gap-3 ${appt.status === 'confirmed' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' :
+                                appt.status === 'completed' ? 'bg-blue-50 text-blue-600 border-blue-100' :
+                                  appt.status === 'cancelled' ? 'bg-rose-50 text-rose-600 border-rose-100' :
+                                    'bg-amber-50 text-amber-600 border-amber-100'
+                                }`}
+                            >
+                              <span>{appt.userId?.name} (Dr. {appt.doctorId?.name})</span>
+                              <span className="text-[10px] text-slate-400">Reason: {appt.reason}</span>
+                            </div>
+                          ))}
+                          {hourAppts.length === 0 && <span className="text-xs text-slate-400 italic">No bookings scheduled for this hour</span>}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* DAY VIEW */}
-            {calendarTab === 'day' && (
-              <div className="space-y-2 border border-slate-100 rounded-3xl p-4 bg-slate-50/20 max-h-[400px] overflow-y-auto">
-                {['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00'].map(hour => {
-                  const hourAppts = allAppointments.filter(a => a.date === '2026-07-15' && a.time.startsWith(hour.split(':')[0]));
-                  return (
-                    <div key={hour} className="flex gap-4 items-center py-2.5 border-b border-slate-100">
-                      <span className="text-xs font-bold text-slate-400 w-16">{hour}</span>
-                      <div className="flex-1 flex gap-2 overflow-x-auto">
-                        {hourAppts.map(appt => (
-                          <div 
-                            key={appt._id}
-                            className={`px-3 py-1.5 rounded-xl text-xs font-bold border flex items-center gap-3 ${
-                              appt.status === 'confirmed' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' :
-                              appt.status === 'completed' ? 'bg-blue-50 text-blue-600 border-blue-100' :
-                              appt.status === 'cancelled' ? 'bg-rose-50 text-rose-600 border-rose-100' :
-                              'bg-amber-50 text-amber-600 border-amber-100'
-                            }`}
-                          >
-                            <span>{appt.userId?.name} (Dr. {appt.doctorId?.name})</span>
-                            <span className="text-[10px] text-slate-400">Reason: {appt.reason}</span>
-                          </div>
-                        ))}
-                        {hourAppts.length === 0 && <span className="text-xs text-slate-400 italic">No bookings scheduled for this hour</span>}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* APPOINTMENTS QUEUE VIEWS */}
-        {(activeView === 'appointments-upcoming' || activeView === 'appointments-completed' || activeView === 'appointments-cancelled') && (
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-xl font-bold text-slate-800 capitalize">{activeView.replace('appointments-', '')} Appointments</h2>
-              <p className="text-xs text-slate-500 mt-1">Review scheduled virtual slots and status logs</p>
+                    );
+                  })}
+                </div>
+              )}
             </div>
+          )}
 
-            {appointmentsLoading ? (
-              <div className="flex justify-center py-10">
-                <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
+          {/* APPOINTMENTS QUEUE VIEWS */}
+          {(activeView === 'appointments-upcoming' || activeView === 'appointments-completed' || activeView === 'appointments-cancelled') && (
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-xl font-bold text-slate-800 capitalize">{activeView.replace('appointments-', '')} Appointments</h2>
+                <p className="text-xs text-slate-500 mt-1">Review scheduled virtual slots and status logs</p>
               </div>
-            ) : (
-              <div className="bg-white rounded-2xl border border-slate-200 shadow-soft overflow-x-auto">
-                <table className="min-w-full divide-y divide-slate-200">
-                  <thead className="bg-slate-50 text-slate-400 text-xs font-bold uppercase tracking-wider text-left">
-                    <tr>
-                      <th className="px-6 py-4">Patient</th>
-                      <th className="px-6 py-4">Specialist Doctor</th>
-                      <th className="px-6 py-4">Date & Time</th>
-                      <th className="px-6 py-4">Status</th>
-                      <th className="px-6 py-4">Meeting Link</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 font-semibold text-slate-700">
-                    {allAppointments
-                      .filter(appt => {
+
+              {appointmentsLoading ? (
+                <div className="flex justify-center py-10">
+                  <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
+                </div>
+              ) : (
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-soft overflow-x-auto">
+                  <table className="min-w-full divide-y divide-slate-200">
+                    <thead className="bg-slate-50 text-slate-400 text-xs font-bold uppercase tracking-wider text-left">
+                      <tr>
+                        <th className="px-6 py-4">Patient</th>
+                        <th className="px-6 py-4">Specialist Doctor</th>
+                        <th className="px-6 py-4">Date & Time</th>
+                        <th className="px-6 py-4">Status</th>
+                        <th className="px-6 py-4">Meeting Link</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 font-semibold text-slate-700">
+                      {allAppointments
+                        .filter(appt => {
+                          const viewType = activeView.replace('appointments-', '');
+                          if (viewType === 'upcoming') return appt.status === 'pending' || appt.status === 'confirmed';
+                          if (viewType === 'completed') return appt.status === 'completed';
+                          if (viewType === 'cancelled') return appt.status === 'cancelled';
+                          return true;
+                        })
+                        .map(appt => (
+                          <tr key={appt._id}>
+                            <td className="px-6 py-4">
+                              <h4 className="font-bold text-slate-800 text-sm">{appt.userId?.name}</h4>
+                              <p className="text-xs text-slate-400 font-normal">{appt.userId?.email}</p>
+                            </td>
+                            <td className="px-6 py-4">
+                              <h4 className="font-bold text-slate-850 text-sm">Dr. {appt.doctorId?.name}</h4>
+                              <p className="text-xs text-slate-400 font-semibold text-indigo-650">Dr. {appt.doctorId?.specialty}</p>
+                            </td>
+                            <td className="px-6 py-4 text-xs font-bold text-indigo-650">
+                              {appt.date} at {appt.time}
+                            </td>
+                            <td className="px-6 py-4">
+                              <span className={`text-[9px] font-bold px-2 py-0.5 rounded border uppercase ${appt.status === 'confirmed' ? 'bg-emerald-555/10 text-emerald-600 border-emerald-100' :
+                                appt.status === 'completed' ? 'bg-blue-50 text-blue-600 border-blue-100' :
+                                  appt.status === 'cancelled' ? 'bg-rose-50 text-rose-600 border-rose-100' :
+                                    'bg-amber-50 text-amber-600 border-amber-100'
+                                }`}>
+                                {appt.status}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4">
+                              {appt.meetingLink ? (
+                                <a href={appt.meetingLink} target="_blank" rel="noopener noreferrer" className="text-indigo-650 hover:underline font-bold">Link</a>
+                              ) : (
+                                <span className="text-slate-400 italic">No link</span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      {allAppointments.filter(appt => {
                         const viewType = activeView.replace('appointments-', '');
                         if (viewType === 'upcoming') return appt.status === 'pending' || appt.status === 'confirmed';
                         if (viewType === 'completed') return appt.status === 'completed';
                         if (viewType === 'cancelled') return appt.status === 'cancelled';
                         return true;
-                      })
-                      .map(appt => (
-                        <tr key={appt._id}>
-                          <td className="px-6 py-4">
-                            <h4 className="font-bold text-slate-800 text-sm">{appt.userId?.name}</h4>
-                            <p className="text-xs text-slate-400 font-normal">{appt.userId?.email}</p>
-                          </td>
-                          <td className="px-6 py-4">
-                            <h4 className="font-bold text-slate-850 text-sm">Dr. {appt.doctorId?.name}</h4>
-                            <p className="text-xs text-slate-400 font-semibold text-indigo-650">Dr. {appt.doctorId?.specialty}</p>
-                          </td>
-                          <td className="px-6 py-4 text-xs font-bold text-indigo-650">
-                            {appt.date} at {appt.time}
-                          </td>
-                          <td className="px-6 py-4">
-                            <span className={`text-[9px] font-bold px-2 py-0.5 rounded border uppercase ${
-                              appt.status === 'confirmed' ? 'bg-emerald-555/10 text-emerald-600 border-emerald-100' :
-                              appt.status === 'completed' ? 'bg-blue-50 text-blue-600 border-blue-100' :
-                              appt.status === 'cancelled' ? 'bg-rose-50 text-rose-600 border-rose-100' :
-                              'bg-amber-50 text-amber-600 border-amber-100'
-                            }`}>
-                              {appt.status}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4">
-                            {appt.meetingLink ? (
-                              <a href={appt.meetingLink} target="_blank" rel="noopener noreferrer" className="text-indigo-650 hover:underline font-bold">Link</a>
-                            ) : (
-                              <span className="text-slate-400 italic">No link</span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    {allAppointments.filter(appt => {
-                      const viewType = activeView.replace('appointments-', '');
-                      if (viewType === 'upcoming') return appt.status === 'pending' || appt.status === 'confirmed';
-                      if (viewType === 'completed') return appt.status === 'completed';
-                      if (viewType === 'cancelled') return appt.status === 'cancelled';
-                      return true;
-                    }).length === 0 && (
-                      <tr>
-                        <td colSpan={5} className="text-center py-6 text-slate-400 italic font-semibold">No appointments found in this category.</td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* VIEW: RECOMMENDED FOODS MANAGEMENT */}
-        {activeView === 'recFoods' && (
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <div>
-                <h2 className="text-xl font-bold text-slate-800">Doctor Recommended Foods</h2>
-                <p className="text-xs text-slate-400 font-semibold mt-0.5">Manage clean food recommendations for patients.</p>
-              </div>
-              <div className="flex space-x-3">
-                <div className="relative w-64">
-                  <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
-                    <Search className="h-4 w-4" />
-                  </span>
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSearchRecFoods()}
-                    placeholder="Search recommended foods..."
-                    className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:primary text-sm bg-white"
-                  />
-                </div>
-                <button
-                  onClick={() => {
-                    setEditingRecFoodId(null);
-                    setRecFoodForm({ category: 'Millet/Grains', productName: '', image: '', nutritionDetails: '', ingredients: '', pesticideInfo: '', certifications: '', doctorNotes: '', status: 'active' });
-                    setShowRecFoodModal(true);
-                  }}
-                  className="bg-primary hover:bg-primary-dark text-white font-bold px-4 py-2 rounded-xl text-sm flex items-center space-x-1.5 shadow-soft"
-                >
-                  <Plus className="h-4.5 w-4.5" />
-                  <span>Add Product</span>
-                </button>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-soft overflow-x-auto">
-              <table className="min-w-full divide-y divide-slate-200">
-                <thead className="bg-slate-50 text-slate-400 text-xs font-bold uppercase tracking-wider text-left">
-                  <tr>
-                    <th className="px-6 py-4">Image & Product</th>
-                    <th className="px-6 py-4">Category</th>
-                    <th className="px-6 py-4">Pesticide Info</th>
-                    <th className="px-6 py-4">Status</th>
-                    <th className="px-6 py-4 text-center">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 text-sm font-semibold text-slate-700">
-                  {!recFoods || recFoods.length === 0 ? (
-                    <tr>
-                      <td colSpan={5} className="text-center py-8 text-slate-400">No recommended foods added.</td>
-                    </tr>
-                  ) : (
-                    recFoods.map((f) => (
-                      <tr key={f._id} className="hover:bg-slate-50/50">
-                        <td className="px-6 py-4 font-bold text-slate-800 flex items-center space-x-3">
-                          <div className="relative w-10 h-10 shrink-0 rounded bg-slate-100 border border-slate-200">
-                            {f.image && (
-                              <img 
-                                src={f.image} 
-                                alt={f.productName} 
-                                className="absolute inset-0 w-full h-full object-cover rounded z-10" 
-                                onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                              />
-                            )}
-                            <div className="absolute inset-0 flex items-center justify-center">
-                              <Utensils className="h-4 w-4 text-slate-300" />
-                            </div>
-                          </div>
-                          <span>{f.productName}</span>
-                        </td>
-                        <td className="px-6 py-4"><span className="bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded text-xs font-bold border border-emerald-100">{f.category}</span></td>
-                        <td className="px-6 py-4 text-xs text-slate-500 max-w-[200px] truncate">{f.pesticideInfo || '--'}</td>
-                        <td className="px-6 py-4 text-slate-500">
-                          {f.status === 'active' ? <span className="bg-green-50 text-success px-2 py-0.5 rounded text-[10px] font-bold border border-green-100">Active</span> : <span className="bg-slate-100 text-slate-500 px-2 py-0.5 rounded text-[10px] font-bold border border-slate-200">Inactive</span>}
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex justify-center space-x-2">
-                            <button
-                              onClick={() => {
-                                setEditingRecFoodId(f._id);
-                                setRecFoodForm({
-                                  category: f.category, productName: f.productName, image: f.image, nutritionDetails: f.nutritionDetails, ingredients: f.ingredients, pesticideInfo: f.pesticideInfo, certifications: f.certifications, doctorNotes: f.doctorNotes, status: f.status
-                                });
-                                setShowRecFoodModal(true);
-                              }}
-                              className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-primary transition-all"
-                            >
-                              <Edit className="h-4.5 w-4.5" />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteRecFood(f._id)}
-                              className="p-1.5 hover:bg-red-50 rounded-lg text-slate-400 hover:text-danger transition-all"
-                            >
-                              <Trash2 className="h-4.5 w-4.5" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-            
-            {recFoodPagination.pages > 1 && (
-              <div className="flex justify-between items-center py-4 bg-slate-50 px-6 border border-slate-200 rounded-2xl">
-                <span className="text-xs font-bold text-slate-500">
-                  Page {recFoodPagination.page} of {recFoodPagination.pages}
-                </span>
-                <div className="flex space-x-2">
-                  <button disabled={recFoodPagination.page === 1} onClick={() => fetchRecFoods(recFoodPagination.page - 1)} className="px-3 py-1 bg-white border border-slate-200 rounded-lg text-xs font-bold disabled:opacity-50">Prev</button>
-                  <button disabled={recFoodPagination.page === recFoodPagination.pages} onClick={() => fetchRecFoods(recFoodPagination.page + 1)} className="px-3 py-1 bg-white border border-slate-200 rounded-lg text-xs font-bold disabled:opacity-50">Next</button>
-                </div>
-              </div>
-            )}
-
-            {showRecFoodModal && (
-              <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                <div className="bg-white p-6 rounded-3xl border border-slate-200 max-w-2xl w-full shadow-lg max-h-[90vh] overflow-y-auto">
-                  <h3 className="text-base font-bold text-slate-800 mb-4">{editingRecFoodId ? 'Update Recommended Food' : 'Add Recommended Food'}</h3>
-                  <form onSubmit={handleRecFoodSubmit} className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Category</label>
-                        <select
-                          required
-                          value={recFoodForm.category}
-                          onChange={(e) => setRecFoodForm({ ...recFoodForm, category: e.target.value })}
-                          className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-semibold bg-white"
-                        >
-                          <option value="Millet/Grains">Millet/Grains</option>
-                          <option value="Low-GI Foods">Low-GI Foods</option>
-                          <option value="Organic Products">Organic Products</option>
-                          <option value="Supplements">Supplements</option>
-                          <option value="Diabetic Snacks">Diabetic Snacks</option>
-                          <option value="Healthy Oils">Healthy Oils</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Product Name</label>
-                        <input
-                          type="text" required value={recFoodForm.productName}
-                          onChange={(e) => setRecFoodForm({ ...recFoodForm, productName: e.target.value })}
-                          className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-semibold"
-                        />
-                      </div>
-                      <div className="col-span-2">
-                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Image URL</label>
-                        <input
-                          type="url" value={recFoodForm.image} placeholder="https://..."
-                          onChange={(e) => setRecFoodForm({ ...recFoodForm, image: e.target.value })}
-                          className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-semibold"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Nutrition Details</label>
-                        <input
-                          type="text" value={recFoodForm.nutritionDetails} placeholder="e.g. 100 kcal, 20g Carbs"
-                          onChange={(e) => setRecFoodForm({ ...recFoodForm, nutritionDetails: e.target.value })}
-                          className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-semibold"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Ingredients</label>
-                        <input
-                          type="text" value={recFoodForm.ingredients}
-                          onChange={(e) => setRecFoodForm({ ...recFoodForm, ingredients: e.target.value })}
-                          className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-semibold"
-                        />
-                      </div>
-                      <div className="col-span-2">
-                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Pesticide Information</label>
-                        <textarea
-                          rows={2} value={recFoodForm.pesticideInfo}
-                          onChange={(e) => setRecFoodForm({ ...recFoodForm, pesticideInfo: e.target.value })}
-                          className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-semibold"
-                        />
-                      </div>
-                      <div className="col-span-2">
-                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Certifications</label>
-                        <input
-                          type="text" value={recFoodForm.certifications} placeholder="e.g. USDA Organic, Non-GMO"
-                          onChange={(e) => setRecFoodForm({ ...recFoodForm, certifications: e.target.value })}
-                          className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-semibold"
-                        />
-                      </div>
-                      <div className="col-span-2">
-                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Doctor Notes (Optional)</label>
-                        <textarea
-                          rows={2} value={recFoodForm.doctorNotes}
-                          onChange={(e) => setRecFoodForm({ ...recFoodForm, doctorNotes: e.target.value })}
-                          className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-semibold"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Status</label>
-                        <select
-                          value={recFoodForm.status}
-                          onChange={(e: any) => setRecFoodForm({ ...recFoodForm, status: e.target.value })}
-                          className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-semibold bg-white"
-                        >
-                          <option value="active">Active</option>
-                          <option value="inactive">Inactive</option>
-                        </select>
-                      </div>
-                    </div>
-                    <div className="flex space-x-3 pt-4 border-t border-slate-100">
-                      <button type="button" onClick={() => setShowRecFoodModal(false)} className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-sm font-bold transition-all">Cancel</button>
-                      <button type="submit" className="flex-1 py-2.5 bg-primary hover:bg-primary-dark text-white rounded-xl text-sm font-bold shadow-soft transition-all">Save Recommended Food</button>
-                    </div>
-                  </form>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* VIEW 3: FOOD MASTER LIBRARY TEMPLATES */}
-        {activeView === 'foods' && (
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <div>
-                <h2 className="text-xl font-bold text-slate-800">Food Templates Library</h2>
-                <p className="text-xs text-slate-400 font-semibold mt-0.5">Define master items for patient quick logging.</p>
-              </div>
-              <div className="flex space-x-3">
-                <div className="relative w-64">
-                  <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
-                    <Search className="h-4 w-4" />
-                  </span>
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSearchFoods()}
-                    placeholder="Search master foods..."
-                    className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary text-sm bg-white"
-                  />
-                </div>
-                <div className="relative">
-                  <input type="file" accept=".csv" onChange={handleBulkImport} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" title="Bulk Import CSV" />
-                  <button className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold px-4 py-2 rounded-xl text-sm flex items-center space-x-1.5 shadow-soft">
-                    <FileUp className="h-4.5 w-4.5" />
-                    <span>Import CSV</span>
-                  </button>
-                </div>
-                <button
-                  onClick={() => { setEditingFoodId(null); setFoodForm({ name: '', category: 'South Indian', calories: 100, carbs: 20, protein: 5, fat: 2, fiber: 0, servingSize: 100, servingUnit: 'g', isActive: true }); setShowFoodModal(true); }}
-                  className="bg-primary hover:bg-primary-dark text-white font-bold px-4 py-2 rounded-xl text-sm flex items-center space-x-1.5 shadow-soft"
-                >
-                  <Plus className="h-4.5 w-4.5" />
-                  <span>Add Template</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Foods Grid */}
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-soft overflow-x-auto">
-              <table className="min-w-full divide-y divide-slate-200">
-                <thead className="bg-slate-50 text-slate-400 text-xs font-bold uppercase tracking-wider text-left">
-                  <tr>
-                    <th className="px-6 py-4">Food Name</th>
-                    <th className="px-6 py-4">Category</th>
-                    <th className="px-6 py-4">Calories</th>
-                    <th className="px-6 py-4">Carbs</th>
-                    <th className="px-6 py-4">Protein</th>
-                    <th className="px-6 py-4">Fat</th>
-                    <th className="px-6 py-4">Fiber</th>
-                    <th className="px-6 py-4">Status</th>
-                    <th className="px-6 py-4 text-center">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 text-sm font-semibold text-slate-700">
-                  {foods.length === 0 ? (
-                    <tr>
-                      <td colSpan={8} className="text-center py-8 text-slate-400">No food templates seeded. Add one.</td>
-                    </tr>
-                  ) : (
-                    foods.map((f) => (
-                      <tr key={f._id} className="hover:bg-slate-50/50">
-                        <td className="px-6 py-4 font-bold text-slate-800">{f.name}</td>
-                        <td className="px-6 py-4"><span className="bg-slate-100 px-2 py-0.5 rounded text-xs font-bold text-slate-500">{f.category}</span></td>
-                        <td className="px-6 py-4 text-orange-600">{f.calories} kcal</td>
-                        <td className="px-6 py-4 text-blue-600">{f.carbs}g</td>
-                        <td className="px-6 py-4 text-teal-600">{f.protein}g</td>
-                        <td className="px-6 py-4 text-slate-500">{f.fat}g</td>
-                        <td className="px-6 py-4 text-emerald-600">{f.fiber || 0}g</td>
-                        <td className="px-6 py-4 text-slate-500">
-                          {f.isActive ? <span className="bg-green-50 text-success px-2 py-0.5 rounded text-[10px] font-bold border border-green-100">Active</span> : <span className="bg-slate-100 text-slate-500 px-2 py-0.5 rounded text-[10px] font-bold border border-slate-200">Inactive</span>}
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex justify-center space-x-2">
-                            <button
-                              onClick={() => { setEditingFoodId(f._id); setFoodForm({ name: f.name, category: f.category, calories: f.calories, carbs: f.carbs, protein: f.protein, fat: f.fat, fiber: f.fiber || 0, servingSize: f.servingSize, servingUnit: f.servingUnit, isActive: f.isActive !== false }); setShowFoodModal(true); }}
-                              className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-primary transition-all"
-                            >
-                              <Edit className="h-4.5 w-4.5" />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteFood(f._id)}
-                              className="p-1.5 hover:bg-red-50 rounded-lg text-slate-400 hover:text-danger transition-all"
-                            >
-                              <Trash2 className="h-4.5 w-4.5" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Pagination Controls for Foods */}
-            {foodPagination.pages > 1 && (
-              <div className="flex justify-between items-center py-4 bg-slate-50 px-6 border border-slate-200 rounded-2xl">
-                <span className="text-xs font-bold text-slate-500">
-                  Showing {(foodPagination.page - 1) * foodPagination.limit + 1} to {Math.min(foodPagination.page * foodPagination.limit, foodPagination.total)} of {foodPagination.total} foods
-                </span>
-                <div className="flex space-x-2">
-                  <button
-                    disabled={foodPagination.page === 1}
-                    onClick={() => fetchFoods(foodPagination.page - 1)}
-                    className="px-3 py-1 bg-white border border-slate-200 rounded-lg text-xs font-bold disabled:opacity-50"
-                  >
-                    Prev
-                  </button>
-                  <span className="text-xs font-bold text-slate-600 px-3 py-1">
-                    Page {foodPagination.page} of {foodPagination.pages}
-                  </span>
-                  <button
-                    disabled={foodPagination.page === foodPagination.pages}
-                    onClick={() => fetchFoods(foodPagination.page + 1)}
-                    className="px-3 py-1 bg-white border border-slate-200 rounded-lg text-xs font-bold disabled:opacity-50"
-                  >
-                    Next
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Food Modal Form */}
-            {showFoodModal && (
-              <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                <div className="bg-white p-6 rounded-3xl border border-slate-200 max-w-md w-full shadow-lg">
-                  <h3 className="text-base font-bold text-slate-800 mb-4">{editingFoodId ? 'Update Food Template' : 'Add Food Template'}</h3>
-                  <form onSubmit={handleFoodSubmit} className="space-y-4">
-                    <div>
-                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Food Name</label>
-                      <input
-                        type="text"
-                        required
-                        value={foodForm.name}
-                        onChange={(e) => setFoodForm({ ...foodForm, name: e.target.value })}
-                        className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary text-sm font-semibold"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Category</label>
-                        <select
-                          value={foodForm.category}
-                          onChange={(e: any) => setFoodForm({ ...foodForm, category: e.target.value })}
-                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-bold"
-                        >
-                          <option value="South Indian">South Indian</option>
-                          <option value="North Indian">North Indian</option>
-                          <option value="Snacks">Snacks</option>
-                          <option value="Fruits">Fruits</option>
-                          <option value="Vegetables">Vegetables</option>
-                          <option value="Beverages">Beverages</option>
-                          <option value="Dairy">Dairy</option>
-                          <option value="Non-Veg">Non-Veg</option>
-                          <option value="Sweets">Sweets</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Calories (kcal)</label>
-                        <input
-                          type="number"
-                          required
-                          value={foodForm.calories}
-                          onChange={(e) => setFoodForm({ ...foodForm, calories: parseFloat(e.target.value) || 0 })}
-                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-bold"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-2">
-                      <div>
-                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Carbs (g)</label>
-                        <input
-                          type="number"
-                          required
-                          value={foodForm.carbs}
-                          onChange={(e) => setFoodForm({ ...foodForm, carbs: parseFloat(e.target.value) || 0 })}
-                          className="w-full px-2 py-2 border border-slate-200 rounded-xl text-center text-sm font-bold"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Protein (g)</label>
-                        <input
-                          type="number"
-                          required
-                          value={foodForm.protein}
-                          onChange={(e) => setFoodForm({ ...foodForm, protein: parseFloat(e.target.value) || 0 })}
-                          className="w-full px-2 py-2 border border-slate-200 rounded-xl text-center text-sm font-bold"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Fat (g)</label>
-                        <input
-                          type="number"
-                          required
-                          value={foodForm.fat}
-                          onChange={(e) => setFoodForm({ ...foodForm, fat: parseFloat(e.target.value) || 0 })}
-                          className="w-full px-2 py-2 border border-slate-200 rounded-xl text-center text-sm font-bold"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Fiber (g)</label>
-                        <input
-                          type="number"
-                          required
-                          value={foodForm.fiber}
-                          onChange={(e) => setFoodForm({ ...foodForm, fiber: parseFloat(e.target.value) || 0 })}
-                          className="w-full px-2 py-2 border border-slate-200 rounded-xl text-center text-sm font-bold"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-3">
-                      <div>
-                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Serving Size</label>
-                        <input
-                          type="number"
-                          required
-                          value={foodForm.servingSize}
-                          onChange={(e) => setFoodForm({ ...foodForm, servingSize: parseFloat(e.target.value) || 100 })}
-                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-bold"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Unit</label>
-                        <input
-                          type="text"
-                          required
-                          value={foodForm.servingUnit}
-                          onChange={(e) => setFoodForm({ ...foodForm, servingUnit: e.target.value })}
-                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-semibold text-slate-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Status</label>
-                        <select
-                          value={foodForm.isActive ? 'true' : 'false'}
-                          onChange={(e) => setFoodForm({ ...foodForm, isActive: e.target.value === 'true' })}
-                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-bold bg-white"
-                        >
-                          <option value="true">Active</option>
-                          <option value="false">Inactive</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div className="flex space-x-3 pt-2">
-                      <button
-                        type="button"
-                        onClick={() => setShowFoodModal(false)}
-                        className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 font-semibold rounded-xl text-sm"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="submit"
-                        className="flex-1 py-2.5 bg-primary hover:bg-primary-dark text-white font-bold rounded-xl text-sm"
-                      >
-                        Save Template
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* VIEW 4: EDUCATIONAL VIDEO EDITOR */}
-        {activeView === 'videos' && (
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <div>
-                <h2 className="text-xl font-bold text-slate-800">Educational Video Tutorials</h2>
-                <p className="text-xs text-slate-400 font-semibold mt-0.5">Upload streaming URLs or YouTube embed references.</p>
-              </div>
-              <button
-                onClick={() => { setEditingVideoId(null); setVideoForm({ title: '', description: '', url: '', thumbnailUrl: '', category: 'CGM Guide', targetPlatform: 'Both' as any, isPaidOnly: false }); setShowVideoModal(true); }}
-                className="bg-primary hover:bg-primary-dark text-white font-bold px-4 py-2 rounded-xl text-sm flex items-center space-x-1.5 shadow-soft"
-              >
-                <Plus className="h-4.5 w-4.5" />
-                <span>Upload Video</span>
-              </button>
-            </div>
-
-            {/* Videos Listing Grid */}
-            <div className="grid grid-cols-3 gap-6">
-              {videos.length === 0 ? (
-                <div className="col-span-3 text-center p-8 bg-white border border-slate-200 rounded-2xl text-sm text-slate-400">No videos configured.</div>
-              ) : (
-                videos.map((vid) => (
-                  <div key={vid._id} className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-soft flex flex-col justify-between">
-                    <div className="aspect-video w-full bg-slate-100 relative">
-                      <iframe src={getEmbedUrl(vid.url)} className="w-full h-full border-none" />
-                      {vid.isPaidOnly && (
-                        <div className="absolute top-2 right-2 bg-slate-900/80 backdrop-blur-md text-amber-300 text-[10px] font-black px-2.5 py-1 rounded-lg border border-amber-400/30 flex items-center gap-1 shadow-md">
-                          <span>👑 Paid Only</span>
-                        </div>
-                      )}
-                    </div>
-                    <div className="p-4 flex-1">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="text-[10px] font-bold text-primary bg-primary-light/50 px-2 py-0.5 rounded-full">{vid.category}</span>
-                        {vid.isPaidOnly ? (
-                          <span className="text-[10px] font-extrabold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full flex items-center gap-1">
-                            👑 Paid Subscribers Only
-                          </span>
-                        ) : (
-                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full flex items-center gap-1">
-                            ✓ All Users (Free)
-                          </span>
+                      }).length === 0 && (
+                          <tr>
+                            <td colSpan={5} className="text-center py-6 text-slate-400 italic font-semibold">No appointments found in this category.</td>
+                          </tr>
                         )}
-                      </div>
-                      <h4 className="text-sm font-bold text-slate-800 mt-2">{vid.title}</h4>
-                      <p className="text-xs text-slate-400 font-medium mt-1 leading-relaxed">{vid.description}</p>
-                    </div>
-                    <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end space-x-2">
-                      <button
-                        onClick={() => { setEditingVideoId(vid._id); setVideoForm({ title: vid.title, description: vid.description || '', url: vid.url, thumbnailUrl: vid.thumbnailUrl || '', category: vid.category, targetPlatform: vid.targetPlatform || 'Both', isPaidOnly: !!vid.isPaidOnly }); setShowVideoModal(true); }}
-                        className="p-1.5 hover:bg-slate-200 text-slate-500 rounded-lg"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteVideo(vid._id)}
-                        className="p-1.5 hover:bg-red-50 text-slate-400 hover:text-danger rounded-lg"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-
-            {/* Video Modal Form */}
-            {showVideoModal && (
-              <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                <div className="bg-white p-6 rounded-3xl border border-slate-200 max-w-md w-full shadow-lg">
-                  <h3 className="text-base font-bold text-slate-800 mb-4">{editingVideoId ? 'Edit Video Link' : 'Add Video Link'}</h3>
-                  <form onSubmit={handleVideoSubmit} className="space-y-4">
-                    <div>
-                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Title</label>
-                      <input
-                        type="text"
-                        required
-                        value={videoForm.title}
-                        onChange={(e) => setVideoForm({ ...videoForm, title: e.target.value })}
-                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-semibold"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Description</label>
-                      <textarea
-                        value={videoForm.description}
-                        onChange={(e) => setVideoForm({ ...videoForm, description: e.target.value })}
-                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-medium h-20"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Video Stream URL</label>
-                      <input
-                        type="text"
-                        required
-                        value={videoForm.url}
-                        onChange={(e) => setVideoForm({ ...videoForm, url: e.target.value })}
-                        placeholder="https://www.youtube.com/embed/XXXXX"
-                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Thumbnail link</label>
-                        <input
-                          type="text"
-                          value={videoForm.thumbnailUrl}
-                          onChange={(e) => setVideoForm({ ...videoForm, thumbnailUrl: e.target.value })}
-                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Category</label>
-                        <input
-                          type="text"
-                          required
-                          value={videoForm.category}
-                          onChange={(e) => setVideoForm({ ...videoForm, category: e.target.value })}
-                          placeholder="CGM Guide, Dietary Tips"
-                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-bold"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Access Control: Paid Users Only vs All Users Checkbox */}
-                    <div className={`p-3.5 rounded-2xl border transition-all ${
-                      videoForm.isPaidOnly
-                        ? 'bg-amber-50/80 border-amber-300 ring-1 ring-amber-300/40'
-                        : 'bg-slate-50 border-slate-200'
-                    }`}>
-                      <label className="flex items-start gap-3 cursor-pointer select-none">
-                        <input
-                          type="checkbox"
-                          checked={videoForm.isPaidOnly}
-                          onChange={(e) => setVideoForm({ ...videoForm, isPaidOnly: e.target.checked })}
-                          className="mt-0.5 h-4.5 w-4.5 rounded-md border-slate-300 text-amber-600 focus:ring-amber-500 cursor-pointer"
-                        />
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-black text-slate-800">Paid Users Only Access</span>
-                            {videoForm.isPaidOnly ? (
-                              <span className="text-[9px] font-black uppercase tracking-wider bg-amber-500 text-white px-2 py-0.5 rounded-full shadow-2xs">
-                                👑 Pro Exclusive
-                              </span>
-                            ) : (
-                              <span className="text-[9px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">
-                                Free for All
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-[11px] text-slate-500 font-medium mt-1 leading-relaxed">
-                            {videoForm.isPaidOnly
-                              ? 'Only active paid subscribers can watch this video in the app. Free and trial accounts will see it locked with an upgrade button.'
-                              : 'Accessible to all app members, including free and trial users.'}
-                          </p>
-                        </div>
-                      </label>
-                    </div>
-
-                    <div className="flex space-x-3 pt-2">
-                      <button
-                        type="button"
-                        onClick={() => setShowVideoModal(false)}
-                        className="flex-1 py-2 bg-slate-100 hover:bg-slate-200 rounded-xl font-semibold"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="submit"
-                        className="flex-1 py-2 bg-primary hover:bg-primary-dark text-white font-bold rounded-xl"
-                      >
-                        Save Video
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* VIEW 5: EDUCATIONAL ARTICLES/GUIDES EDITOR */}
-        {activeView === 'guides' && (
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <div>
-                <h2 className="text-xl font-bold text-slate-800">Educational Guide Articles</h2>
-                <p className="text-xs text-slate-400 font-semibold mt-0.5">Write guidelines and diet recommendations in plain text/markdown.</p>
-              </div>
-              <button
-                onClick={() => { setEditingGuideId(null); setGuideForm({ title: '', content: '', category: 'Diet', readTime: 5 }); setShowGuideModal(true); }}
-                className="bg-primary hover:bg-primary-dark text-white font-bold px-4 py-2 rounded-xl text-sm flex items-center space-x-1.5 shadow-soft"
-              >
-                <Plus className="h-4.5 w-4.5" />
-                <span>Create Guide</span>
-              </button>
-            </div>
-
-            {/* Guides Grid */}
-            <div className="grid grid-cols-2 gap-6">
-              {guides.length === 0 ? (
-                <div className="col-span-2 text-center p-8 bg-white border border-slate-200 rounded-2xl text-sm text-slate-400">No guides configured.</div>
-              ) : (
-                guides.map((g) => (
-                  <div key={g._id} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-soft flex flex-col justify-between h-56">
-                    <div>
-                      <div className="flex justify-between items-start mb-2">
-                        <span className="text-[10px] font-bold text-secondary bg-secondary-light/50 px-2 py-0.5 rounded-full">{g.category}</span>
-                        <span className="text-[10px] font-semibold text-slate-400">{g.readTime} min read</span>
-                      </div>
-                      <h4 className="text-sm font-bold text-slate-800 line-clamp-1">{g.title}</h4>
-                      <p className="text-xs text-slate-400 font-medium mt-2 line-clamp-3 leading-relaxed">{g.content}</p>
-                    </div>
-                    <div className="flex justify-end space-x-2 pt-3 border-t border-slate-100 mt-4">
-                      <button
-                        onClick={() => { setEditingGuideId(g._id); setGuideForm({ title: g.title, content: g.content, category: g.category, readTime: g.readTime }); setShowGuideModal(true); }}
-                        className="p-1.5 hover:bg-slate-100 text-slate-500 rounded-lg"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteGuide(g._id)}
-                        className="p-1.5 hover:bg-red-50 text-slate-400 hover:text-danger rounded-lg"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-
-            {/* Guide Modal Form */}
-            {showGuideModal && (
-              <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                <div className="bg-white p-6 rounded-3xl border border-slate-200 max-w-xl w-full shadow-lg">
-                  <h3 className="text-base font-bold text-slate-800 mb-4">{editingGuideId ? 'Update Guide Article' : 'Create Guide Article'}</h3>
-                  <form onSubmit={handleGuideSubmit} className="space-y-4">
-                    <div>
-                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Title</label>
-                      <input
-                        type="text"
-                        required
-                        value={guideForm.title}
-                        onChange={(e) => setGuideForm({ ...guideForm, title: e.target.value })}
-                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-bold"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Content (Markdown / Text)</label>
-                      <textarea
-                        required
-                        value={guideForm.content}
-                        onChange={(e) => setGuideForm({ ...guideForm, content: e.target.value })}
-                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-medium h-48 focus:outline-none focus:ring-2 focus:ring-primary"
-                        placeholder="Write content..."
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Category</label>
-                        <input
-                          type="text"
-                          required
-                          value={guideForm.category}
-                          onChange={(e) => setGuideForm({ ...guideForm, category: e.target.value })}
-                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-bold"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Read Time (minutes)</label>
-                        <input
-                          type="number"
-                          required
-                          value={guideForm.readTime}
-                          onChange={(e) => setGuideForm({ ...guideForm, readTime: parseInt(e.target.value, 10) || 5 })}
-                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-bold"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="flex space-x-3 pt-2">
-                      <button
-                        type="button"
-                        onClick={() => setShowGuideModal(false)}
-                        className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 rounded-xl font-semibold text-sm"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="submit"
-                        className="flex-1 py-2.5 bg-primary hover:bg-primary-dark text-white font-bold rounded-xl text-sm"
-                      >
-                        Save Guide
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* VIEW 6: PUSH NOTIFICATION SENDER AND SCHEDULER */}
-        {activeView === 'notifications' && (
-          <>
-            <div className="space-y-6 max-w-xl mx-auto bg-white p-6 rounded-3xl border border-slate-200 shadow-soft mt-8">
-              <div>
-                <h2 className="text-xl font-bold text-slate-800">Dispatch Push Alert</h2>
-                <p className="text-xs text-slate-400 font-semibold mt-0.5">Send custom FCM push alerts immediately or schedule them for the future.</p>
-              </div>
-
-              {pushStatus && (
-                <div className="p-4 bg-green-50 border border-green-100 text-success rounded-xl flex items-center space-x-2 text-xs font-semibold">
-                  <CheckCircle className="h-5 w-5 shrink-0" />
-                  <span>{pushStatus}</span>
+                    </tbody>
+                  </table>
                 </div>
               )}
+            </div>
+          )}
 
-              <form onSubmit={handleSendPush} className="space-y-4">
+          {/* VIEW: RECOMMENDED FOODS MANAGEMENT */}
+          {activeView === 'recFoods' && (
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Recipient User (Email, Mobile, Name, or ID - Optional)</label>
-                  <input
-                    type="text"
-                    value={pushForm.userId}
-                    onChange={(e) => setPushForm({ ...pushForm, userId: e.target.value })}
-                    placeholder="Enter email, mobile number, or leave blank to broadcast to all"
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary"
-                  />
+                  <h2 className="text-xl font-bold text-slate-800">Doctor Recommended Foods</h2>
+                  <p className="text-xs text-slate-400 font-semibold mt-0.5">Manage clean food recommendations for patients.</p>
                 </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Notification Title</label>
-                  <input
-                    type="text"
-                    required
-                    value={pushForm.title}
-                    onChange={(e) => setPushForm({ ...pushForm, title: e.target.value })}
-                    placeholder="Daily Glucose Summary, Log Reminder"
-                    className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm font-semibold focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Notification Message</label>
-                  <textarea
-                    required
-                    value={pushForm.body}
-                    onChange={(e) => setPushForm({ ...pushForm, body: e.target.value })}
-                    placeholder="Remember to log your meals every 3 hours to maintain healthy profiles."
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-medium h-24 focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center space-x-1">
-                    <Calendar className="h-4 w-4" />
-                    <span>Schedule Dispatch (Optional)</span>
-                  </label>
-                  <input
-                    type="datetime-local"
-                    value={pushForm.scheduledFor}
-                    onChange={(e) => setPushForm({ ...pushForm, scheduledFor: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-bold text-slate-500"
-                  />
-                  <p className="text-[10px] text-slate-400 font-semibold mt-1">Leave blank to dispatch immediately.</p>
-                </div>
-
-                <button
-                  type="submit"
-                  className="w-full bg-primary hover:bg-primary-dark text-white font-bold py-3.5 px-4 rounded-xl shadow-soft flex items-center justify-center space-x-2"
-                >
-                  <Send className="h-4.5 w-4.5" />
-                  <span>{pushForm.scheduledFor ? 'Schedule Notification' : 'Broadcast Instantly'}</span>
-                </button>
-              </form>
-            </div>
-
-            <div className="space-y-6 max-w-xl mx-auto bg-white p-6 rounded-3xl border border-slate-200 shadow-soft mt-8">
-              <div>
-                <h2 className="text-xl font-bold text-slate-800">Dispatch Manual Email</h2>
-                <p className="text-xs text-slate-400 font-semibold mt-0.5">Send custom email to a specific user or all users.</p>
-              </div>
-
-              <form onSubmit={handleSendManualEmail} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Recipient User ID (Optional)</label>
-                  <input
-                    type="text"
-                    value={emailForm.userId}
-                    onChange={(e) => setEmailForm({ ...emailForm, userId: e.target.value })}
-                    placeholder="Broadcast to all users with email if left blank"
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Email Subject</label>
-                  <input
-                    type="text"
-                    required
-                    value={emailForm.title}
-                    onChange={(e) => setEmailForm({ ...emailForm, title: e.target.value })}
-                    placeholder="Subject"
-                    className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm font-semibold focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Email Body</label>
-                  <textarea
-                    required
-                    value={emailForm.body}
-                    onChange={(e) => setEmailForm({ ...emailForm, body: e.target.value })}
-                    placeholder="Email text..."
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-medium h-24 focus:outline-none"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  className="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3.5 px-4 rounded-xl shadow-soft flex items-center justify-center space-x-2"
-                >
-                  <Send className="h-4.5 w-4.5" />
-                  <span>Send Email</span>
-                </button>
-              </form>
-            </div>
-          </>
-        )}
-
-        {/* VIEW 6.1: FAQS */}
-        {activeView === 'faqs' && (
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <div>
-                <h2 className="text-xl font-bold text-slate-800">Dynamic FAQs</h2>
-                <p className="text-xs text-slate-400 font-semibold mt-0.5">Manage frequently asked questions for both Website and App.</p>
-              </div>
-              <button
-                onClick={() => { setEditingFaqId(null); setFaqForm({ question: '', answer: '', platform: 'Both', category: 'General', isActive: true, order: 0 }); setShowFaqModal(true); }}
-                className="bg-primary hover:bg-primary-dark text-white font-bold px-4 py-2 rounded-xl text-sm flex items-center space-x-1.5 shadow-soft"
-              >
-                <Plus className="h-4.5 w-4.5" />
-                <span>Add FAQ</span>
-              </button>
-            </div>
-
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-soft overflow-hidden">
-              <table className="min-w-full divide-y divide-slate-200">
-                <thead className="bg-slate-50 text-slate-400 text-xs font-bold uppercase tracking-wider text-left">
-                  <tr>
-                    <th className="px-6 py-4">Question</th>
-                    <th className="px-6 py-4">Platform</th>
-                    <th className="px-6 py-4">Category</th>
-                    <th className="px-6 py-4">Status</th>
-                    <th className="px-6 py-4 text-center">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 text-sm font-semibold text-slate-700">
-                  {faqs.map(f => (
-                    <tr key={f._id} className="hover:bg-slate-50/50">
-                      <td className="px-6 py-4 text-slate-800"><div className="w-64 truncate">{f.question}</div></td>
-                      <td className="px-6 py-4"><span className="bg-blue-50 text-primary px-2 py-1 rounded text-xs">{f.platform}</span></td>
-                      <td className="px-6 py-4">{f.category}</td>
-                      <td className="px-6 py-4">{f.isActive ? 'Active' : 'Inactive'}</td>
-                      <td className="px-6 py-4 text-center">
-                        <button onClick={() => { setEditingFaqId(f._id); setFaqForm({ question: f.question, answer: f.answer, platform: f.platform, category: f.category, isActive: f.isActive, order: f.order }); setShowFaqModal(true); }} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500"><Edit className="h-4.5 w-4.5" /></button>
-                        <button onClick={() => handleDeleteFaq(f._id)} className="p-1.5 hover:bg-red-50 rounded-lg text-slate-400"><Trash2 className="h-4.5 w-4.5" /></button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {showFaqModal && (
-              <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                <div className="bg-white p-6 rounded-3xl border border-slate-200 max-w-2xl w-full shadow-lg">
-                  <h3 className="text-base font-bold text-slate-800 mb-4">{editingFaqId ? 'Edit FAQ' : 'Add FAQ'}</h3>
-                  <form onSubmit={handleFaqSubmit} className="space-y-4">
-                    <div><label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Question</label><input type="text" required value={faqForm.question} onChange={e => setFaqForm({ ...faqForm, question: e.target.value })} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm" /></div>
-                    <div>
-                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Answer</label>
-                      <ReactQuill
-                        theme="snow"
-                        value={faqForm.answer}
-                        onChange={value => setFaqForm({ ...faqForm, answer: value })}
-                        className="bg-white rounded-xl overflow-hidden border border-slate-200"
-                        style={{ height: '220px', marginBottom: '45px' }}
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div><label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Platform</label><select value={faqForm.platform} onChange={e => setFaqForm({ ...faqForm, platform: e.target.value as any })} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm"><option value="App">App</option><option value="Website">Website</option><option value="Both">Both</option></select></div>
-                      <div><label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Category</label><input type="text" required value={faqForm.category} onChange={e => setFaqForm({ ...faqForm, category: e.target.value })} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm" /></div>
-                    </div>
-                    <div className="flex space-x-3 pt-2">
-                      <button type="button" onClick={() => setShowFaqModal(false)} className="flex-1 py-2 bg-slate-100 rounded-xl font-semibold">Cancel</button>
-                      <button type="submit" className="flex-1 py-2 bg-primary text-white font-bold rounded-xl">Save FAQ</button>
-                    </div>
-                  </form>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* VIEW 6.1b: HEALTH INSIGHTS */}
-        {activeView === 'healthInsights' && (
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-xl font-bold text-slate-800">Health Insights</h2>
-              <p className="text-xs text-slate-400 font-semibold mt-0.5">Manage the daily health insight shown on the patient dashboard.</p>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Active Daily Insight Form */}
-              <div className="lg:col-span-2 bg-white p-6 rounded-3xl border border-slate-200 shadow-soft">
-                <h3 className="text-sm font-black text-slate-800 mb-4 flex items-center space-x-2">
-                  <Activity className="h-5 w-5 text-primary" />
-                  <span>Active Daily Insight</span>
-                </h3>
-                <form onSubmit={handleCustomInsightSubmit} className="space-y-4">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Insight Text Content</label>
-                    <textarea
-                      required
-                      value={activeInsightText}
-                      onChange={(e) => setActiveInsightText(e.target.value)}
-                      placeholder="Type a custom daily tip or select one from the templates..."
-                      className="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm font-medium h-32 focus:outline-none focus:border-primary transition-all leading-relaxed"
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    disabled={insightSaving}
-                    className="w-full bg-primary hover:bg-primary-dark text-white font-bold py-3.5 px-4 rounded-xl shadow-soft flex items-center justify-center space-x-2 transition-all disabled:opacity-50"
-                  >
-                    {insightSaving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
-                    <span>{insightSaving ? 'Saving...' : 'Set Active for Patients'}</span>
-                  </button>
-                </form>
-              </div>
-
-              {/* Templated / Prefilled Insights */}
-              <div className="bg-slate-50 p-6 rounded-3xl border border-slate-200/60">
-                <h3 className="text-sm font-black text-slate-800 mb-4 flex items-center space-x-2">
-                  <Award className="h-5 w-5 text-secondary" />
-                  <span>Easy Access Templates</span>
-                </h3>
-                <p className="text-xs text-slate-400 font-semibold mb-4">Click any template below to load it into the editor or activate it directly.</p>
-                <div className="space-y-3 max-h-[350px] overflow-y-auto pr-1">
-                  {healthInsights.map((insight) => (
-                    <div
-                      key={insight._id}
-                      onClick={() => setActiveInsightText(insight.content)}
-                      className={`p-3.5 rounded-2xl border text-xs font-semibold leading-relaxed transition-all cursor-pointer ${insight.isActive
-                          ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
-                          : 'bg-white border-slate-200 hover:border-slate-300 text-slate-600'
-                        }`}
-                    >
-                      <div className="flex justify-between items-start mb-2">
-                        <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${insight.isActive ? 'bg-emerald-200 text-emerald-900' : 'bg-slate-100 text-slate-500'
-                          }`}>
-                          {insight.isActive ? 'Active Now' : insight.isTemplate ? 'Template' : 'Custom'}
-                        </span>
-                        {!insight.isActive && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleSetInsightActive(insight._id);
-                            }}
-                            className="text-[9px] font-extrabold text-primary hover:underline"
-                          >
-                            Set Active
-                          </button>
-                        )}
-                      </div>
-                      <p>{insight.content}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-        {activeView === 'product-support' && (
-          <SupportPortal />
-        )}
-
-        {/* VIEW 6.2: TICKETS */}
-        {activeView === 'tickets' && (
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <div>
-                <h2 className="text-xl font-bold text-slate-800">Support Q&A</h2>
-                <p className="text-xs text-slate-400 font-semibold mt-0.5">Answer questions submitted from the website or app.</p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 gap-4">
-              {tickets.map(t => (
-                <div key={t._id} className="bg-white rounded-2xl border border-slate-200 shadow-soft p-5">
-                  <div className="flex justify-between items-start mb-2">
-                    <div>
-                      <h4 className="text-sm font-bold text-slate-800">{t.name} <span className="text-slate-400 font-medium text-xs">({t.email})</span></h4>
-                      <p className="text-xs text-slate-500 mt-1">{new Date(t.createdAt).toLocaleString()}</p>
-                    </div>
-                    <span className={`px-2 py-1 rounded text-[10px] font-bold ${t.status === 'Open' ? 'bg-orange-50 text-orange-600' : 'bg-green-50 text-success'}`}>{t.status}</span>
-                  </div>
-                  <div className="bg-slate-50 p-3 rounded-xl mt-2">
-                    <p className="text-sm font-semibold text-slate-700">Q: {t.question}</p>
-                  </div>
-                  {t.status === 'Answered' ? (
-                    <div className="bg-blue-50 p-3 rounded-xl mt-2 border border-blue-100">
-                      <p className="text-sm font-semibold text-primary">A: {t.answer}</p>
-                    </div>
-                  ) : (
-                    <div className="mt-3 flex justify-end">
-                      <button onClick={() => { setSelectedTicket(t); setTicketAnswer(''); setShowTicketModal(true); }} className="px-4 py-2 bg-primary text-white rounded-xl text-xs font-bold flex items-center space-x-1"><MessageSquare className="h-4 w-4" /> <span>Answer & Email</span></button>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            {showTicketModal && (
-              <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                <div className="bg-white p-6 rounded-3xl border border-slate-200 max-w-md w-full shadow-lg">
-                  <h3 className="text-base font-bold text-slate-800 mb-4">Reply to Ticket</h3>
-                  <div className="bg-slate-50 p-3 rounded-xl mb-4"><p className="text-xs font-bold text-slate-600">{selectedTicket?.question}</p></div>
-                  <form onSubmit={handleTicketAnswer} className="space-y-4">
-                    <div><label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Your Answer</label><textarea required value={ticketAnswer} onChange={e => setTicketAnswer(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm h-32" placeholder="This will be emailed to the user..." /></div>
-                    <div className="flex space-x-3 pt-2">
-                      <button type="button" onClick={() => setShowTicketModal(false)} className="flex-1 py-2 bg-slate-100 rounded-xl font-semibold">Cancel</button>
-                      <button type="submit" className="flex-1 py-2 bg-primary text-white font-bold rounded-xl">Send Answer</button>
-                    </div>
-                  </form>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* VIEW 7: SUBSCRIPTION PLANS MANAGEMENT */}
-        {activeView === 'plans' && (
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <div>
-                <h2 className="text-xl font-bold text-slate-800">Subscription Plans Master</h2>
-                <p className="text-xs text-slate-400 font-semibold mt-0.5">Configure billing tiers and feature-level access controls.</p>
-              </div>
-              <button
-                onClick={() => {
-                  setEditingPlanId(null);
-                  setPlanForm({
-                    name: '',
-                    code: '',
-                    description: '',
-                    monthlyPrice: 1000,
-                    yearlyPrice: 1000,
-                    originalMonthlyPrice: 0,
-                    originalYearlyPrice: 3600,
-                    monthlyFreeQuestions: 1,
-                    yearlyFreeQuestions: 10,
-                    trialDays: 2,
-                    displayOrder: 1,
-                    badge: 'None',
-                    color: '#2563EB',
-                    isActive: true,
-                    features: {
-                      unlimitedReports: false,
-                      advancedAnalysis: false,
-                      premiumVideos: false,
-                      foodInsights: false,
-                      exportReports: false,
-                      notifications: false,
-                      aiCoaching: false,
-                      foodScanner: false
-                    }
-                  });
-                  setShowPlanModal(true);
-                }}
-                className="bg-primary hover:bg-primary-dark text-white font-bold px-4 py-2 rounded-xl text-sm flex items-center space-x-1.5 shadow-soft"
-              >
-                <Plus className="h-4.5 w-4.5" />
-                <span>Create Plan</span>
-              </button>
-            </div>
-
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-soft overflow-x-auto">
-              <table className="min-w-full divide-y divide-slate-200">
-                <thead className="bg-slate-50 text-slate-400 text-xs font-bold uppercase tracking-wider text-left">
-                  <tr>
-                    <th className="px-6 py-4">Plan Name</th>
-                    <th className="px-6 py-4">Code</th>
-                    <th className="px-6 py-4">Prices</th>
-                    <th className="px-6 py-4">Doctor Qs Quota</th>
-                    <th className="px-6 py-4">Trial Period</th>
-                    <th className="px-6 py-4">Features Check</th>
-                    <th className="px-6 py-4">Display Order</th>
-                    <th className="px-6 py-4">Status</th>
-                    <th className="px-6 py-4 text-center">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 text-sm font-semibold text-slate-700">
-                  {plans.length === 0 ? (
-                    <tr>
-                      <td colSpan={9} className="text-center py-8 text-slate-400">No subscription plans seeded. Create one.</td>
-                    </tr>
-                  ) : (
-                    plans.map((p) => {
-                      const activeFeatures = Object.entries(p.features || {})
-                        .filter(([_, enabled]) => !!enabled)
-                        .map(([key]) => key);
-
-                      return (
-                        <tr key={p._id} className="hover:bg-slate-50/50">
-                          <td className="px-6 py-4 font-bold text-slate-800 flex items-center space-x-2">
-                            <span className="w-3.5 h-3.5 rounded-full shrink-0" style={{ backgroundColor: p.color || '#2563EB' }}></span>
-                            <span className="whitespace-nowrap">{p.name}</span>
-                            {p.badge && p.badge !== 'None' && (
-                              <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold text-white whitespace-nowrap shrink-0" style={{ backgroundColor: p.color || '#2563EB' }}>
-                                {p.badge}
-                              </span>
-                            )}
-                          </td>
-                          <td className="px-6 py-4 text-slate-500 font-bold uppercase">{p.code}</td>
-                          <td className="px-6 py-4">
-                            <span className="text-slate-800 block font-bold">₹{p.monthlyPrice}/mo</span>
-                            <span className="text-[10px] text-slate-400 font-bold block">₹{p.yearlyPrice}/yr</span>
-                          </td>
-                          <td className="px-6 py-4">
-                            <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 block whitespace-nowrap">
-                              {p.monthlyFreeQuestions ?? 1}/mo
-                            </span>
-                            <span className="text-[10px] font-bold text-slate-500 block mt-0.5">
-                              {p.yearlyFreeQuestions ?? 10}/yr
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 font-medium text-slate-500">{p.trialDays} days</td>
-                          <td className="px-6 py-4">
-                            <span className="text-xs text-primary font-bold bg-blue-50 px-2 py-1 rounded">
-                              {activeFeatures.length} / 8 features
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 font-medium text-slate-500">{p.displayOrder}</td>
-                          <td className="px-6 py-4">
-                            {p.isActive ? (
-                              <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-green-50 text-success border border-green-100">
-                                Active
-                              </span>
-                            ) : (
-                              <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-50 text-slate-400 border border-slate-100">
-                                Inactive
-                              </span>
-                            )}
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="flex justify-center space-x-2">
-                              <button
-                                onClick={() => {
-                                  setEditingPlanId(p._id);
-                                  setPlanForm({
-                                    name: p.name,
-                                    code: p.code,
-                                    description: p.description || '',
-                                    monthlyPrice: p.monthlyPrice,
-                                    yearlyPrice: p.yearlyPrice,
-                                    originalMonthlyPrice: p.originalMonthlyPrice ?? 0,
-                                    originalYearlyPrice: p.originalYearlyPrice ?? 0,
-                                    monthlyFreeQuestions: p.monthlyFreeQuestions ?? 1,
-                                    yearlyFreeQuestions: p.yearlyFreeQuestions ?? 10,
-                                    trialDays: p.trialDays,
-                                    displayOrder: p.displayOrder,
-                                    badge: p.badge || 'None',
-                                    color: p.color || '#2563EB',
-                                    isActive: p.isActive,
-                                    features: {
-                                      unlimitedReports: !!p.features?.unlimitedReports,
-                                      advancedAnalysis: !!p.features?.advancedAnalysis,
-                                      premiumVideos: !!p.features?.premiumVideos,
-                                      foodInsights: !!p.features?.foodInsights,
-                                      exportReports: !!p.features?.exportReports,
-                                      notifications: !!p.features?.notifications,
-                                      aiCoaching: !!p.features?.aiCoaching,
-                                      foodScanner: !!p.features?.foodScanner
-                                    }
-                                  });
-                                  setShowPlanModal(true);
-                                }}
-                                className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-primary transition-all"
-                              >
-                                <Edit className="h-4.5 w-4.5" />
-                              </button>
-                              <button
-                                onClick={() => handleDeletePlan(p._id)}
-                                className="p-1.5 hover:bg-red-50 rounded-lg text-slate-400 hover:text-danger transition-all"
-                              >
-                                <Trash2 className="h-4.5 w-4.5" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* VIEW 7.5: PROMO COUPONS MANAGEMENT */}
-        {activeView === 'coupons' && (
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <div>
-                <h2 className="text-xl font-bold text-slate-800">Promo Discount Coupons</h2>
-                <p className="text-xs text-slate-400 font-semibold mt-0.5">Manage and issue promotional discount coupon codes for plans.</p>
-              </div>
-              <button
-                onClick={() => {
-                  setEditingCouponId(null);
-                  setCouponForm({
-                    code: '',
-                    discountType: 'percentage',
-                    discountValue: 10,
-                    expiryDate: '',
-                    maxRedemptions: '',
-                    isActive: true
-                  });
-                  setShowCouponModal(true);
-                }}
-                className="bg-primary hover:bg-primary-dark text-white font-bold px-4 py-2 rounded-xl text-sm flex items-center space-x-1.5 shadow-soft"
-              >
-                <Plus className="h-4.5 w-4.5" />
-                <span>Create Coupon</span>
-              </button>
-            </div>
-
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-soft overflow-x-auto">
-              <table className="min-w-full divide-y divide-slate-200">
-                <thead className="bg-slate-50 text-slate-400 text-xs font-bold uppercase tracking-wider text-left">
-                  <tr>
-                    <th className="px-6 py-4">Coupon Code</th>
-                    <th className="px-6 py-4">Discount Type</th>
-                    <th className="px-6 py-4">Discount Value</th>
-                    <th className="px-6 py-4">Redemptions</th>
-                    <th className="px-6 py-4">Expiry Date</th>
-                    <th className="px-6 py-4">Status</th>
-                    <th className="px-6 py-4 text-center">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 text-sm font-semibold text-slate-700">
-                  {coupons.length === 0 ? (
-                    <tr>
-                      <td colSpan={7} className="text-center py-8 text-slate-400">No discount coupons found. Create one.</td>
-                    </tr>
-                  ) : (
-                    coupons.map((c) => {
-                      const isExpired = c.expiryDate && new Date(c.expiryDate) < new Date();
-                      const isLimitReached = c.maxRedemptions !== undefined && c.redemptionsCount >= c.maxRedemptions;
-
-                      return (
-                        <tr key={c._id} className="hover:bg-slate-50/50">
-                          <td className="px-6 py-4 font-bold text-slate-800 tracking-wider">
-                            {c.code}
-                          </td>
-                          <td className="px-6 py-4 capitalize text-xs">
-                            {c.discountType}
-                          </td>
-                          <td className="px-6 py-4 text-slate-800 font-extrabold">
-                            {c.discountType === 'percentage' ? `${c.discountValue}%` : `₹${c.discountValue}`}
-                          </td>
-                          <td className="px-6 py-4 text-xs font-medium">
-                            <span className="text-slate-800 font-bold">{c.redemptionsCount}</span>
-                            {c.maxRedemptions !== undefined ? ` / ${c.maxRedemptions} max` : ' (unlimited)'}
-                          </td>
-                          <td className="px-6 py-4 text-xs font-medium text-slate-400">
-                            {c.expiryDate ? new Date(c.expiryDate).toLocaleDateString() : 'Never'}
-                            {isExpired && <span className="text-[10px] text-red-500 font-bold ml-1.5">(Expired)</span>}
-                          </td>
-                          <td className="px-6 py-4">
-                            <button
-                              onClick={() => toggleCouponStatus(c)}
-                              className={`px-2.5 py-0.5 rounded-full text-xs font-bold border transition-all ${c.isActive && !isExpired && !isLimitReached
-                                ? 'bg-green-50 text-success border-green-100 hover:bg-green-100'
-                                : 'bg-red-50 text-danger border-red-100 hover:bg-red-100'
-                                }`}
-                            >
-                              {c.isActive && !isExpired && !isLimitReached ? 'Active' : 'Inactive'}
-                            </button>
-                          </td>
-                          <td className="px-6 py-4 text-center">
-                            <div className="flex justify-center space-x-1.5">
-                              <button
-                                onClick={() => {
-                                  setEditingCouponId(c._id);
-                                  setCouponForm({
-                                    code: c.code,
-                                    discountType: c.discountType,
-                                    discountValue: c.discountValue,
-                                    expiryDate: c.expiryDate ? new Date(c.expiryDate).toISOString().split('T')[0] : '',
-                                    maxRedemptions: c.maxRedemptions !== undefined ? c.maxRedemptions.toString() : '',
-                                    isActive: c.isActive
-                                  });
-                                  setShowCouponModal(true);
-                                }}
-                                className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-primary transition-all"
-                              >
-                                <Edit className="h-4.5 w-4.5" />
-                              </button>
-                              <button
-                                onClick={() => handleDeleteCoupon(c._id)}
-                                className="p-1.5 hover:bg-red-50 rounded-lg text-slate-400 hover:text-danger transition-all"
-                              >
-                                <Trash2 className="h-4.5 w-4.5" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* VIEW 8: PAYMENTS AND SUBSCRIPTIONS AUDIT & WIDGETS */}
-        {activeView === 'payments' && (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-bold text-slate-800">Branding & Payments Control</h2>
-              {/* Sub-tab navigation */}
-              <div className="flex bg-slate-100 p-1.5 rounded-xl border border-slate-200">
-                <button
-                  onClick={() => setPaymentTab('billing')}
-                  className={`py-1.5 px-4 font-bold text-xs rounded-lg uppercase tracking-wider transition-all ${paymentTab === 'billing'
-                      ? 'bg-white text-primary shadow-sm'
-                      : 'text-slate-500 hover:text-slate-800'
-                    }`}
-                >
-                  Billing & Gateway
-                </button>
-                <button
-                  onClick={() => setPaymentTab('common')}
-                  className={`py-1.5 px-4 font-bold text-xs rounded-lg uppercase tracking-wider transition-all ${paymentTab === 'common'
-                      ? 'bg-white text-primary shadow-sm'
-                      : 'text-slate-500 hover:text-slate-800'
-                    }`}
-                >
-                  General App Config
-                </button>
-                <button
-                  onClick={() => setPaymentTab('transactions')}
-                  className={`py-1.5 px-4 font-bold text-xs rounded-lg uppercase tracking-wider transition-all ${paymentTab === 'transactions'
-                      ? 'bg-white text-primary shadow-sm'
-                      : 'text-slate-500 hover:text-slate-800'
-                    }`}
-                >
-                  Transactions & Manual Control
-                </button>
-                <button
-                  onClick={() => setPaymentTab('branding')}
-                  className={`py-1.5 px-4 font-bold text-xs rounded-lg uppercase tracking-wider transition-all ${paymentTab === 'branding'
-                      ? 'bg-white text-primary shadow-sm'
-                      : 'text-slate-500 hover:text-slate-800'
-                    }`}
-                >
-                  App Branding
-                </button>
-              </div>
-            </div>
-
-            {/* TAB 1: BILLING & GATEWAY SETTINGS */}
-            {paymentTab === 'billing' && (
-              <div className="space-y-6 animate-fadeIn">
-                {/* Gateway Toggle Config Form (Billing Only) */}
-                {paymentConfig && (
-                  <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-soft">
-                    <h3 className="text-sm font-bold text-slate-600 uppercase tracking-wider mb-4 flex items-center space-x-1.5">
-                      <CreditCard className="h-4 w-4" />
-                      <span>Gateway Integrations Settings</span>
-                    </h3>
-                    <form onSubmit={handleConfigSubmit} className="space-y-4">
-                      <div className="grid grid-cols-3 gap-6">
-                        <div>
-                          <label className="flex items-center space-x-2.5 text-xs font-bold text-slate-600 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={paymentConfig.enableSubscriptions}
-                              onChange={(e) => setPaymentConfig({ ...paymentConfig, enableSubscriptions: e.target.checked })}
-                              className="h-4 w-4 text-primary rounded border-slate-300 focus:ring-primary"
-                            />
-                            <span>Enforce Subscription Wall globally</span>
-                          </label>
-                          <p className="text-[10px] text-slate-400 font-semibold mt-1">If unchecked, all app premium sections are available freely.</p>
-                        </div>
-
-                        <div>
-                          <label className="flex items-center space-x-2.5 text-xs font-bold text-slate-600 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={paymentConfig.enableTwilioOtp}
-                              onChange={(e) => setPaymentConfig({ ...paymentConfig, enableTwilioOtp: e.target.checked })}
-                              className="h-4 w-4 text-primary rounded border-slate-300 focus:ring-primary"
-                            />
-                            <span>Enable Twilio SMS OTP</span>
-                          </label>
-                          <p className="text-[10px] text-slate-400 font-semibold mt-1">If unchecked, OTPs will be sent via Email instead of SMS.</p>
-                        </div>
-
-                        <div>
-                          <label className="flex items-center space-x-2.5 text-xs font-bold text-slate-600 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={paymentConfig.enablePayments}
-                              onChange={(e) => setPaymentConfig({ ...paymentConfig, enablePayments: e.target.checked })}
-                              className="h-4 w-4 text-primary rounded border-slate-300 focus:ring-primary"
-                            />
-                            <span>Enable Live Razorpay checkout</span>
-                          </label>
-                          <p className="text-[10px] text-slate-400 font-semibold mt-1">If unchecked, checkout runs mock success modes.</p>
-                        </div>
-
-                        <div>
-                          <label className="flex items-center space-x-2.5 text-xs font-bold text-slate-600 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={!paymentConfig.isSandbox}
-                              onChange={(e) => setPaymentConfig({ ...paymentConfig, isSandbox: !e.target.checked })}
-                              className="h-4 w-4 text-primary rounded border-slate-300 focus:ring-primary"
-                            />
-                            <span>Production Live Gateway Mode</span>
-                          </label>
-                          <p className="text-[10px] text-slate-400 font-semibold mt-1">Sandbox toggle for API client runs.</p>
-                        </div>
-
-                        <div>
-                          <label className="flex items-center space-x-2.5 text-xs font-bold text-slate-600 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={paymentConfig.enableExternalPayments ?? false}
-                              onChange={(e) => setPaymentConfig({ ...paymentConfig, enableExternalPayments: e.target.checked })}
-                              className="h-4 w-4 text-primary rounded border-slate-300 focus:ring-primary"
-                            />
-                            <span>Enable External Payments (Shop)</span>
-                          </label>
-                          <p className="text-[10px] text-slate-400 font-semibold mt-1">Enable external payments and checkout flow.</p>
-                        </div>
-                        
-                        <div>
-                          <label className="flex items-center space-x-2.5 text-xs font-bold text-slate-600 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={paymentConfig.enableIOSExternalPayments ?? false}
-                              onChange={(e) => setPaymentConfig({ ...paymentConfig, enableIOSExternalPayments: e.target.checked })}
-                              className="h-4 w-4 text-primary rounded border-slate-300 focus:ring-primary"
-                            />
-                            <span>Enable iOS External Payments (Razorpay/Promo)</span>
-                          </label>
-                          <p className="text-[10px] text-slate-400 font-semibold mt-1">If unchecked, iOS App hides Razorpay and Promo Code to comply with Apple Guideline 3.1.1.</p>
-                        </div>
-                      </div>
-                      
-                      <div className="grid grid-cols-2 gap-6 pt-3 border-t border-slate-100 mt-4">
-                        <div>
-                          <label className="flex items-center space-x-2.5 text-xs font-bold text-slate-600 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={paymentConfig.enableSubscriptionCoupons ?? true}
-                              onChange={(e) => setPaymentConfig({ ...paymentConfig, enableSubscriptionCoupons: e.target.checked })}
-                              className="h-4 w-4 text-primary rounded border-slate-300 focus:ring-primary"
-                            />
-                            <span>Enable Subscription Coupon Code Section</span>
-                          </label>
-                          <p className="text-[10px] text-slate-400 font-semibold mt-1">If unchecked, the promo code section in subscriptions is hidden.</p>
-                        </div>
-
-                        <div>
-                          <label className="flex items-center space-x-2.5 text-xs font-bold text-slate-600 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={paymentConfig.enableSaferFoodCoupons ?? true}
-                              onChange={(e) => setPaymentConfig({ ...paymentConfig, enableSaferFoodCoupons: e.target.checked })}
-                              className="h-4 w-4 text-primary rounded border-slate-300 focus:ring-primary"
-                            />
-                            <span>Enable Safer Food (Non-Cancer) Coupon Section</span>
-                          </label>
-                          <p className="text-[10px] text-slate-400 font-semibold mt-1">If unchecked, the promo code section in shop basket is hidden.</p>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-3 border-t border-slate-100">
-                        <div>
-                          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Subscription GST (%)</label>
-                          <input
-                            type="number"
-                            min="0"
-                            max="100"
-                            required
-                            value={paymentConfig.gstPercentage !== undefined ? paymentConfig.gstPercentage : 18}
-                            onChange={(e) => setPaymentConfig({ ...paymentConfig, gstPercentage: parseInt(e.target.value) || 0 })}
-                            placeholder="18"
-                            className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold bg-white"
-                          />
-                          <p className="text-[10px] text-slate-400 font-semibold mt-1">GST percentage rate applied to subscriptions (e.g., 0, 5, 12, 18).</p>
-                        </div>
-
-                        <div>
-                          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Subscription GST Mode</label>
-                          <div className="mt-1.5 p-2 bg-slate-50 border border-slate-200 rounded-xl">
-                            <label className="flex items-center space-x-2 cursor-pointer">
-                              <input
-                                type="checkbox"
-                                checked={paymentConfig.subscriptionGstInclusive ?? true}
-                                onChange={(e) => setPaymentConfig({ ...paymentConfig, subscriptionGstInclusive: e.target.checked })}
-                                className="h-4 w-4 text-primary rounded border-slate-300 focus:ring-primary"
-                              />
-                              <span className="text-xs font-bold text-slate-800">GST Included in Plan Price</span>
-                            </label>
-                          </div>
-                          <p className="text-[10px] text-slate-500 font-semibold mt-1">
-                            {(paymentConfig.subscriptionGstInclusive ?? true)
-                              ? 'Inclusive: Customer pays exactly ₹1000 (tax is factored inside).'
-                              : 'Exclusive: Tax is added on top of ₹1000 at checkout.'}
-                          </p>
-                        </div>
-
-                        <div>
-                          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Ask Mito 48h Fee (₹)</label>
-                          <input
-                            type="number"
-                            min="0"
-                            required
-                            value={paymentConfig.askMitoQuestionFee !== undefined ? paymentConfig.askMitoQuestionFee : 100}
-                            onChange={(e) => setPaymentConfig({ ...paymentConfig, askMitoQuestionFee: parseFloat(e.target.value) || 0 })}
-                            placeholder="100"
-                            className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold bg-white"
-                          />
-                          <p className="text-[10px] text-slate-400 font-semibold mt-1">Fee per question (Default ₹100).</p>
-                        </div>
-                      </div>
-
-                      {paymentConfig.enablePayments && (
-                        <div className="grid grid-cols-2 gap-4 pt-3 border-t border-slate-100">
-                          <div>
-                            <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Razorpay Key ID</label>
-                            <input
-                              type="text"
-                              required
-                              value={paymentConfig.razorpayKeyId || ''}
-                              onChange={(e) => setPaymentConfig({ ...paymentConfig, razorpayKeyId: e.target.value })}
-                              placeholder="rzp_test_..."
-                              className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Razorpay Key Secret</label>
-                            <input
-                              type="password"
-                              required
-                              value={paymentConfig.razorpayKeySecret || ''}
-                              onChange={(e) => setPaymentConfig({ ...paymentConfig, razorpayKeySecret: e.target.value })}
-                              placeholder="••••••••••••"
-                              className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold"
-                            />
-                          </div>
-                        </div>
-                      )}
-
-                      <div className="flex justify-end">
-                        <button
-                          type="submit"
-                          className="bg-primary hover:bg-primary-dark text-white font-bold py-2 px-5 rounded-xl text-xs shadow-soft transition-all"
-                        >
-                          Save Integration Settings
-                        </button>
-                      </div>
-                    </form>
-                  </div>
-                )}
-
-                {/* Aggregates Dashboard widgets */}
-                {paymentStats && (
-                  <div className="space-y-6">
-                    <div className="grid grid-cols-4 gap-6">
-                      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-soft flex items-center space-x-4">
-                        <div className="p-3 bg-blue-50 text-primary rounded-xl">
-                          <DollarSign className="h-6 w-6" />
-                        </div>
-                        <div>
-                          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Total Revenue</span>
-                          <span className="text-2xl font-extrabold text-slate-800">₹{Number(paymentStats.totalRevenue || 0).toFixed(2)}</span>
-                        </div>
-                      </div>
-
-                      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-soft flex items-center space-x-4">
-                        <div className="p-3 bg-teal-50 text-secondary rounded-xl">
-                          <Users className="h-6 w-6" />
-                        </div>
-                        <div>
-                          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Active Subscribers</span>
-                          <span className="text-2xl font-extrabold text-slate-800">{paymentStats.activeSubscribers}</span>
-                        </div>
-                      </div>
-
-                      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-soft flex items-center space-x-4">
-                        <div className="p-3 bg-orange-50 text-warning rounded-xl">
-                          <Percent className="h-6 w-6" />
-                        </div>
-                        <div>
-                          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Monthly Revenue</span>
-                          <span className="text-2xl font-extrabold text-slate-800">₹{Number(paymentStats.monthlyRevenue || 0).toFixed(2)}</span>
-                        </div>
-                      </div>
-
-                      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-soft flex items-center space-x-4">
-                        <div className="p-3 bg-purple-50 text-purple-600 rounded-xl">
-                          <Award className="h-6 w-6" />
-                        </div>
-                        <div>
-                          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Today's Sales</span>
-                          <span className="text-2xl font-extrabold text-slate-800">₹{Number(paymentStats.todayRevenue || 0).toFixed(2)}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Graphs for analytics */}
-                    <div className="grid grid-cols-2 gap-6">
-                      {/* Revenue Trend line */}
-                      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-soft">
-                        <h3 className="text-sm font-bold text-slate-600 uppercase tracking-wider mb-4">6-Month Revenue Trend (INR)</h3>
-                        <div className="h-64">
-                          <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={paymentStats.revenueTrend}>
-                              <XAxis dataKey="month" tick={{ fontSize: 11, fontWeight: 'semibold' }} axisLine={false} tickLine={false} />
-                              <YAxis tick={{ fontSize: 11, fontWeight: 'semibold' }} axisLine={false} tickLine={false} />
-                              <Tooltip />
-                              <Bar dataKey="revenue" fill="#3B82F6" radius={[6, 6, 0, 0]} />
-                            </BarChart>
-                          </ResponsiveContainer>
-                        </div>
-                      </div>
-
-                      {/* Plan share distributions */}
-                      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-soft">
-                        <h3 className="text-sm font-bold text-slate-600 uppercase tracking-wider mb-4">Plan Share Distribution</h3>
-                        <div className="h-64 flex justify-center items-center">
-                          <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                              <Pie
-                                data={paymentStats.planWiseRevenue}
-                                dataKey="value"
-                                nameKey="name"
-                                cx="50%"
-                                cy="50%"
-                                outerRadius={80}
-                                label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                              >
-                                {paymentStats.planWiseRevenue.map((_: any, index: number) => (
-                                  <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
-                                ))}
-                              </Pie>
-                              <Tooltip />
-                            </PieChart>
-                          </ResponsiveContainer>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* TAB 2: GENERAL APP CONFIG (Glucose Limits & Alerts) */}
-            {paymentTab === 'common' && (
-              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-soft animate-fadeIn">
-                <h3 className="text-sm font-bold text-slate-600 uppercase tracking-wider mb-4 flex items-center space-x-1.5">
-                  <Activity className="h-4 w-4 text-primary" />
-                  <span>General App Configuration Settings</span>
-                </h3>
-                {paymentConfig ? (
-                  <form onSubmit={handleConfigSubmit} className="space-y-4">
-                    <div className="grid grid-cols-3 gap-6">
-                      <div>
-                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Safe Glucose Limit (mg/dL)</label>
-                        <input
-                          type="number"
-                          min="50"
-                          max="200"
-                          required
-                          value={paymentConfig.safeGlucoseThreshold !== undefined ? paymentConfig.safeGlucoseThreshold : 90}
-                          onChange={(e) => setPaymentConfig({ ...paymentConfig, safeGlucoseThreshold: parseInt(e.target.value) || 0 })}
-                          placeholder="90"
-                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold bg-white"
-                        />
-                        <p className="text-[10px] text-slate-400 font-semibold mt-1">Blood sugar levels at or below this are marked as Safe.</p>
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Moderate Glucose Limit (mg/dL)</label>
-                        <input
-                          type="number"
-                          min="50"
-                          max="300"
-                          required
-                          value={paymentConfig.moderateGlucoseThreshold !== undefined ? paymentConfig.moderateGlucoseThreshold : 110}
-                          onChange={(e) => setPaymentConfig({ ...paymentConfig, moderateGlucoseThreshold: parseInt(e.target.value) || 0 })}
-                          placeholder="110"
-                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold bg-white"
-                        />
-                        <p className="text-[10px] text-slate-400 font-semibold mt-1">Levels above this are Avoid; levels in between are Moderate.</p>
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Alert Min Interval (hours)</label>
-                        <input
-                          type="number"
-                          min="1"
-                          max="24"
-                          required
-                          value={paymentConfig.glucoseAlertMinIntervalHours !== undefined ? paymentConfig.glucoseAlertMinIntervalHours : 2}
-                          onChange={(e) => setPaymentConfig({ ...paymentConfig, glucoseAlertMinIntervalHours: parseInt(e.target.value) || 2 })}
-                          placeholder="2"
-                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold bg-white"
-                        />
-                        <p className="text-[10px] text-slate-400 font-semibold mt-1">Prevents alert emails from spamming; consecutive alerts wait at least this long.</p>
-                      </div>
-                    </div>
-
-                    <div className="flex justify-end">
-                      <button
-                        type="submit"
-                        disabled={savingPaymentConfig}
-                        className="bg-primary hover:bg-primary-dark text-white font-bold py-2 px-5 rounded-xl text-xs shadow-soft transition-all"
-                      >
-                        {savingPaymentConfig ? 'Saving Settings...' : 'Save Settings'}
-                      </button>
-                    </div>
-                  </form>
-                ) : (
-                  <p className="text-xs font-bold text-slate-400">Loading configurations...</p>
-                )}
-              </div>
-            )}
-
-            {/* TAB: APP BRANDING CONFIG */}
-            {paymentTab === 'branding' && (
-              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-soft animate-fadeIn">
-                <h3 className="text-sm font-bold text-slate-600 uppercase tracking-wider mb-4 flex items-center space-x-1.5">
-                  <Award className="h-4 w-4 text-primary" />
-                  <span>App Branding Settings</span>
-                </h3>
-                {paymentConfig ? (
-                  <form onSubmit={handleConfigSubmit} className="space-y-6">
-                    <div className="grid grid-cols-2 gap-6">
-                      <div>
-                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Application Name</label>
-                        <input
-                          type="text"
-                          required
-                          value={paymentConfig.appName !== undefined ? paymentConfig.appName : 'Mito_Reboot'}
-                          onChange={(e) => setPaymentConfig({ ...paymentConfig, appName: e.target.value })}
-                          placeholder="Mito_Reboot"
-                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold bg-white"
-                        />
-                        <p className="text-[10px] text-slate-400 font-semibold mt-1">Displayed in headers, sidebars, emails, and notifications. Fallback is Mito_Reboot.</p>
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Application Tagline</label>
-                        <input
-                          type="text"
-                          required
-                          value={paymentConfig.appTagline !== undefined ? paymentConfig.appTagline : 'Preventive Lifestyle App'}
-                          onChange={(e) => setPaymentConfig({ ...paymentConfig, appTagline: e.target.value })}
-                          placeholder="Preventive Lifestyle App"
-                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold bg-white"
-                        />
-                        <p className="text-[10px] text-slate-400 font-semibold mt-1">Displayed in user app, website pages, and footer areas.</p>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-6 pt-4 border-t border-slate-100">
-                      <div>
-                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">App Logo URL</label>
-                        <div className="flex space-x-3">
-                          <input
-                            type="text"
-                            value={paymentConfig.appLogoUrl || ''}
-                            onChange={(e) => setPaymentConfig({ ...paymentConfig, appLogoUrl: e.target.value })}
-                            placeholder="https://example.com/logo.png"
-                            className="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold bg-white"
-                          />
-                          <div className="relative">
-                            <input
-                              type="file"
-                              accept="image/*"
-                              id="logo-upload-input"
-                              onChange={handleLogoUpload}
-                              className="hidden"
-                            />
-                            <label
-                              htmlFor="logo-upload-input"
-                              className="cursor-pointer bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 px-4 rounded-xl text-xs border border-slate-200 shadow-soft transition-all inline-block"
-                            >
-                              {uploadingLogo ? 'Uploading...' : 'Upload Image'}
-                            </label>
-                          </div>
-                        </div>
-                        <p className="text-[10px] text-slate-400 font-semibold mt-1">Enter a direct image link or upload a logo file. Leave blank to default to the red heart icon.</p>
-                      </div>
-                    </div>
-
-                    {paymentConfig.appLogoUrl && (
-                      <div className="pt-2">
-                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Logo Preview</label>
-                        <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 inline-block">
-                          <img src={paymentConfig.appLogoUrl} alt="App Logo Preview" className="h-12 w-auto object-contain rounded-md" />
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="grid grid-cols-1 gap-6 pt-4 border-t border-slate-100">
-                      <div>
-                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Cancer Treatment Disclaimer</label>
-                        <div className="bg-white [&_.ql-container]:rounded-b-2xl [&_.ql-toolbar]:rounded-t-2xl [&_.ql-editor]:min-h-[150px]">
-                          <ReactQuill
-                            theme="snow"
-                            value={paymentConfig.cancerTreatmentDisclaimer !== undefined ? paymentConfig.cancerTreatmentDisclaimer : ''}
-                            onChange={(val) => setPaymentConfig({ ...paymentConfig, cancerTreatmentDisclaimer: val })}
-                            placeholder="Enter Cancer Treatment Disclaimer..."
-                          />
-                        </div>
-                        <p className="text-[10px] text-slate-400 font-semibold mt-1.5">This disclaimer popup is shown to users during registration if they select "CANCER TREATMENT".</p>
-                      </div>
-
-                      <div className="pt-4 border-t border-slate-100/50">
-                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Cancer Secondary Prevention Disclaimer</label>
-                        <div className="bg-white [&_.ql-container]:rounded-b-2xl [&_.ql-toolbar]:rounded-t-2xl [&_.ql-editor]:min-h-[150px]">
-                          <ReactQuill
-                            theme="snow"
-                            value={paymentConfig.cancerSecondaryDisclaimer !== undefined ? paymentConfig.cancerSecondaryDisclaimer : ''}
-                            onChange={(val) => setPaymentConfig({ ...paymentConfig, cancerSecondaryDisclaimer: val })}
-                            placeholder="Enter Cancer Secondary Prevention Disclaimer..."
-                          />
-                        </div>
-                        <p className="text-[10px] text-slate-400 font-semibold mt-1.5">This disclaimer popup is shown to users during registration if they select "CANCER SECONDARY PREVENTION".</p>
-                      </div>
-
-                      <div className="pt-4 border-t border-slate-100/50">
-                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Cancer Prevention / General Public Disclaimer</label>
-                        <div className="bg-white [&_.ql-container]:rounded-b-2xl [&_.ql-toolbar]:rounded-t-2xl [&_.ql-editor]:min-h-[150px]">
-                          <ReactQuill
-                            theme="snow"
-                            value={paymentConfig.cancerPreventionDisclaimer !== undefined ? paymentConfig.cancerPreventionDisclaimer : ''}
-                            onChange={(val) => setPaymentConfig({ ...paymentConfig, cancerPreventionDisclaimer: val })}
-                            placeholder="Enter General Public Disclaimer..."
-                          />
-                        </div>
-                        <p className="text-[10px] text-slate-400 font-semibold mt-1.5">This disclaimer popup is shown to users during registration if they select "CANCER PREVENTION [NO HISTORY OF CANCER]".</p>
-                      </div>
-
-                      <div className="pt-4 border-t border-slate-100/50">
-                        <div className="flex items-center justify-between mb-2">
-                          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider">A Note from the Founder (Founder's Vision)</label>
-                          <span className="text-[10px] font-bold text-rose-600 bg-rose-50 border border-rose-200/60 px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                            <span>👑 App & Web Founder Note</span>
-                          </span>
-                        </div>
-                        <div className="bg-white [&_.ql-container]:rounded-b-2xl [&_.ql-toolbar]:rounded-t-2xl [&_.ql-editor]:min-h-[220px]">
-                          <ReactQuill
-                            theme="snow"
-                            value={paymentConfig.founderNote !== undefined ? paymentConfig.founderNote : ''}
-                            onChange={(val) => setPaymentConfig({ ...paymentConfig, founderNote: val })}
-                            placeholder="Enter Note from the Founder..."
-                          />
-                        </div>
-                        <p className="text-[10px] text-slate-400 font-semibold mt-1.5">
-                          Displayed under Help & Support → Founder Note and Profile in the mobile app, and on the public website.
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex justify-end pt-4 border-t border-slate-100">
-                      <button
-                        type="submit"
-                        disabled={savingPaymentConfig}
-                        className="bg-primary hover:bg-primary-dark text-white font-bold py-2 px-5 rounded-xl text-xs shadow-soft transition-all"
-                      >
-                        {savingPaymentConfig ? 'Saving Settings...' : 'Save Settings'}
-                      </button>
-                    </div>
-                  </form>
-                ) : (
-                  <p className="text-xs font-bold text-slate-400">Loading configurations...</p>
-                )}
-              </div>
-            )}
-
-            {/* TAB 3: TRANSACTIONS DIRECTORY & MANUAL OVERRIDES */}
-            {paymentTab === 'transactions' && (
-              <div className="space-y-4 animate-fadeIn">
-                <div className="flex justify-between items-center">
-                  <h3 className="text-sm font-bold text-slate-600 uppercase tracking-wider">Transaction Records & Manual Controls</h3>
+                <div className="flex space-x-3">
                   <div className="relative w-64">
                     <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
                       <Search className="h-4 w-4" />
@@ -8115,2106 +5358,4098 @@ const AdminPanelContent: React.FC = () => {
                       type="text"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Search order or email..."
+                      onKeyDown={(e) => e.key === 'Enter' && handleSearchRecFoods()}
+                      placeholder="Search recommended foods..."
+                      className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:primary text-sm bg-white"
+                    />
+                  </div>
+                  <button
+                    onClick={() => {
+                      setEditingRecFoodId(null);
+                      setRecFoodForm({ category: 'Millet/Grains', productName: '', image: '', nutritionDetails: '', ingredients: '', pesticideInfo: '', certifications: '', doctorNotes: '', status: 'active' });
+                      setShowRecFoodModal(true);
+                    }}
+                    className="bg-primary hover:bg-primary-dark text-white font-bold px-4 py-2 rounded-xl text-sm flex items-center space-x-1.5 shadow-soft"
+                  >
+                    <Plus className="h-4.5 w-4.5" />
+                    <span>Add Product</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-soft overflow-x-auto">
+                <table className="min-w-full divide-y divide-slate-200">
+                  <thead className="bg-slate-50 text-slate-400 text-xs font-bold uppercase tracking-wider text-left">
+                    <tr>
+                      <th className="px-6 py-4">Image & Product</th>
+                      <th className="px-6 py-4">Category</th>
+                      <th className="px-6 py-4">Pesticide Info</th>
+                      <th className="px-6 py-4">Status</th>
+                      <th className="px-6 py-4 text-center">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 text-sm font-semibold text-slate-700">
+                    {!recFoods || recFoods.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="text-center py-8 text-slate-400">No recommended foods added.</td>
+                      </tr>
+                    ) : (
+                      recFoods.map((f) => (
+                        <tr key={f._id} className="hover:bg-slate-50/50">
+                          <td className="px-6 py-4 font-bold text-slate-800 flex items-center space-x-3">
+                            <div className="relative w-10 h-10 shrink-0 rounded bg-slate-100 border border-slate-200">
+                              {f.image && (
+                                <img
+                                  src={f.image}
+                                  alt={f.productName}
+                                  className="absolute inset-0 w-full h-full object-cover rounded z-10"
+                                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                                />
+                              )}
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <Utensils className="h-4 w-4 text-slate-300" />
+                              </div>
+                            </div>
+                            <span>{f.productName}</span>
+                          </td>
+                          <td className="px-6 py-4"><span className="bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded text-xs font-bold border border-emerald-100">{f.category}</span></td>
+                          <td className="px-6 py-4 text-xs text-slate-500 max-w-[200px] truncate">{f.pesticideInfo || '--'}</td>
+                          <td className="px-6 py-4 text-slate-500">
+                            {f.status === 'active' ? <span className="bg-green-50 text-success px-2 py-0.5 rounded text-[10px] font-bold border border-green-100">Active</span> : <span className="bg-slate-100 text-slate-500 px-2 py-0.5 rounded text-[10px] font-bold border border-slate-200">Inactive</span>}
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex justify-center space-x-2">
+                              <button
+                                onClick={() => {
+                                  setEditingRecFoodId(f._id);
+                                  setRecFoodForm({
+                                    category: f.category, productName: f.productName, image: f.image, nutritionDetails: f.nutritionDetails, ingredients: f.ingredients, pesticideInfo: f.pesticideInfo, certifications: f.certifications, doctorNotes: f.doctorNotes, status: f.status
+                                  });
+                                  setShowRecFoodModal(true);
+                                }}
+                                className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-primary transition-all"
+                              >
+                                <Edit className="h-4.5 w-4.5" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteRecFood(f._id)}
+                                className="p-1.5 hover:bg-red-50 rounded-lg text-slate-400 hover:text-danger transition-all"
+                              >
+                                <Trash2 className="h-4.5 w-4.5" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {recFoodPagination.pages > 1 && (
+                <div className="flex justify-between items-center py-4 bg-slate-50 px-6 border border-slate-200 rounded-2xl">
+                  <span className="text-xs font-bold text-slate-500">
+                    Page {recFoodPagination.page} of {recFoodPagination.pages}
+                  </span>
+                  <div className="flex space-x-2">
+                    <button disabled={recFoodPagination.page === 1} onClick={() => fetchRecFoods(recFoodPagination.page - 1)} className="px-3 py-1 bg-white border border-slate-200 rounded-lg text-xs font-bold disabled:opacity-50">Prev</button>
+                    <button disabled={recFoodPagination.page === recFoodPagination.pages} onClick={() => fetchRecFoods(recFoodPagination.page + 1)} className="px-3 py-1 bg-white border border-slate-200 rounded-lg text-xs font-bold disabled:opacity-50">Next</button>
+                  </div>
+                </div>
+              )}
+
+              {showRecFoodModal && (
+                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                  <div className="bg-white p-6 rounded-3xl border border-slate-200 max-w-2xl w-full shadow-lg max-h-[90vh] overflow-y-auto">
+                    <h3 className="text-base font-bold text-slate-800 mb-4">{editingRecFoodId ? 'Update Recommended Food' : 'Add Recommended Food'}</h3>
+                    <form onSubmit={handleRecFoodSubmit} className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Category</label>
+                          <select
+                            required
+                            value={recFoodForm.category}
+                            onChange={(e) => setRecFoodForm({ ...recFoodForm, category: e.target.value })}
+                            className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-semibold bg-white"
+                          >
+                            <option value="Millet/Grains">Millet/Grains</option>
+                            <option value="Low-GI Foods">Low-GI Foods</option>
+                            <option value="Organic Products">Organic Products</option>
+                            <option value="Supplements">Supplements</option>
+                            <option value="Diabetic Snacks">Diabetic Snacks</option>
+                            <option value="Healthy Oils">Healthy Oils</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Product Name</label>
+                          <input
+                            type="text" required value={recFoodForm.productName}
+                            onChange={(e) => setRecFoodForm({ ...recFoodForm, productName: e.target.value })}
+                            className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-semibold"
+                          />
+                        </div>
+                        <div className="col-span-2">
+                          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Image URL</label>
+                          <input
+                            type="url" value={recFoodForm.image} placeholder="https://..."
+                            onChange={(e) => setRecFoodForm({ ...recFoodForm, image: e.target.value })}
+                            className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-semibold"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Nutrition Details</label>
+                          <input
+                            type="text" value={recFoodForm.nutritionDetails} placeholder="e.g. 100 kcal, 20g Carbs"
+                            onChange={(e) => setRecFoodForm({ ...recFoodForm, nutritionDetails: e.target.value })}
+                            className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-semibold"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Ingredients</label>
+                          <input
+                            type="text" value={recFoodForm.ingredients}
+                            onChange={(e) => setRecFoodForm({ ...recFoodForm, ingredients: e.target.value })}
+                            className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-semibold"
+                          />
+                        </div>
+                        <div className="col-span-2">
+                          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Pesticide Information</label>
+                          <textarea
+                            rows={2} value={recFoodForm.pesticideInfo}
+                            onChange={(e) => setRecFoodForm({ ...recFoodForm, pesticideInfo: e.target.value })}
+                            className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-semibold"
+                          />
+                        </div>
+                        <div className="col-span-2">
+                          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Certifications</label>
+                          <input
+                            type="text" value={recFoodForm.certifications} placeholder="e.g. USDA Organic, Non-GMO"
+                            onChange={(e) => setRecFoodForm({ ...recFoodForm, certifications: e.target.value })}
+                            className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-semibold"
+                          />
+                        </div>
+                        <div className="col-span-2">
+                          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Doctor Notes (Optional)</label>
+                          <textarea
+                            rows={2} value={recFoodForm.doctorNotes}
+                            onChange={(e) => setRecFoodForm({ ...recFoodForm, doctorNotes: e.target.value })}
+                            className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-semibold"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Status</label>
+                          <select
+                            value={recFoodForm.status}
+                            onChange={(e: any) => setRecFoodForm({ ...recFoodForm, status: e.target.value })}
+                            className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-semibold bg-white"
+                          >
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div className="flex space-x-3 pt-4 border-t border-slate-100">
+                        <button type="button" onClick={() => setShowRecFoodModal(false)} className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-sm font-bold transition-all">Cancel</button>
+                        <button type="submit" className="flex-1 py-2.5 bg-primary hover:bg-primary-dark text-white rounded-xl text-sm font-bold shadow-soft transition-all">Save Recommended Food</button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* VIEW 3: FOOD MASTER LIBRARY TEMPLATES */}
+          {activeView === 'foods' && (
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="text-xl font-bold text-slate-800">Food Templates Library</h2>
+                  <p className="text-xs text-slate-400 font-semibold mt-0.5">Define master items for patient quick logging.</p>
+                </div>
+                <div className="flex space-x-3">
+                  <div className="relative w-64">
+                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                      <Search className="h-4 w-4" />
+                    </span>
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleSearchFoods()}
+                      placeholder="Search master foods..."
                       className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary text-sm bg-white"
                     />
                   </div>
-                </div>
-
-                <div className="bg-white rounded-2xl border border-slate-200 shadow-soft overflow-x-auto">
-                  <table className="min-w-full divide-y divide-slate-200">
-                    <thead className="bg-slate-50 text-slate-400 text-xs font-bold uppercase tracking-wider text-left">
-                      <tr>
-                        <th className="px-6 py-4">User</th>
-                        <th className="px-6 py-4">Plan & Cycle</th>
-                        <th className="px-6 py-4">Amount</th>
-                        <th className="px-6 py-4">Date</th>
-                        <th className="px-6 py-4">Gateway Info</th>
-                        <th className="px-6 py-4">Status</th>
-                        <th className="px-6 py-4 text-center">Manage</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 text-sm font-semibold text-slate-700">
-                      {transactions.length === 0 ? (
-                        <tr>
-                          <td colSpan={7} className="text-center py-8 text-slate-400">No payment transaction logs matching criteria.</td>
-                        </tr>
-                      ) : (
-                        transactions.map((tx) => (
-                          <tr key={tx._id} className="hover:bg-slate-50/50">
-                            <td className="px-6 py-4">
-                              <span className="text-slate-800 font-bold block">{tx.userId?.name || 'Mito_Reboot Patient'}</span>
-                              <span className="text-[10px] text-slate-400 block">{tx.userId?.email || '--'}</span>
-                            </td>
-                            <td className="px-6 py-4">
-                              <span className="text-slate-800 uppercase font-bold block">{tx.planId?.name || '--'}</span>
-                              <span className="text-[10px] text-slate-400 capitalize block">{tx.billingCycle || 'monthly'}</span>
-                            </td>
-                            <td className="px-6 py-4 text-slate-800 font-extrabold">₹{tx.amount}</td>
-                            <td className="px-6 py-4 text-xs font-medium text-slate-400">
-                              {new Date(tx.createdAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
-                            </td>
-                            <td className="px-6 py-4">
-                              <span className="text-xs text-slate-500 font-semibold block">Order: {tx.gatewayOrderId || '--'}</span>
-                              <span className="text-[9px] text-slate-400 font-semibold block">Pay ID: {tx.gatewayPaymentId || '--'}</span>
-                            </td>
-                            <td className="px-6 py-4">
-                              <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${tx.status === 'success' ? 'bg-green-50 text-success border-green-100' :
-                                tx.status === 'pending' ? 'bg-amber-50 text-amber-600 border-amber-100' :
-                                  tx.status === 'refunded' ? 'bg-purple-50 text-purple-600 border-purple-100' :
-                                    'bg-red-50 text-danger border-red-100'
-                                }`}>
-                                {tx.status}
-                              </span>
-                            </td>
-                            <td className="px-6 py-4 text-center">
-                              <div className="flex justify-center space-x-2">
-                                {tx.status === 'success' && (
-                                  <button
-                                    onClick={() => {
-                                      setSelectedTx(tx);
-                                      setRefundAmount(tx.amount.toString());
-                                    }}
-                                    className="px-2 py-1 bg-purple-50 hover:bg-purple-100 border border-purple-100 rounded-lg text-xs font-bold text-purple-700 transition-all"
-                                  >
-                                    Refund
-                                  </button>
-                                )}
-                                {tx.subscriptionId && (
-                                  <>
-                                    <button
-                                      onClick={() => {
-                                        setSelectedSubId(tx.subscriptionId);
-                                        setOverrideForm({
-                                          action: 'extend',
-                                          days: 30,
-                                          planId: plans[0]?._id || '',
-                                          billingCycle: 'monthly'
-                                        });
-                                        setShowOverrideModal(true);
-                                      }}
-                                      className="px-2 py-1 bg-blue-50 hover:bg-blue-100 border border-blue-100 rounded-lg text-xs font-bold text-primary transition-all"
-                                    >
-                                      Override
-                                    </button>
-                                    <button
-                                      onClick={async () => {
-                                        if (confirm('Are you sure you want to cancel and force-expire this user subscription immediately?')) {
-                                          try {
-                                            const response = await fetch(`${apiUrl}/admin/payments/subscriptions/${tx.subscriptionId}/cancel`, {
-                                              method: 'POST',
-                                              headers: {
-                                                'Content-Type': 'application/json',
-                                                'Authorization': `Bearer ${token}`
-                                              }
-                                            });
-                                            const data = await response.json();
-                                            if (response.ok) {
-                                              alert('Subscription cancelled successfully.');
-                                              fetchTransactions(txPagination.page);
-                                              fetchPaymentStats();
-                                            } else {
-                                              alert(data.message || 'Failed to cancel subscription.');
-                                            }
-                                          } catch (err) {
-                                            console.error(err);
-                                            alert('Error cancelling subscription.');
-                                          }
-                                        }
-                                      }}
-                                      className="px-2 py-1 bg-red-50 hover:bg-red-100 border border-red-100 rounded-lg text-xs font-bold text-danger transition-all"
-                                    >
-                                      Cancel Sub
-                                    </button>
-                                  </>
-                                )}
-                              </div>
-                            </td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Tx Pagination */}
-                {txPagination.pages > 1 && (
-                  <div className="flex justify-between items-center pt-2">
-                    <span className="text-xs font-bold text-slate-400">Total: {txPagination.total} payments</span>
-                    <div className="flex space-x-2">
-                      <button
-                        disabled={txPagination.page === 1}
-                        onClick={() => fetchTransactions(txPagination.page - 1)}
-                        className="px-3 py-1 bg-white border border-slate-200 rounded-lg text-xs font-bold disabled:opacity-50"
-                      >
-                        Prev
-                      </button>
-                      <span className="text-xs font-bold text-slate-600 px-3 py-1">
-                        Page {txPagination.page} of {txPagination.pages}
-                      </span>
-                      <button
-                        disabled={txPagination.page === txPagination.pages}
-                        onClick={() => fetchTransactions(txPagination.page + 1)}
-                        className="px-3 py-1 bg-white border border-slate-200 rounded-lg text-xs font-bold disabled:opacity-50"
-                      >
-                        Next
-                      </button>
-                    </div>
+                  <div className="relative">
+                    <input type="file" accept=".csv" onChange={handleBulkImport} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" title="Bulk Import CSV" />
+                    <button className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold px-4 py-2 rounded-xl text-sm flex items-center space-x-1.5 shadow-soft">
+                      <FileUp className="h-4.5 w-4.5" />
+                      <span>Import CSV</span>
+                    </button>
                   </div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* MODAL 1: CREATE / EDIT PLAN DIALOG */}
-        {showPlanModal && (
-          <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-3xl p-6 border border-slate-100 w-full max-w-xl shadow-2xl max-h-[90vh] overflow-y-auto no-scrollbar">
-              <div className="flex justify-between items-center pb-3 border-b border-slate-100 mb-4">
-                <h3 className="text-sm font-extrabold text-slate-800 uppercase tracking-wide">
-                  {editingPlanId ? 'Edit Subscription Plan' : 'Create Subscription Plan'}
-                </h3>
-                <button
-                  onClick={() => setShowPlanModal(false)}
-                  className="text-slate-400 hover:text-slate-600 text-xs font-bold"
-                >
-                  Close
-                </button>
-              </div>
-
-              <form onSubmit={handlePlanSubmit} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Plan Name</label>
-                    <input
-                      type="text"
-                      required
-                      value={planForm.name}
-                      onChange={(e) => setPlanForm({ ...planForm, name: e.target.value })}
-                      placeholder="Premium Plan"
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Plan Code</label>
-                    <input
-                      type="text"
-                      required
-                      disabled={!!editingPlanId}
-                      value={planForm.code}
-                      onChange={(e) => setPlanForm({ ...planForm, code: e.target.value.toLowerCase().replace(/\s+/g, '') })}
-                      placeholder="premium"
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-bold uppercase focus:outline-none disabled:bg-slate-50"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Description</label>
-                  <textarea
-                    value={planForm.description}
-                    onChange={(e) => setPlanForm({ ...planForm, description: e.target.value })}
-                    placeholder="Provide description of what is included in this tier."
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-medium h-16 focus:outline-none"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 bg-amber-50/70 p-3.5 rounded-2xl border border-amber-200/80">
-                  <div>
-                    <label className="block text-xs font-bold text-amber-900 uppercase mb-1">
-                      Original / MRP Monthly Price (Slashed)
-                    </label>
-                    <input
-                      type="number"
-                      placeholder="e.g. 350"
-                      value={planForm.originalMonthlyPrice || ''}
-                      onChange={(e) => setPlanForm({ ...planForm, originalMonthlyPrice: parseFloat(e.target.value) || 0 })}
-                      className="w-full px-3 py-2 bg-white border border-amber-200 rounded-xl text-xs font-bold focus:outline-none"
-                    />
-                    <span className="text-[10px] text-amber-700 font-medium mt-0.5 block">App displays as ~~₹350~~ (Intro Offer)</span>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-amber-900 uppercase mb-1">
-                      Original / MRP Yearly Price (Slashed)
-                    </label>
-                    <input
-                      type="number"
-                      placeholder="e.g. 3500"
-                      value={planForm.originalYearlyPrice || ''}
-                      onChange={(e) => setPlanForm({ ...planForm, originalYearlyPrice: parseFloat(e.target.value) || 0 })}
-                      className="w-full px-3 py-2 bg-white border border-amber-200 rounded-xl text-xs font-bold focus:outline-none"
-                    />
-                    <span className="text-[10px] text-amber-700 font-medium mt-0.5 block">App displays as ~~₹3,500~~ (Intro Offer)</span>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Selling Monthly Price (INR)</label>
-                    <input
-                      type="number"
-                      required
-                      value={planForm.monthlyPrice}
-                      onChange={(e) => setPlanForm({ ...planForm, monthlyPrice: parseFloat(e.target.value) })}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-bold focus:outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Selling Yearly Price (INR)</label>
-                    <input
-                      type="number"
-                      required
-                      value={planForm.yearlyPrice}
-                      onChange={(e) => setPlanForm({ ...planForm, yearlyPrice: parseFloat(e.target.value) })}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-bold focus:outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Trial Period (Days)</label>
-                    <input
-                      type="number"
-                      required
-                      value={planForm.trialDays}
-                      onChange={(e) => setPlanForm({ ...planForm, trialDays: parseInt(e.target.value, 10) })}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-bold focus:outline-none"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 bg-emerald-50/60 p-3.5 rounded-2xl border border-emerald-100">
-                  <div>
-                    <label className="block text-xs font-bold text-emerald-800 uppercase mb-1">Free Qs / Month (Ask Mito)</label>
-                    <input
-                      type="number"
-                      required
-                      min={0}
-                      value={planForm.monthlyFreeQuestions}
-                      onChange={(e) => setPlanForm({ ...planForm, monthlyFreeQuestions: parseInt(e.target.value, 10) || 0 })}
-                      className="w-full px-3 py-2 bg-white border border-emerald-200 rounded-xl text-xs font-bold text-emerald-900 focus:outline-none focus:border-emerald-400"
-                    />
-                    <p className="text-[10px] text-emerald-600 font-semibold mt-1">Included for monthly subscribers (e.g. 1)</p>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-emerald-800 uppercase mb-1">Free Qs / Year (Ask Mito)</label>
-                    <input
-                      type="number"
-                      required
-                      min={0}
-                      value={planForm.yearlyFreeQuestions}
-                      onChange={(e) => setPlanForm({ ...planForm, yearlyFreeQuestions: parseInt(e.target.value, 10) || 0 })}
-                      className="w-full px-3 py-2 bg-white border border-emerald-200 rounded-xl text-xs font-bold text-emerald-900 focus:outline-none focus:border-emerald-400"
-                    />
-                    <p className="text-[10px] text-emerald-600 font-semibold mt-1">Included for annual subscribers (e.g. 10)</p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Badge</label>
-                    <select
-                      value={planForm.badge}
-                      onChange={(e) => setPlanForm({ ...planForm, badge: e.target.value as any })}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none"
-                    >
-                      <option value="None">None</option>
-                      <option value="Popular">Popular</option>
-                      <option value="Recommended">Recommended</option>
-                      <option value="Best Value">Best Value</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Plan Accent Color</label>
-                    <input
-                      type="color"
-                      value={planForm.color}
-                      onChange={(e) => setPlanForm({ ...planForm, color: e.target.value })}
-                      className="w-full h-8 border border-slate-200 rounded-xl cursor-pointer p-0.5"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Display Order</label>
-                    <input
-                      type="number"
-                      required
-                      value={planForm.displayOrder}
-                      onChange={(e) => setPlanForm({ ...planForm, displayOrder: parseInt(e.target.value, 10) })}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-bold focus:outline-none"
-                    />
-                  </div>
-                </div>
-
-                <div className="border-t border-slate-100 pt-3">
-                  <span className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Features Entitlements Checklist</span>
-                  <div className="grid grid-cols-2 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                    <label className="flex items-center space-x-2 text-xs font-bold text-slate-600 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={planForm.features.unlimitedReports}
-                        onChange={(e) => setPlanForm({ ...planForm, features: { ...planForm.features, unlimitedReports: e.target.checked } })}
-                        className="h-4 w-4 text-primary rounded border-slate-300 focus:ring-primary"
-                      />
-                      <span>Unlimited Report Uploads</span>
-                    </label>
-
-                    <label className="flex items-center space-x-2 text-xs font-bold text-slate-600 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={planForm.features.advancedAnalysis}
-                        onChange={(e) => setPlanForm({ ...planForm, features: { ...planForm.features, advancedAnalysis: e.target.checked } })}
-                        className="h-4 w-4 text-primary rounded border-slate-300 focus:ring-primary"
-                      />
-                      <span>Advanced Spikes Analysis</span>
-                    </label>
-
-                    <label className="flex items-center space-x-2 text-xs font-bold text-slate-600 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={planForm.features.premiumVideos}
-                        onChange={(e) => setPlanForm({ ...planForm, features: { ...planForm.features, premiumVideos: e.target.checked } })}
-                        className="h-4 w-4 text-primary rounded border-slate-300 focus:ring-primary"
-                      />
-                      <span>Premium Guides & Videos</span>
-                    </label>
-
-                    <label className="flex items-center space-x-2 text-xs font-bold text-slate-600 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={planForm.features.foodInsights}
-                        onChange={(e) => setPlanForm({ ...planForm, features: { ...planForm.features, foodInsights: e.target.checked } })}
-                        className="h-4 w-4 text-primary rounded border-slate-300 focus:ring-primary"
-                      />
-                      <span>Top Foods Glycemic Insights</span>
-                    </label>
-
-                    <label className="flex items-center space-x-2 text-xs font-bold text-slate-600 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={planForm.features.exportReports}
-                        onChange={(e) => setPlanForm({ ...planForm, features: { ...planForm.features, exportReports: e.target.checked } })}
-                        className="h-4 w-4 text-primary rounded border-slate-300 focus:ring-primary"
-                      />
-                      <span>Export Comprehensive PDF Reports</span>
-                    </label>
-
-                    <label className="flex items-center space-x-2 text-xs font-bold text-slate-600 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={planForm.features.notifications}
-                        onChange={(e) => setPlanForm({ ...planForm, features: { ...planForm.features, notifications: e.target.checked } })}
-                        className="h-4 w-4 text-primary rounded border-slate-300 focus:ring-primary"
-                      />
-                      <span>Custom Reminders & Alerts</span>
-                    </label>
-
-                    <label className="flex items-center space-x-2 text-xs font-bold text-slate-600 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={planForm.features.aiCoaching}
-                        onChange={(e) => setPlanForm({ ...planForm, features: { ...planForm.features, aiCoaching: e.target.checked } })}
-                        className="h-4 w-4 text-primary rounded border-slate-300 focus:ring-primary"
-                      />
-                      <span>AI Coaching Assistant</span>
-                    </label>
-
-                    <label className="flex items-center space-x-2 text-xs font-bold text-slate-600 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={planForm.features.foodScanner}
-                        onChange={(e) => setPlanForm({ ...planForm, features: { ...planForm.features, foodScanner: e.target.checked } })}
-                        className="h-4 w-4 text-primary rounded border-slate-300 focus:ring-primary"
-                      />
-                      <span>Food Scanner</span>
-                    </label>
-                  </div>
-                </div>
-
-                <div className="flex justify-between items-center pt-3 border-t border-slate-100">
-                  <label className="flex items-center space-x-2 text-xs font-bold text-slate-500 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={planForm.isActive}
-                      onChange={(e) => setPlanForm({ ...planForm, isActive: e.target.checked })}
-                      className="h-4 w-4 text-primary rounded border-slate-300 focus:ring-primary"
-                    />
-                    <span>Active Plan Template</span>
-                  </label>
                   <button
-                    type="submit"
-                    className="bg-primary hover:bg-primary-dark text-white font-bold py-2.5 px-6 rounded-xl text-xs shadow-soft transition-all"
+                    onClick={() => { setEditingFoodId(null); setFoodForm({ name: '', category: 'South Indian', calories: 100, carbs: 20, protein: 5, fat: 2, fiber: 0, servingSize: 100, servingUnit: 'g', isActive: true }); setShowFoodModal(true); }}
+                    className="bg-primary hover:bg-primary-dark text-white font-bold px-4 py-2 rounded-xl text-sm flex items-center space-x-1.5 shadow-soft"
                   >
-                    Save Plan Template
+                    <Plus className="h-4.5 w-4.5" />
+                    <span>Add Template</span>
                   </button>
                 </div>
-              </form>
-            </div>
-          </div>
-        )}
-
-        {/* MODAL 2: TRANSACTION REFUND DIALOG */}
-        {selectedTx && (
-          <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-3xl p-6 border border-slate-100 w-full max-w-sm shadow-2xl">
-              <div className="flex justify-between items-center pb-3 border-b border-slate-100 mb-4">
-                <h3 className="text-xs font-extrabold text-slate-800 uppercase tracking-wide">
-                  Refund Payment Order
-                </h3>
-                <button
-                  onClick={() => setSelectedTx(null)}
-                  className="text-slate-400 hover:text-slate-600 text-xs font-bold"
-                >
-                  Cancel
-                </button>
               </div>
 
-              <div className="mb-4 bg-slate-50 p-4 rounded-2xl border border-slate-100 text-xs font-semibold text-slate-600 space-y-2">
-                <div className="flex justify-between">
-                  <span>Transaction ID:</span>
-                  <span className="text-slate-800 font-bold">{selectedTx.gatewayOrderId}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Original Amount:</span>
-                  <span className="text-slate-800 font-bold">₹{selectedTx.amount}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Billing Name:</span>
-                  <span className="text-slate-800 font-bold">{selectedTx.userId?.name || 'Mito_Reboot User'}</span>
-                </div>
-              </div>
-
-              <form onSubmit={handleRefundSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Refund Amount (INR)</label>
-                  <input
-                    type="number"
-                    required
-                    min={1}
-                    max={selectedTx.amount}
-                    value={refundAmount}
-                    onChange={(e) => setRefundAmount(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-bold focus:outline-none"
-                  />
-                  <p className="text-[10px] text-slate-400 font-semibold mt-1">
-                    Defaults to maximum amount: ₹{selectedTx.amount}. Will trigger automatic API SDK refunds if active.
-                  </p>
-                </div>
-
-                <button
-                  type="submit"
-                  className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-xl text-xs shadow-soft transition-all"
-                >
-                  Process Cryptographic Refund
-                </button>
-              </form>
-            </div>
-          </div>
-        )}
-
-        {/* MODAL 3: MANUAL SUBSCRIPTION OVERRIDE DIALOG */}
-        {showOverrideModal && (
-          <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-3xl p-6 border border-slate-100 w-full max-w-sm shadow-2xl">
-              <div className="flex justify-between items-center pb-3 border-b border-slate-100 mb-4">
-                <h3 className="text-xs font-extrabold text-slate-800 uppercase tracking-wide">
-                  Manual Subscription Override
-                </h3>
-                <button
-                  onClick={() => setShowOverrideModal(false)}
-                  className="text-slate-400 hover:text-slate-600 text-xs font-bold"
-                >
-                  Cancel
-                </button>
-              </div>
-
-              <form onSubmit={handleOverrideSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Select Action</label>
-                  <select
-                    value={overrideForm.action}
-                    onChange={(e) => setOverrideForm({ ...overrideForm, action: e.target.value as any })}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none"
-                  >
-                    <option value="extend">Extend Subscription Expiry Date</option>
-                    <option value="change-plan">Upgrade / Downgrade Plan Tier</option>
-                    <option value="cancel">Force Expire / Cancel Plan</option>
-                  </select>
-                </div>
-
-                {overrideForm.action === 'extend' && (
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Extend Period by (Days)</label>
-                    <input
-                      type="number"
-                      required
-                      min={1}
-                      value={overrideForm.days}
-                      onChange={(e) => setOverrideForm({ ...overrideForm, days: parseInt(e.target.value, 10) })}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-bold focus:outline-none"
-                    />
-                  </div>
-                )}
-
-                {overrideForm.action === 'change-plan' && (
-                  <div className="space-y-3">
-                    <div>
-                      <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Select Target Plan</label>
-                      <select
-                        value={overrideForm.planId}
-                        onChange={(e) => setOverrideForm({ ...overrideForm, planId: e.target.value })}
-                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none"
-                      >
-                        {plans.map((p) => (
-                          <option key={p._id} value={p._id}>{p.name} ({p.code})</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Billing Cycle</label>
-                      <select
-                        value={overrideForm.billingCycle}
-                        onChange={(e) => setOverrideForm({ ...overrideForm, billingCycle: e.target.value as any })}
-                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-[11px] font-semibold focus:outline-none"
-                      >
-                        <option value="monthly">Monthly Cycle (30 days)</option>
-                        <option value="yearly">Yearly Cycle (365 days)</option>
-                      </select>
-                    </div>
-                  </div>
-                )}
-
-                {overrideForm.action === 'cancel' && (
-                  <div className="p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start space-x-2 text-[10px] font-bold text-danger">
-                    <ShieldAlert className="h-4 w-4 shrink-0 text-danger mt-0.5" />
-                    <span>Warning: Forcefully expiring a user subscription cuts off premium feature access immediately. An FCM notification will be sent.</span>
-                  </div>
-                )}
-
-                <button
-                  type="submit"
-                  className="w-full bg-primary hover:bg-primary-dark text-white font-bold py-3 px-4 rounded-xl text-xs shadow-soft transition-all"
-                >
-                  Apply Subscription Override
-                </button>
-              </form>
-            </div>
-          </div>
-        )}
-        {/* MODAL 4: CREATE / EDIT COUPON DIALOG */}
-        {showCouponModal && (
-          <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-3xl p-6 border border-slate-100 w-full max-w-md shadow-2xl">
-              <div className="flex justify-between items-center pb-3 border-b border-slate-100 mb-4">
-                <h3 className="text-sm font-extrabold text-slate-800 uppercase tracking-wide">
-                  {editingCouponId ? 'Edit Coupon Code' : 'Create Promo Coupon'}
-                </h3>
-                <button
-                  onClick={() => setShowCouponModal(false)}
-                  className="text-slate-400 hover:text-slate-600 text-xs font-bold"
-                >
-                  Close
-                </button>
-              </div>
-
-              <form onSubmit={handleCouponSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Coupon Code</label>
-                  <input
-                    type="text"
-                    required
-                    disabled={!!editingCouponId}
-                    value={couponForm.code}
-                    onChange={(e) => setCouponForm({ ...couponForm, code: e.target.value.toUpperCase().replace(/\s+/g, '') })}
-                    placeholder="E.G. WELCOME50"
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-bold uppercase focus:outline-none disabled:bg-slate-50"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Discount Type</label>
-                    <select
-                      value={couponForm.discountType}
-                      onChange={(e) => setCouponForm({ ...couponForm, discountType: e.target.value as any })}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none"
-                    >
-                      <option value="percentage">Percentage (%)</option>
-                      <option value="fixed">Fixed Amount (₹)</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Discount Value</label>
-                    <input
-                      type="number"
-                      required
-                      min={1}
-                      max={couponForm.discountType === 'percentage' ? 100 : undefined}
-                      value={couponForm.discountValue}
-                      onChange={(e) => setCouponForm({ ...couponForm, discountValue: parseFloat(e.target.value) })}
-                      placeholder={couponForm.discountType === 'percentage' ? '50' : '99'}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-extrabold focus:outline-none"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Expiry Date (Optional)</label>
-                    <input
-                      type="date"
-                      value={couponForm.expiryDate}
-                      onChange={(e) => setCouponForm({ ...couponForm, expiryDate: e.target.value })}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Max Redemptions (Optional)</label>
-                    <input
-                      type="number"
-                      min={1}
-                      value={couponForm.maxRedemptions}
-                      onChange={(e) => setCouponForm({ ...couponForm, maxRedemptions: e.target.value })}
-                      placeholder="Unlimited"
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex items-center space-x-2 pt-2">
-                  <input
-                    type="checkbox"
-                    id="isActiveCoupon"
-                    checked={couponForm.isActive}
-                    onChange={(e) => setCouponForm({ ...couponForm, isActive: e.target.checked })}
-                    className="h-4.5 w-4.5 border-slate-200 rounded-md focus:ring-primary text-primary"
-                  />
-                  <label htmlFor="isActiveCoupon" className="text-xs font-bold text-slate-600 uppercase select-none">
-                    Coupon Active
-                  </label>
-                </div>
-
-                <button
-                  type="submit"
-                  className="w-full bg-primary hover:bg-primary-dark text-white font-bold py-3 px-4 rounded-xl text-xs shadow-soft transition-all"
-                >
-                  {editingCouponId ? 'Update Coupon' : 'Create Coupon'}
-                </button>
-              </form>
-            </div>
-          </div>
-        )}
-
-        {/* MODAL 5: USER ACTIVITY DETAILS DIALOG */}
-        {showUserModal && (
-          <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-3xl p-6 border border-slate-200 w-full max-w-4xl shadow-2xl flex flex-col max-h-[90vh]">
-              <div className="flex justify-between items-center pb-3 border-b border-slate-100 mb-4 shrink-0">
-                <div>
-                  <h3 className="text-xs font-extrabold text-slate-800 uppercase tracking-wide">
-                    Patient Details & Activity Log
-                  </h3>
-                  {selectedUserActivity?.user && (
-                    <p className="text-[11px] text-slate-400 font-semibold mt-0.5">{selectedUserActivity.user.name} ({selectedUserActivity.user.email})</p>
-                  )}
-                </div>
-                <button
-                  onClick={() => setShowUserModal(false)}
-                  className="text-slate-400 hover:text-slate-600 text-xs font-bold"
-                >
-                  Close
-                </button>
-              </div>
-
-              {!selectedUserActivity ? (
-                <div className="flex-1 flex flex-col items-center justify-center py-12 text-slate-400">
-                  <Loader2 className="h-8 w-8 animate-spin mb-2 text-primary" />
-                  <span className="font-semibold text-xs">Loading patient history...</span>
-                </div>
-              ) : (
-                <>
-                  {/* Tab Navigation */}
-                  <div className="flex border-b border-slate-100 mb-4 shrink-0 overflow-x-auto no-scrollbar">
-                    {(['overview', 'food', 'glucose', 'reports', 'coaching', 'notify'] as const).map((tab) => (
-                      <button
-                        key={tab}
-                        onClick={() => setUserModalTab(tab)}
-                        className={`px-4 py-2 text-xs font-extrabold uppercase border-b-2 transition-all -mb-[2px] whitespace-nowrap ${userModalTab === tab
-                          ? 'border-primary text-primary'
-                          : 'border-transparent text-slate-400 hover:text-slate-600'
-                          }`}
-                      >
-                        {tab === 'notify' ? 'Send Alert' : tab}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Scrollable Content Container */}
-                  <div className="flex-1 overflow-y-auto pr-1 text-xs text-slate-700 font-semibold space-y-4">
-                    {/* TAB 1: OVERVIEW */}
-                    {userModalTab === 'overview' && (
-                      <div className="space-y-4">
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                          <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100">
-                            <span className="block text-[10px] uppercase font-bold text-slate-400 mb-1">Age</span>
-                            <span className="text-slate-800 font-bold">{selectedUserActivity.user.age ?? '--'} yrs</span>
-                          </div>
-                          <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100">
-                            <span className="block text-[10px] uppercase font-bold text-slate-400 mb-1">Gender</span>
-                            <span className="text-slate-800 font-bold capitalize">{selectedUserActivity.user.gender ?? '--'}</span>
-                          </div>
-                          <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100">
-                            <span className="block text-[10px] uppercase font-bold text-slate-400 mb-1">Height / Weight</span>
-                            <span className="text-slate-800 font-bold">
-                              {selectedUserActivity.user.height ? `${selectedUserActivity.user.height} cm` : '--'} / {selectedUserActivity.user.weight ? `${selectedUserActivity.user.weight} kg` : '--'}
-                            </span>
-                          </div>
-                          <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100">
-                            <span className="block text-[10px] uppercase font-bold text-slate-400 mb-1">Activity Level</span>
-                            <span className="text-slate-800 font-bold capitalize">{selectedUserActivity.user.activityLevel?.replace('-', ' ') ?? '--'}</span>
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100 col-span-1">
-                            <span className="block text-[10px] uppercase font-bold text-slate-400 mb-1">Target Calories</span>
-                            <span className="text-slate-800 font-extrabold text-sm">{selectedUserActivity.user.dailyCalorieTarget ? `${selectedUserActivity.user.dailyCalorieTarget} kcal` : '--'}</span>
-                          </div>
-                          <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100 col-span-1">
-                            <span className="block text-[10px] uppercase font-bold text-slate-400 mb-1">Diabetes Goal</span>
-                            <span className="text-slate-800 font-bold capitalize">{selectedUserActivity.user.goal?.replace('-', ' ') ?? '--'}</span>
-                          </div>
-                          <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100 col-span-1">
-                            <span className="block text-[10px] uppercase font-bold text-slate-400 mb-1">TDEE / BMR</span>
-                            <span className="text-slate-800 font-bold">
-                              {selectedUserActivity.user.tdee ? `${Math.round(selectedUserActivity.user.tdee)} kcal` : '--'} / {selectedUserActivity.user.bmr ? `${Math.round(selectedUserActivity.user.bmr)} kcal` : '--'}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="bg-blue-50/30 border border-blue-100/50 p-4 rounded-3xl space-y-2">
-                          <h4 className="text-[10px] font-bold text-primary uppercase tracking-wider">Activity Summary</h4>
-                          <ul className="space-y-1 text-slate-600 font-medium text-[11px]">
-                            <li>• Total Meals Logged: <strong className="text-slate-800">{selectedUserActivity.foodLogs?.length ?? 0}</strong></li>
-                            <li>• Glucose Readings: <strong className="text-slate-800">{selectedUserActivity.glucoseReadings?.length ?? 0}</strong></li>
-                            <li>• CGM Reports Uploaded: <strong className="text-slate-800">{selectedUserActivity.cgmReports?.length ?? 0}</strong></li>
-                          </ul>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* TAB 2: FOOD LOGS */}
-                    {userModalTab === 'food' && (
-                      <div className="bg-white rounded-2xl border border-slate-200 overflow-x-auto">
-                        <table className="min-w-full divide-y divide-slate-100 text-[11px]">
-                          <thead className="bg-slate-50 text-slate-400 uppercase font-bold text-left">
-                            <tr>
-                              <th className="px-4 py-3">Logged At</th>
-                              <th className="px-4 py-3">Meal Name</th>
-                              <th className="px-4 py-3">Category</th>
-                              <th className="px-4 py-3">Meal Type</th>
-                              <th className="px-4 py-3">Calories</th>
-                              <th className="px-4 py-3">Macros (C/P/F)</th>
-                              <th className="px-4 py-3">Spike Status</th>
-                              <th className="px-4 py-3">User Feedback</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-slate-100 text-slate-700 font-medium">
-                            {!selectedUserActivity.foodLogs || selectedUserActivity.foodLogs.length === 0 ? (
-                              <tr>
-                                <td colSpan={8} className="text-center py-6 text-slate-400">No meals logged yet.</td>
-                              </tr>
-                            ) : (
-                              selectedUserActivity.foodLogs.map((log: any) => (
-                                <tr key={log._id}>
-                                  <td className="px-4 py-3 text-slate-400 whitespace-nowrap">
-                                    {new Date(log.loggedAt).toLocaleString()}
-                                  </td>
-                                  <td className="px-4 py-3 font-bold text-slate-800">{log.name}</td>
-                                  <td className="px-4 py-3">{log.category}</td>
-                                  <td className="px-4 py-3 capitalize">{log.mealType}</td>
-                                  <td className="px-4 py-3 text-orange-600 font-bold">{log.calories} kcal</td>
-                                  <td className="px-4 py-3 text-slate-500 whitespace-nowrap">
-                                    {log.carbs}g / {log.protein}g / {log.fat}g
-                                  </td>
-                                  <td className="px-4 py-3">
-                                    {log.glucoseAnalysis ? (
-                                      <span className={`px-2 py-0.5 rounded font-bold uppercase text-[9px] ${log.glucoseAnalysis.status === 'Safe'
-                                        ? 'bg-green-50 text-success border border-green-100'
-                                        : log.glucoseAnalysis.status === 'Moderate'
-                                          ? 'bg-orange-50 text-warning border border-orange-100'
-                                          : 'bg-red-50 text-danger border border-red-100'
-                                        }`}>
-                                        {log.glucoseAnalysis.status} ({log.glucoseAnalysis.peakGlucose} mg/dL)
-                                      </span>
-                                    ) : (
-                                      <span className="text-slate-400 text-[10px]">No reading overlap</span>
-                                    )}
-                                  </td>
-                                  <td className="px-4 py-3">
-                                    {log.feedback ? (
-                                      <span className={`px-2 py-0.5 rounded font-bold uppercase text-[9px] ${log.feedback.isAccurate ? 'bg-green-50 text-success' : 'bg-red-50 text-danger'
-                                        }`}>
-                                        {log.feedback.isAccurate ? 'Accurate' : 'Inaccurate'}
-                                      </span>
-                                    ) : (
-                                      <span className="text-slate-400 text-[10px]">-</span>
-                                    )}
-                                  </td>
-                                </tr>
-                              ))
-                            )}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
-
-                    {/* TAB 3: GLUCOSE READINGS */}
-                    {userModalTab === 'glucose' && (
-                      <div className="bg-white rounded-2xl border border-slate-200 overflow-x-auto">
-                        <table className="min-w-full divide-y divide-slate-100 text-[11px]">
-                          <thead className="bg-slate-50 text-slate-400 uppercase font-bold text-left">
-                            <tr>
-                              <th className="px-4 py-3">Timestamp</th>
-                              <th className="px-4 py-3">Glucose Level</th>
-                              <th className="px-4 py-3">Source</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-slate-100 text-slate-700 font-medium">
-                            {!selectedUserActivity.glucoseReadings || selectedUserActivity.glucoseReadings.length === 0 ? (
-                              <tr>
-                                <td colSpan={3} className="text-center py-6 text-slate-400">No glucose readings logged yet.</td>
-                              </tr>
-                            ) : (
-                              selectedUserActivity.glucoseReadings.map((r: any) => (
-                                <tr key={r._id}>
-                                  <td className="px-4 py-3 text-slate-400">
-                                    {new Date(r.timestamp).toLocaleString()}
-                                  </td>
-                                  <td className="px-4 py-3 font-bold text-slate-800 text-sm">
-                                    {r.value} mg/dL
-                                  </td>
-                                  <td className="px-4 py-3 text-slate-500">{r.source || 'Manual'}</td>
-                                </tr>
-                              ))
-                            )}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
-
-                    {/* TAB 4: CGM REPORTS */}
-                    {userModalTab === 'reports' && (
-                      <div className="bg-white rounded-2xl border border-slate-200 overflow-x-auto">
-                        <table className="min-w-full divide-y divide-slate-100 text-[11px]">
-                          <thead className="bg-slate-50 text-slate-400 uppercase font-bold text-left">
-                            <tr>
-                              <th className="px-4 py-3">Uploaded At</th>
-                              <th className="px-4 py-3">Report File Name</th>
-                              <th className="px-4 py-3">Data Records</th>
-                              <th className="px-4 py-3">Analysis Range</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-slate-100 text-slate-700 font-medium">
-                            {!selectedUserActivity.cgmReports || selectedUserActivity.cgmReports.length === 0 ? (
-                              <tr>
-                                <td colSpan={4} className="text-center py-6 text-slate-400">No reports uploaded yet.</td>
-                              </tr>
-                            ) : (
-                              selectedUserActivity.cgmReports.map((rep: any) => (
-                                <tr key={rep._id}>
-                                  <td className="px-4 py-3 text-slate-400">
-                                    {new Date(rep.createdAt).toLocaleString()}
-                                  </td>
-                                  <td className="px-4 py-3 font-bold text-slate-800">{rep.fileName}</td>
-                                  <td className="px-4 py-3 text-slate-500">{rep.recordCount ?? 0} rows</td>
-                                  <td className="px-4 py-3 text-slate-600">
-                                    {rep.startDate ? new Date(rep.startDate).toLocaleDateString() : '--'} to {rep.endDate ? new Date(rep.endDate).toLocaleDateString() : '--'}
-                                  </td>
-                                </tr>
-                              ))
-                            )}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
-                    {/* TAB 5: COACHING */}
-                    {userModalTab === 'coaching' && (
-                      <div className="space-y-4">
-                        {coachingSessions.length === 0 ? (
-                          <div className="text-center py-8 text-slate-400 font-semibold text-xs border-2 border-dashed border-slate-100 rounded-2xl">
-                            No AI coaching sessions triggered yet.
-                          </div>
-                        ) : (
-                          coachingSessions.map((session: any) => (
-                            <div key={session._id} className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
-                              <div className="flex justify-between items-center mb-3 pb-3 border-b border-slate-100">
-                                <div>
-                                  <span className="text-xs font-bold text-slate-800">
-                                    Trigger: {session.foodName || session.foodLogId?.name || 'Unknown Food'}
-                                  </span>
-                                  <span className="ml-2 px-2 py-0.5 rounded text-[10px] font-bold bg-red-50 text-red-600">
-                                    Spike: {session.peakGlucose} mg/dL
-                                  </span>
-                                </div>
-                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${session.status === 'resolved' ? 'bg-green-50 text-success' : 'bg-amber-50 text-amber-600'
-                                  }`}>
-                                  {session.status}
-                                </span>
-                              </div>
-                              <div className="space-y-3">
-                                {session.messages.map((msg: any, i: number) => (
-                                  <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                    <div className={`max-w-[85%] p-3 rounded-2xl text-[11px] font-medium ${msg.role === 'user'
-                                      ? 'bg-primary text-white rounded-tr-sm'
-                                      : 'bg-slate-50 text-slate-700 border border-slate-100 rounded-tl-sm'
-                                      }`}>
-                                      <span className="block text-[9px] font-bold uppercase mb-1 opacity-70">
-                                        {msg.role === 'user' ? 'Patient' : 'AI Assistant'}
-                                      </span>
-                                      {msg.content}
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
+              {/* Foods Grid */}
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-soft overflow-x-auto">
+                <table className="min-w-full divide-y divide-slate-200">
+                  <thead className="bg-slate-50 text-slate-400 text-xs font-bold uppercase tracking-wider text-left">
+                    <tr>
+                      <th className="px-6 py-4">Food Name</th>
+                      <th className="px-6 py-4">Category</th>
+                      <th className="px-6 py-4">Calories</th>
+                      <th className="px-6 py-4">Carbs</th>
+                      <th className="px-6 py-4">Protein</th>
+                      <th className="px-6 py-4">Fat</th>
+                      <th className="px-6 py-4">Fiber</th>
+                      <th className="px-6 py-4">Status</th>
+                      <th className="px-6 py-4 text-center">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 text-sm font-semibold text-slate-700">
+                    {foods.length === 0 ? (
+                      <tr>
+                        <td colSpan={8} className="text-center py-8 text-slate-400">No food templates seeded. Add one.</td>
+                      </tr>
+                    ) : (
+                      foods.map((f) => (
+                        <tr key={f._id} className="hover:bg-slate-50/50">
+                          <td className="px-6 py-4 font-bold text-slate-800">{f.name}</td>
+                          <td className="px-6 py-4"><span className="bg-slate-100 px-2 py-0.5 rounded text-xs font-bold text-slate-500">{f.category}</span></td>
+                          <td className="px-6 py-4 text-orange-600">{f.calories} kcal</td>
+                          <td className="px-6 py-4 text-blue-600">{f.carbs}g</td>
+                          <td className="px-6 py-4 text-teal-600">{f.protein}g</td>
+                          <td className="px-6 py-4 text-slate-500">{f.fat}g</td>
+                          <td className="px-6 py-4 text-emerald-600">{f.fiber || 0}g</td>
+                          <td className="px-6 py-4 text-slate-500">
+                            {f.isActive ? <span className="bg-green-50 text-success px-2 py-0.5 rounded text-[10px] font-bold border border-green-100">Active</span> : <span className="bg-slate-100 text-slate-500 px-2 py-0.5 rounded text-[10px] font-bold border border-slate-200">Inactive</span>}
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex justify-center space-x-2">
+                              <button
+                                onClick={() => { setEditingFoodId(f._id); setFoodForm({ name: f.name, category: f.category, calories: f.calories, carbs: f.carbs, protein: f.protein, fat: f.fat, fiber: f.fiber || 0, servingSize: f.servingSize, servingUnit: f.servingUnit, isActive: f.isActive !== false }); setShowFoodModal(true); }}
+                                className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-primary transition-all"
+                              >
+                                <Edit className="h-4.5 w-4.5" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteFood(f._id)}
+                                className="p-1.5 hover:bg-red-50 rounded-lg text-slate-400 hover:text-danger transition-all"
+                              >
+                                <Trash2 className="h-4.5 w-4.5" />
+                              </button>
                             </div>
-                          ))
-                        )}
-                      </div>
+                          </td>
+                        </tr>
+                      ))
                     )}
+                  </tbody>
+                </table>
+              </div>
 
-                    {/* TAB 6: SEND ALERT */}
-                    {userModalTab === 'notify' && (
-                      <form onSubmit={handleSendUserDirectNotification} className="space-y-4 max-w-md">
-                        <div className="bg-blue-50/30 border border-blue-100/50 p-3 rounded-2xl text-[10px] text-primary">
-                          This alert will dispatch a real-time push notification directly to the user's mobile device via FCM to advise them on their food intake or glycemic spike management.
-                        </div>
+              {/* Pagination Controls for Foods */}
+              {foodPagination.pages > 1 && (
+                <div className="flex justify-between items-center py-4 bg-slate-50 px-6 border border-slate-200 rounded-2xl">
+                  <span className="text-xs font-bold text-slate-500">
+                    Showing {(foodPagination.page - 1) * foodPagination.limit + 1} to {Math.min(foodPagination.page * foodPagination.limit, foodPagination.total)} of {foodPagination.total} foods
+                  </span>
+                  <div className="flex space-x-2">
+                    <button
+                      disabled={foodPagination.page === 1}
+                      onClick={() => fetchFoods(foodPagination.page - 1)}
+                      className="px-3 py-1 bg-white border border-slate-200 rounded-lg text-xs font-bold disabled:opacity-50"
+                    >
+                      Prev
+                    </button>
+                    <span className="text-xs font-bold text-slate-600 px-3 py-1">
+                      Page {foodPagination.page} of {foodPagination.pages}
+                    </span>
+                    <button
+                      disabled={foodPagination.page === foodPagination.pages}
+                      onClick={() => fetchFoods(foodPagination.page + 1)}
+                      className="px-3 py-1 bg-white border border-slate-200 rounded-lg text-xs font-bold disabled:opacity-50"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
 
+              {/* Food Modal Form */}
+              {showFoodModal && (
+                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                  <div className="bg-white p-6 rounded-3xl border border-slate-200 max-w-md w-full shadow-lg">
+                    <h3 className="text-base font-bold text-slate-800 mb-4">{editingFoodId ? 'Update Food Template' : 'Add Food Template'}</h3>
+                    <form onSubmit={handleFoodSubmit} className="space-y-4">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Food Name</label>
+                        <input
+                          type="text"
+                          required
+                          value={foodForm.name}
+                          onChange={(e) => setFoodForm({ ...foodForm, name: e.target.value })}
+                          className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary text-sm font-semibold"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Alert Title</label>
+                          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Category</label>
+                          <select
+                            value={foodForm.category}
+                            onChange={(e: any) => setFoodForm({ ...foodForm, category: e.target.value })}
+                            className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-bold"
+                          >
+                            <option value="South Indian">South Indian</option>
+                            <option value="North Indian">North Indian</option>
+                            <option value="Snacks">Snacks</option>
+                            <option value="Fruits">Fruits</option>
+                            <option value="Vegetables">Vegetables</option>
+                            <option value="Beverages">Beverages</option>
+                            <option value="Dairy">Dairy</option>
+                            <option value="Non-Veg">Non-Veg</option>
+                            <option value="Sweets">Sweets</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Calories (kcal)</label>
+                          <input
+                            type="number"
+                            required
+                            value={foodForm.calories}
+                            onChange={(e) => setFoodForm({ ...foodForm, calories: parseFloat(e.target.value) || 0 })}
+                            className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-bold"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-2">
+                        <div>
+                          <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Carbs (g)</label>
+                          <input
+                            type="number"
+                            required
+                            value={foodForm.carbs}
+                            onChange={(e) => setFoodForm({ ...foodForm, carbs: parseFloat(e.target.value) || 0 })}
+                            className="w-full px-2 py-2 border border-slate-200 rounded-xl text-center text-sm font-bold"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Protein (g)</label>
+                          <input
+                            type="number"
+                            required
+                            value={foodForm.protein}
+                            onChange={(e) => setFoodForm({ ...foodForm, protein: parseFloat(e.target.value) || 0 })}
+                            className="w-full px-2 py-2 border border-slate-200 rounded-xl text-center text-sm font-bold"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Fat (g)</label>
+                          <input
+                            type="number"
+                            required
+                            value={foodForm.fat}
+                            onChange={(e) => setFoodForm({ ...foodForm, fat: parseFloat(e.target.value) || 0 })}
+                            className="w-full px-2 py-2 border border-slate-200 rounded-xl text-center text-sm font-bold"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Fiber (g)</label>
+                          <input
+                            type="number"
+                            required
+                            value={foodForm.fiber}
+                            onChange={(e) => setFoodForm({ ...foodForm, fiber: parseFloat(e.target.value) || 0 })}
+                            className="w-full px-2 py-2 border border-slate-200 rounded-xl text-center text-sm font-bold"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-3">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Serving Size</label>
+                          <input
+                            type="number"
+                            required
+                            value={foodForm.servingSize}
+                            onChange={(e) => setFoodForm({ ...foodForm, servingSize: parseFloat(e.target.value) || 100 })}
+                            className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-bold"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Unit</label>
                           <input
                             type="text"
                             required
-                            value={userModalNotify.title}
-                            onChange={(e) => setUserModalNotify({ ...userModalNotify, title: e.target.value })}
-                            placeholder="E.G. High Glucose Warning"
-                            className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary font-bold text-xs"
+                            value={foodForm.servingUnit}
+                            onChange={(e) => setFoodForm({ ...foodForm, servingUnit: e.target.value })}
+                            className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-semibold text-slate-500"
                           />
                         </div>
-
                         <div>
-                          <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Message Content</label>
-                          <textarea
-                            required
-                            rows={3}
-                            value={userModalNotify.body}
-                            onChange={(e) => setUserModalNotify({ ...userModalNotify, body: e.target.value })}
-                            placeholder="Enter the alert advice instructions..."
-                            className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary font-semibold text-xs"
-                          />
-                        </div>
-
-                        <button
-                          type="submit"
-                          className="bg-primary hover:bg-primary-dark text-white font-bold px-4 py-2.5 rounded-xl shadow-soft flex items-center space-x-1.5 transition-all text-xs"
-                        >
-                          <Send className="h-4 w-4" />
-                          <span>Dispatch Alert FCM</span>
-                        </button>
-                      </form>
-                    )}
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        )}
-        {/* VIEW 9: LEGAL DOCUMENTS */}
-        {activeView === 'legal' && (
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-xl font-bold text-slate-800">Legal Documents</h2>
-              <p className="text-xs text-slate-400 font-semibold mt-0.5">Manage Privacy Policy and Terms of Service content (Markdown supported).</p>
-            </div>
-
-            <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-soft space-y-4">
-              <div className="flex justify-between items-center">
-                <h3 className="text-sm font-bold text-slate-800">Privacy Policy</h3>
-                <button
-                  onClick={() => handleSaveLegal('PrivacyPolicy', privacyPolicy)}
-                  disabled={legalSaving}
-                  className="bg-primary hover:bg-primary-dark text-white font-bold py-2 px-4 rounded-xl text-xs flex items-center space-x-1.5 shadow-soft transition-all"
-                >
-                  <Save className="h-4 w-4" />
-                  <span>{legalSaving ? 'Saving...' : 'Save Privacy Policy'}</span>
-                </button>
-              </div>
-              <div className="bg-white [&_.ql-container]:rounded-b-2xl [&_.ql-toolbar]:rounded-t-2xl [&_.ql-editor]:min-h-[200px]">
-                <ReactQuill
-                  theme="snow"
-                  value={privacyPolicy}
-                  onChange={setPrivacyPolicy}
-                  placeholder="Enter Privacy Policy content..."
-                />
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-soft space-y-4">
-              <div className="flex justify-between items-center">
-                <h3 className="text-sm font-bold text-slate-800">Terms of Service</h3>
-                <button
-                  onClick={() => handleSaveLegal('TermsOfService', termsOfService)}
-                  disabled={legalSaving}
-                  className="bg-primary hover:bg-primary-dark text-white font-bold py-2 px-4 rounded-xl text-xs flex items-center space-x-1.5 shadow-soft transition-all"
-                >
-                  <Save className="h-4 w-4" />
-                  <span>{legalSaving ? 'Saving...' : 'Save Terms'}</span>
-                </button>
-              </div>
-              <div className="bg-white [&_.ql-container]:rounded-b-2xl [&_.ql-toolbar]:rounded-t-2xl [&_.ql-editor]:min-h-[200px]">
-                <ReactQuill
-                  theme="snow"
-                  value={termsOfService}
-                  onChange={setTermsOfService}
-                  placeholder="Enter Terms of Service content..."
-                />
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* VIEW: APP USER TERMS & CONDITIONS */}
-        {activeView === 'app-user-terms' && (
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-xl font-bold text-slate-800">App User Terms & Conditions</h2>
-              <p className="text-xs text-slate-400 font-semibold mt-0.5">Manage the Master Disclaimer, Privacy Notice & Terms of Use presented to application users during mandatory onboarding.</p>
-            </div>
-
-            <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-soft space-y-4">
-              <div className="flex justify-between items-center">
-                <div>
-                  <h3 className="text-sm font-bold text-slate-800">Master Disclaimer, Privacy Notice & Terms Content</h3>
-                  <p className="text-xs text-slate-500 mt-0.5">Changes saved here will immediately reflect on the user mobile and web Terms Acceptance page.</p>
-                </div>
-                <button
-                  onClick={() => handleSaveLegal('TermsOfService', termsOfService)}
-                  disabled={legalSaving}
-                  className="bg-primary hover:bg-primary-dark text-white font-bold py-2 px-4 rounded-xl text-xs flex items-center space-x-1.5 shadow-soft transition-all"
-                >
-                  <Save className="h-4 w-4" />
-                  <span>{legalSaving ? 'Saving...' : 'Save App User Terms'}</span>
-                </button>
-              </div>
-              <div className="bg-white [&_.ql-container]:rounded-b-2xl [&_.ql-toolbar]:rounded-t-2xl [&_.ql-editor]:min-h-[350px]">
-                <ReactQuill
-                  theme="snow"
-                  value={termsOfService}
-                  onChange={setTermsOfService}
-                  placeholder="Enter complete Master Disclaimer, Privacy Notice & Terms of Use..."
-                />
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* VIEW 9.5: FOUNDERS SECTION */}
-        {activeView === 'founders' && (
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <div>
-                <h2 className="text-xl font-bold text-slate-800">Founders Management</h2>
-                <p className="text-xs text-slate-400 font-semibold mt-0.5">Manage details and YouTube video links of your company's founders.</p>
-              </div>
-              <button
-                onClick={() => {
-                  setEditingFounderId(null);
-                  setFounderForm({
-                    name: '',
-                    role: '',
-                    background: '',
-                    workDone: '',
-                    achievements: '',
-                    tryingToSolve: '',
-                    videoUrl: ''
-                  });
-                  setShowFounderModal(true);
-                }}
-                className="bg-primary hover:bg-primary-dark text-white font-bold px-4 py-2 rounded-xl text-sm flex items-center space-x-1.5 shadow-soft"
-              >
-                <Plus className="h-4.5 w-4.5" />
-                <span>Add Founder</span>
-              </button>
-            </div>
-
-            {/* A Note from the Founder Card */}
-            <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-sm mb-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-4 border-b border-slate-100">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-rose-500 to-amber-500 text-white flex items-center justify-center font-bold text-lg shadow-sm">
-                    👑
-                  </div>
-                  <div>
-                    <h3 className="text-base font-black text-slate-800">A Note from the Founder</h3>
-                    <p className="text-xs text-slate-400 font-medium">
-                      Official message from Dr. Krithikaa Sekar displayed in the mobile app & website.
-                    </p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={async () => {
-                    setSavingPaymentConfig(true);
-                    try {
-                      const res = await fetch(`${apiUrl}/admin/payments/config`, {
-                        method: 'PUT',
-                        headers: {
-                          'Content-Type': 'application/json',
-                          'Authorization': `Bearer ${token}`
-                        },
-                        body: JSON.stringify(paymentConfig)
-                      });
-                      if (res.ok) {
-                        alert('Founder Note updated successfully!');
-                        fetchPaymentConfig();
-                      } else {
-                        const data = await res.json();
-                        alert(data.message || 'Failed to update founder note.');
-                      }
-                    } catch (e) {
-                      console.error(e);
-                      alert('Error updating founder note.');
-                    } finally {
-                      setSavingPaymentConfig(false);
-                    }
-                  }}
-                  disabled={savingPaymentConfig || !paymentConfig}
-                  className="bg-primary hover:bg-primary-dark disabled:opacity-50 text-white font-extrabold px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-sm transition-all cursor-pointer self-start sm:self-auto"
-                >
-                  <Save className="h-4 w-4" />
-                  <span>{savingPaymentConfig ? 'Saving...' : 'Save Founder Note'}</span>
-                </button>
-              </div>
-
-              {paymentConfig ? (
-                <div className="bg-white [&_.ql-container]:rounded-b-2xl [&_.ql-toolbar]:rounded-t-2xl [&_.ql-editor]:min-h-[220px]">
-                  <ReactQuill
-                    theme="snow"
-                    value={paymentConfig.founderNote !== undefined ? paymentConfig.founderNote : ''}
-                    onChange={(val) => setPaymentConfig({ ...paymentConfig, founderNote: val })}
-                    placeholder="Enter Note from the Founder..."
-                  />
-                </div>
-              ) : (
-                <div className="text-xs text-slate-400 font-semibold py-4 text-center">Loading configuration...</div>
-              )}
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {founders.length === 0 ? (
-                <div className="col-span-full text-center py-12 text-slate-400 font-semibold text-xs border-2 border-dashed border-slate-100 rounded-2xl">
-                  No founders found. Click "Add Founder" to create one.
-                </div>
-              ) : (
-                founders.map(f => (
-                  <div key={f._id} className="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm flex flex-col justify-between">
-                    <div>
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h3 className="text-lg font-bold text-slate-800">{f.name}</h3>
-                          <p className="text-xs font-semibold text-primary">{f.role}</p>
-                        </div>
-                        <div className="flex space-x-1">
-                          <button
-                            onClick={() => {
-                              setEditingFounderId(f._id);
-                              setFounderForm({
-                                name: f.name,
-                                role: f.role,
-                                background: f.background,
-                                workDone: f.workDone,
-                                achievements: f.achievements,
-                                tryingToSolve: f.tryingToSolve,
-                                videoUrl: f.videoUrl || ''
-                              });
-                              setShowFounderModal(true);
-                            }}
-                            className="p-2 hover:bg-slate-100 rounded-xl text-slate-500 transition-colors"
+                          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Status</label>
+                          <select
+                            value={foodForm.isActive ? 'true' : 'false'}
+                            onChange={(e) => setFoodForm({ ...foodForm, isActive: e.target.value === 'true' })}
+                            className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-bold bg-white"
                           >
-                            <Edit className="h-4.5 w-4.5" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteFounder(f._id)}
-                            className="p-2 hover:bg-red-50 rounded-xl text-slate-400 hover:text-red-500 transition-colors"
-                          >
-                            <Trash2 className="h-4.5 w-4.5" />
-                          </button>
+                            <option value="true">Active</option>
+                            <option value="false">Inactive</option>
+                          </select>
                         </div>
                       </div>
 
-                      <div className="mt-4 space-y-2 text-xs text-slate-600">
-                        <p><strong>Background:</strong> {f.background?.length > 150 ? f.background.slice(0, 150) + '...' : f.background}</p>
-                        <p><strong>Work Done:</strong> {f.workDone?.length > 150 ? f.workDone.slice(0, 150) + '...' : f.workDone}</p>
-                        {f.videoUrl && (
-                          <div className="mt-3 p-2 bg-slate-50 rounded-xl border border-slate-100 flex items-center space-x-2 text-[11px] text-slate-500">
-                            <span className="text-red-500">🎥</span>
-                            <span className="truncate max-w-[280px] font-mono">{f.videoUrl}</span>
+                      <div className="flex space-x-3 pt-2">
+                        <button
+                          type="button"
+                          onClick={() => setShowFoodModal(false)}
+                          className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 font-semibold rounded-xl text-sm"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          className="flex-1 py-2.5 bg-primary hover:bg-primary-dark text-white font-bold rounded-xl text-sm"
+                        >
+                          Save Template
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* VIEW 4: EDUCATIONAL VIDEO EDITOR */}
+          {activeView === 'videos' && (
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="text-xl font-bold text-slate-800">Educational Video Tutorials</h2>
+                  <p className="text-xs text-slate-400 font-semibold mt-0.5">Upload streaming URLs or YouTube embed references.</p>
+                </div>
+                <button
+                  onClick={() => { setEditingVideoId(null); setVideoForm({ title: '', description: '', url: '', thumbnailUrl: '', category: 'CGM Guide', targetPlatform: 'Both' as any, isPaidOnly: false }); setShowVideoModal(true); }}
+                  className="bg-primary hover:bg-primary-dark text-white font-bold px-4 py-2 rounded-xl text-sm flex items-center space-x-1.5 shadow-soft"
+                >
+                  <Plus className="h-4.5 w-4.5" />
+                  <span>Upload Video</span>
+                </button>
+              </div>
+
+              {/* Videos Listing Grid */}
+              <div className="grid grid-cols-3 gap-6">
+                {videos.length === 0 ? (
+                  <div className="col-span-3 text-center p-8 bg-white border border-slate-200 rounded-2xl text-sm text-slate-400">No videos configured.</div>
+                ) : (
+                  videos.map((vid) => (
+                    <div key={vid._id} className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-soft flex flex-col justify-between">
+                      <div className="aspect-video w-full bg-slate-100 relative">
+                        <iframe src={getEmbedUrl(vid.url)} className="w-full h-full border-none" />
+                        {vid.isPaidOnly && (
+                          <div className="absolute top-2 right-2 bg-slate-900/80 backdrop-blur-md text-amber-300 text-[10px] font-black px-2.5 py-1 rounded-lg border border-amber-400/30 flex items-center gap-1 shadow-md">
+                            <span>👑 Paid Only</span>
                           </div>
                         )}
                       </div>
+                      <div className="p-4 flex-1">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-[10px] font-bold text-primary bg-primary-light/50 px-2 py-0.5 rounded-full">{vid.category}</span>
+                          {vid.isPaidOnly ? (
+                            <span className="text-[10px] font-extrabold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full flex items-center gap-1">
+                              👑 Paid Subscribers Only
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full flex items-center gap-1">
+                              ✓ All Users (Free)
+                            </span>
+                          )}
+                        </div>
+                        <h4 className="text-sm font-bold text-slate-800 mt-2">{vid.title}</h4>
+                        <p className="text-xs text-slate-400 font-medium mt-1 leading-relaxed">{vid.description}</p>
+                      </div>
+                      <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end space-x-2">
+                        <button
+                          onClick={() => { setEditingVideoId(vid._id); setVideoForm({ title: vid.title, description: vid.description || '', url: vid.url, thumbnailUrl: vid.thumbnailUrl || '', category: vid.category, targetPlatform: vid.targetPlatform || 'Both', isPaidOnly: !!vid.isPaidOnly }); setShowVideoModal(true); }}
+                          className="p-1.5 hover:bg-slate-200 text-slate-500 rounded-lg"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteVideo(vid._id)}
+                          className="p-1.5 hover:bg-red-50 text-slate-400 hover:text-danger rounded-lg"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
                     </div>
+                  ))
+                )}
+              </div>
+
+              {/* Video Modal Form */}
+              {showVideoModal && (
+                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                  <div className="bg-white p-6 rounded-3xl border border-slate-200 max-w-md w-full shadow-lg">
+                    <h3 className="text-base font-bold text-slate-800 mb-4">{editingVideoId ? 'Edit Video Link' : 'Add Video Link'}</h3>
+                    <form onSubmit={handleVideoSubmit} className="space-y-4">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Title</label>
+                        <input
+                          type="text"
+                          required
+                          value={videoForm.title}
+                          onChange={(e) => setVideoForm({ ...videoForm, title: e.target.value })}
+                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-semibold"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Description</label>
+                        <textarea
+                          value={videoForm.description}
+                          onChange={(e) => setVideoForm({ ...videoForm, description: e.target.value })}
+                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-medium h-20"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Video Stream URL</label>
+                        <input
+                          type="text"
+                          required
+                          value={videoForm.url}
+                          onChange={(e) => setVideoForm({ ...videoForm, url: e.target.value })}
+                          placeholder="https://www.youtube.com/embed/XXXXX"
+                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Thumbnail link</label>
+                          <input
+                            type="text"
+                            value={videoForm.thumbnailUrl}
+                            onChange={(e) => setVideoForm({ ...videoForm, thumbnailUrl: e.target.value })}
+                            className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Category</label>
+                          <input
+                            type="text"
+                            required
+                            value={videoForm.category}
+                            onChange={(e) => setVideoForm({ ...videoForm, category: e.target.value })}
+                            placeholder="CGM Guide, Dietary Tips"
+                            className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-bold"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Access Control: Paid Users Only vs All Users Checkbox */}
+                      <div className={`p-3.5 rounded-2xl border transition-all ${videoForm.isPaidOnly
+                        ? 'bg-amber-50/80 border-amber-300 ring-1 ring-amber-300/40'
+                        : 'bg-slate-50 border-slate-200'
+                        }`}>
+                        <label className="flex items-start gap-3 cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            checked={videoForm.isPaidOnly}
+                            onChange={(e) => setVideoForm({ ...videoForm, isPaidOnly: e.target.checked })}
+                            className="mt-0.5 h-4.5 w-4.5 rounded-md border-slate-300 text-amber-600 focus:ring-amber-500 cursor-pointer"
+                          />
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-black text-slate-800">Paid Users Only Access</span>
+                              {videoForm.isPaidOnly ? (
+                                <span className="text-[9px] font-black uppercase tracking-wider bg-amber-500 text-white px-2 py-0.5 rounded-full shadow-2xs">
+                                  👑 Pro Exclusive
+                                </span>
+                              ) : (
+                                <span className="text-[9px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">
+                                  Free for All
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-[11px] text-slate-500 font-medium mt-1 leading-relaxed">
+                              {videoForm.isPaidOnly
+                                ? 'Only active paid subscribers can watch this video in the app. Free and trial accounts will see it locked with an upgrade button.'
+                                : 'Accessible to all app members, including free and trial users.'}
+                            </p>
+                          </div>
+                        </label>
+                      </div>
+
+                      <div className="flex space-x-3 pt-2">
+                        <button
+                          type="button"
+                          onClick={() => setShowVideoModal(false)}
+                          className="flex-1 py-2 bg-slate-100 hover:bg-slate-200 rounded-xl font-semibold"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          className="flex-1 py-2 bg-primary hover:bg-primary-dark text-white font-bold rounded-xl"
+                        >
+                          Save Video
+                        </button>
+                      </div>
+                    </form>
                   </div>
-                ))
+                </div>
               )}
             </div>
+          )}
 
-            {showFounderModal && (
-              <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
-                <div className="bg-white p-6 rounded-3xl border border-slate-200 max-w-2xl w-full shadow-lg my-8">
-                  <h3 className="text-base font-bold text-slate-800 mb-4">{editingFounderId ? 'Edit Founder' : 'Add Founder'}</h3>
-                  <form onSubmit={handleFounderSubmit} className="space-y-4">
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Name</label>
-                        <input
-                          type="text"
-                          required
-                          value={founderForm.name}
-                          onChange={e => setFounderForm({ ...founderForm, name: e.target.value })}
-                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Role / Designation</label>
-                        <input
-                          type="text"
-                          required
-                          value={founderForm.role}
-                          onChange={e => setFounderForm({ ...founderForm, role: e.target.value })}
-                          placeholder="e.g. Co-Founder & Chief Medical Officer"
-                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Background Bio</label>
-                      <textarea
-                        required
-                        rows={3}
-                        value={founderForm.background}
-                        onChange={e => setFounderForm({ ...founderForm, background: e.target.value })}
-                        placeholder="Explain the founder's background, education, and credentials..."
-                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm resize-none"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Work Done</label>
-                      <textarea
-                        required
-                        rows={3}
-                        value={founderForm.workDone}
-                        onChange={e => setFounderForm({ ...founderForm, workDone: e.target.value })}
-                        placeholder="Describe their past and current work, research, or clinical experience..."
-                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm resize-none"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Achievements</label>
-                      <textarea
-                        required
-                        rows={3}
-                        value={founderForm.achievements}
-                        onChange={e => setFounderForm({ ...founderForm, achievements: e.target.value })}
-                        placeholder="List their major milestones, awards, or recognized contributions..."
-                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm resize-none"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">What are we trying to solve?</label>
-                      <textarea
-                        required
-                        rows={3}
-                        value={founderForm.tryingToSolve}
-                        onChange={e => setFounderForm({ ...founderForm, tryingToSolve: e.target.value })}
-                        placeholder="Explain the vision/problems the founder is dedicated to solving with this platform..."
-                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm resize-none"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">YouTube / Video URL (Optional)</label>
-                      <input
-                        type="url"
-                        value={founderForm.videoUrl}
-                        onChange={e => setFounderForm({ ...founderForm, videoUrl: e.target.value })}
-                        placeholder="e.g. https://www.youtube.com/watch?v=..."
-                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm"
-                      />
-                    </div>
-
-                    <div className="flex space-x-3 pt-2">
-                      <button
-                        type="button"
-                        onClick={() => setShowFounderModal(false)}
-                        className="flex-1 py-2.5 bg-slate-100 text-slate-600 rounded-xl font-semibold hover:bg-slate-200 transition-colors"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="submit"
-                        className="flex-1 py-2.5 bg-primary text-white font-bold rounded-xl hover:bg-primary-dark transition-colors"
-                      >
-                        Save Founder
-                      </button>
-                    </div>
-                  </form>
+          {/* VIEW 5: EDUCATIONAL ARTICLES/GUIDES EDITOR */}
+          {activeView === 'guides' && (
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="text-xl font-bold text-slate-800">Educational Guide Articles</h2>
+                  <p className="text-xs text-slate-400 font-semibold mt-0.5">Write guidelines and diet recommendations in plain text/markdown.</p>
                 </div>
+                <button
+                  onClick={() => { setEditingGuideId(null); setGuideForm({ title: '', content: '', category: 'Diet', readTime: 5 }); setShowGuideModal(true); }}
+                  className="bg-primary hover:bg-primary-dark text-white font-bold px-4 py-2 rounded-xl text-sm flex items-center space-x-1.5 shadow-soft"
+                >
+                  <Plus className="h-4.5 w-4.5" />
+                  <span>Create Guide</span>
+                </button>
               </div>
-            )}
-          </div>
-        )}
 
-        {/* DAILY LOGGING WORKFLOWS TAB */}
-        {activeView === 'daily-workflows' && (
-          <AdminDailyLoggingWorkflows apiUrl={apiUrl} token={token} />
-        )}
-
-        {/* ASK MITO WORKFLOWS & Q&A TAB */}
-        {activeView === 'ask-mito-workflows' && (
-          <AdminAskMitoTopics apiUrl={apiUrl} token={token} />
-        )}
-
-        {/* AI COACH SETTINGS TAB */}
-        {activeView === 'aicoach' && (
-          <div className="max-w-3xl">
-            <div className="mb-6 flex justify-between items-center">
-              <div>
-                <h2 className="text-xl font-bold text-slate-800 flex items-center">
-                  <Bot className="h-6 w-6 text-primary mr-2" />
-                  Advanced AI Coach Configuration
-                </h2>
-                <p className="text-sm text-slate-500 font-medium mt-1">
-                  Manage sequential chatbot questions and trigger limits for Premium users.
-                </p>
+              {/* Guides Grid */}
+              <div className="grid grid-cols-2 gap-6">
+                {guides.length === 0 ? (
+                  <div className="col-span-2 text-center p-8 bg-white border border-slate-200 rounded-2xl text-sm text-slate-400">No guides configured.</div>
+                ) : (
+                  guides.map((g) => (
+                    <div key={g._id} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-soft flex flex-col justify-between h-56">
+                      <div>
+                        <div className="flex justify-between items-start mb-2">
+                          <span className="text-[10px] font-bold text-secondary bg-secondary-light/50 px-2 py-0.5 rounded-full">{g.category}</span>
+                          <span className="text-[10px] font-semibold text-slate-400">{g.readTime} min read</span>
+                        </div>
+                        <h4 className="text-sm font-bold text-slate-800 line-clamp-1">{g.title}</h4>
+                        <p className="text-xs text-slate-400 font-medium mt-2 line-clamp-3 leading-relaxed">{g.content}</p>
+                      </div>
+                      <div className="flex justify-end space-x-2 pt-3 border-t border-slate-100 mt-4">
+                        <button
+                          onClick={() => { setEditingGuideId(g._id); setGuideForm({ title: g.title, content: g.content, category: g.category, readTime: g.readTime }); setShowGuideModal(true); }}
+                          className="p-1.5 hover:bg-slate-100 text-slate-500 rounded-lg"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteGuide(g._id)}
+                          className="p-1.5 hover:bg-red-50 text-slate-400 hover:text-danger rounded-lg"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
+
+              {/* Guide Modal Form */}
+              {showGuideModal && (
+                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                  <div className="bg-white p-6 rounded-3xl border border-slate-200 max-w-xl w-full shadow-lg">
+                    <h3 className="text-base font-bold text-slate-800 mb-4">{editingGuideId ? 'Update Guide Article' : 'Create Guide Article'}</h3>
+                    <form onSubmit={handleGuideSubmit} className="space-y-4">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Title</label>
+                        <input
+                          type="text"
+                          required
+                          value={guideForm.title}
+                          onChange={(e) => setGuideForm({ ...guideForm, title: e.target.value })}
+                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-bold"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Content (Markdown / Text)</label>
+                        <textarea
+                          required
+                          value={guideForm.content}
+                          onChange={(e) => setGuideForm({ ...guideForm, content: e.target.value })}
+                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-medium h-48 focus:outline-none focus:ring-2 focus:ring-primary"
+                          placeholder="Write content..."
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Category</label>
+                          <input
+                            type="text"
+                            required
+                            value={guideForm.category}
+                            onChange={(e) => setGuideForm({ ...guideForm, category: e.target.value })}
+                            className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-bold"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Read Time (minutes)</label>
+                          <input
+                            type="number"
+                            required
+                            value={guideForm.readTime}
+                            onChange={(e) => setGuideForm({ ...guideForm, readTime: parseInt(e.target.value, 10) || 5 })}
+                            className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-bold"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex space-x-3 pt-2">
+                        <button
+                          type="button"
+                          onClick={() => setShowGuideModal(false)}
+                          className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 rounded-xl font-semibold text-sm"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          className="flex-1 py-2.5 bg-primary hover:bg-primary-dark text-white font-bold rounded-xl text-sm"
+                        >
+                          Save Guide
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
             </div>
+          )}
 
-            {paymentConfig ? (
-              <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm">
-                <form onSubmit={handleConfigSubmit} className="space-y-6">
+          {/* VIEW 6: PUSH NOTIFICATION SENDER AND SCHEDULER */}
+          {activeView === 'notifications' && (
+            <>
+              <div className="space-y-6 max-w-xl mx-auto bg-white p-6 rounded-3xl border border-slate-200 shadow-soft mt-8">
+                <div>
+                  <h2 className="text-xl font-bold text-slate-800">Dispatch Push Alert</h2>
+                  <p className="text-xs text-slate-400 font-semibold mt-0.5">Send custom FCM push alerts immediately or schedule them for the future.</p>
+                </div>
+
+                {pushStatus && (
+                  <div className="p-4 bg-green-50 border border-green-100 text-success rounded-xl flex items-center space-x-2 text-xs font-semibold">
+                    <CheckCircle className="h-5 w-5 shrink-0" />
+                    <span>{pushStatus}</span>
+                  </div>
+                )}
+
+                <form onSubmit={handleSendPush} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Recipient User (Email, Mobile, Name, or ID - Optional)</label>
+                    <input
+                      type="text"
+                      value={pushForm.userId}
+                      onChange={(e) => setPushForm({ ...pushForm, userId: e.target.value })}
+                      placeholder="Enter email, mobile number, or leave blank to broadcast to all"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                  </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">AI Trigger Threshold (mg/dL)</label>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Notification Title</label>
                     <input
-                      type="number"
-                      min="50"
-                      max="300"
+                      type="text"
                       required
-                      value={paymentConfig.aiSpikeThreshold !== undefined ? paymentConfig.aiSpikeThreshold : 110}
-                      onChange={(e) => setPaymentConfig({ ...paymentConfig, aiSpikeThreshold: parseInt(e.target.value) || 0 })}
-                      className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold bg-white focus:ring-2 focus:ring-primary/20"
+                      value={pushForm.title}
+                      onChange={(e) => setPushForm({ ...pushForm, title: e.target.value })}
+                      placeholder="Daily Glucose Summary, Log Reminder"
+                      className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm font-semibold focus:outline-none"
                     />
-                    <p className="text-[11px] text-slate-400 font-semibold mt-1">If a food logs causes a spike above this value, the AI Coaching Chat will be initiated.</p>
                   </div>
 
-                  <div className="border-t border-slate-100 pt-6">
-                    <div className="flex justify-between items-center mb-4">
-                      <div>
-                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Sequential AI Questions</label>
-                        <p className="text-[11px] text-slate-400 font-semibold mt-1">These questions will be asked one-by-one by the AI assistant.</p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const newQ = [...(paymentConfig.aiQuestions || [])];
-                          newQ.push('');
-                          setPaymentConfig({ ...paymentConfig, aiQuestions: newQ });
-                        }}
-                        className="px-3 py-1.5 bg-primary/10 text-primary text-xs font-bold rounded-lg hover:bg-primary/20"
-                      >
-                        + Add Question
-                      </button>
-                    </div>
-
-                    <div className="space-y-3">
-                      {(paymentConfig.aiQuestions || []).map((q: string, i: number) => (
-                        <div key={i} className="flex space-x-2">
-                          <div className="flex-1">
-                            <input
-                              type="text"
-                              value={q}
-                              placeholder={`Question ${i + 1}`}
-                              onChange={(e) => {
-                                const newQ = [...paymentConfig.aiQuestions];
-                                newQ[i] = e.target.value;
-                                setPaymentConfig({ ...paymentConfig, aiQuestions: newQ });
-                              }}
-                              className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold bg-white focus:ring-2 focus:ring-primary/20"
-                              required
-                            />
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const newQ = paymentConfig.aiQuestions.filter((_: any, idx: number) => idx !== i);
-                              setPaymentConfig({ ...paymentConfig, aiQuestions: newQ });
-                            }}
-                            className="p-3 text-red-500 bg-red-50 hover:bg-red-100 rounded-xl transition-colors"
-                          >
-                            <Trash2 className="h-5 w-5" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="border-t border-slate-100 pt-6">
-                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">AI Completion / Final Response</label>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Notification Message</label>
                     <textarea
                       required
-                      rows={3}
-                      value={paymentConfig.aiCompletionMessage || ''}
-                      onChange={(e) => setPaymentConfig({ ...paymentConfig, aiCompletionMessage: e.target.value })}
-                      placeholder="Thank you for sharing this context. Remember to stay hydrated and walk 15 mins after heavy meals!"
-                      className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold bg-white resize-none focus:ring-2 focus:ring-primary/20"
+                      value={pushForm.body}
+                      onChange={(e) => setPushForm({ ...pushForm, body: e.target.value })}
+                      placeholder="Remember to log your meals every 3 hours to maintain healthy profiles."
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-medium h-24 focus:outline-none"
                     />
-                    <p className="text-[11px] text-slate-400 font-semibold mt-1">The automated response sent immediately after the user answers the final question.</p>
                   </div>
 
-                  {/* Hydration Tracker Settings */}
-                  <div className="border-t border-slate-100 pt-6">
-                    <h3 className="text-sm font-bold text-slate-700 mb-4 flex items-center space-x-2">
-                      <span>💧</span>
-                      <span>Hydration Tracker Configuration</span>
-                    </h3>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center space-x-1">
+                      <Calendar className="h-4 w-4" />
+                      <span>Schedule Dispatch (Optional)</span>
+                    </label>
+                    <input
+                      type="datetime-local"
+                      value={pushForm.scheduledFor}
+                      onChange={(e) => setPushForm({ ...pushForm, scheduledFor: e.target.value })}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-bold text-slate-500"
+                    />
+                    <p className="text-[10px] text-slate-400 font-semibold mt-1">Leave blank to dispatch immediately.</p>
+                  </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Enable Hydration Tracker</label>
-                        <div className="flex items-center space-x-3 mt-1">
-                          <input
-                            type="checkbox"
-                            checked={paymentConfig.enableHydrationTracker !== false}
-                            onChange={(e) => setPaymentConfig({ ...paymentConfig, enableHydrationTracker: e.target.checked })}
-                            className="h-5 w-5 text-primary border-slate-300 rounded focus:ring-primary"
-                            id="enableHydrationTracker"
-                          />
-                          <label htmlFor="enableHydrationTracker" className="text-xs font-bold text-slate-600">
-                            {paymentConfig.enableHydrationTracker !== false ? 'Enabled (ON)' : 'Disabled (OFF)'}
-                          </label>
-                        </div>
-                      </div>
+                  <button
+                    type="submit"
+                    className="w-full bg-primary hover:bg-primary-dark text-white font-bold py-3.5 px-4 rounded-xl shadow-soft flex items-center justify-center space-x-2"
+                  >
+                    <Send className="h-4.5 w-4.5" />
+                    <span>{pushForm.scheduledFor ? 'Schedule Notification' : 'Broadcast Instantly'}</span>
+                  </button>
+                </form>
+              </div>
 
+              <div className="space-y-6 max-w-xl mx-auto bg-white p-6 rounded-3xl border border-slate-200 shadow-soft mt-8">
+                <div>
+                  <h2 className="text-xl font-bold text-slate-800">Dispatch Manual Email</h2>
+                  <p className="text-xs text-slate-400 font-semibold mt-0.5">Send custom email to a specific user or all users.</p>
+                </div>
+
+                <form onSubmit={handleSendManualEmail} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Recipient User ID (Optional)</label>
+                    <input
+                      type="text"
+                      value={emailForm.userId}
+                      onChange={(e) => setEmailForm({ ...emailForm, userId: e.target.value })}
+                      placeholder="Broadcast to all users with email if left blank"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Email Subject</label>
+                    <input
+                      type="text"
+                      required
+                      value={emailForm.title}
+                      onChange={(e) => setEmailForm({ ...emailForm, title: e.target.value })}
+                      placeholder="Subject"
+                      className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm font-semibold focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Email Body</label>
+                    <textarea
+                      required
+                      value={emailForm.body}
+                      onChange={(e) => setEmailForm({ ...emailForm, body: e.target.value })}
+                      placeholder="Email text..."
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-medium h-24 focus:outline-none"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3.5 px-4 rounded-xl shadow-soft flex items-center justify-center space-x-2"
+                  >
+                    <Send className="h-4.5 w-4.5" />
+                    <span>Send Email</span>
+                  </button>
+                </form>
+              </div>
+            </>
+          )}
+
+          {/* VIEW 6.1: FAQS */}
+          {activeView === 'faqs' && (
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="text-xl font-bold text-slate-800">Dynamic FAQs</h2>
+                  <p className="text-xs text-slate-400 font-semibold mt-0.5">Manage frequently asked questions for both Website and App.</p>
+                </div>
+                <button
+                  onClick={() => { setEditingFaqId(null); setFaqForm({ question: '', answer: '', platform: 'Both', category: 'General', isActive: true, order: 0 }); setShowFaqModal(true); }}
+                  className="bg-primary hover:bg-primary-dark text-white font-bold px-4 py-2 rounded-xl text-sm flex items-center space-x-1.5 shadow-soft"
+                >
+                  <Plus className="h-4.5 w-4.5" />
+                  <span>Add FAQ</span>
+                </button>
+              </div>
+
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-soft overflow-hidden">
+                <table className="min-w-full divide-y divide-slate-200">
+                  <thead className="bg-slate-50 text-slate-400 text-xs font-bold uppercase tracking-wider text-left">
+                    <tr>
+                      <th className="px-6 py-4">Question</th>
+                      <th className="px-6 py-4">Platform</th>
+                      <th className="px-6 py-4">Category</th>
+                      <th className="px-6 py-4">Status</th>
+                      <th className="px-6 py-4 text-center">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 text-sm font-semibold text-slate-700">
+                    {faqs.map(f => (
+                      <tr key={f._id} className="hover:bg-slate-50/50">
+                        <td className="px-6 py-4 text-slate-800"><div className="w-64 truncate">{f.question}</div></td>
+                        <td className="px-6 py-4"><span className="bg-blue-50 text-primary px-2 py-1 rounded text-xs">{f.platform}</span></td>
+                        <td className="px-6 py-4">{f.category}</td>
+                        <td className="px-6 py-4">{f.isActive ? 'Active' : 'Inactive'}</td>
+                        <td className="px-6 py-4 text-center">
+                          <button onClick={() => { setEditingFaqId(f._id); setFaqForm({ question: f.question, answer: f.answer, platform: f.platform, category: f.category, isActive: f.isActive, order: f.order }); setShowFaqModal(true); }} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500"><Edit className="h-4.5 w-4.5" /></button>
+                          <button onClick={() => handleDeleteFaq(f._id)} className="p-1.5 hover:bg-red-50 rounded-lg text-slate-400"><Trash2 className="h-4.5 w-4.5" /></button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {showFaqModal && (
+                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                  <div className="bg-white p-6 rounded-3xl border border-slate-200 max-w-2xl w-full shadow-lg">
+                    <h3 className="text-base font-bold text-slate-800 mb-4">{editingFaqId ? 'Edit FAQ' : 'Add FAQ'}</h3>
+                    <form onSubmit={handleFaqSubmit} className="space-y-4">
+                      <div><label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Question</label><input type="text" required value={faqForm.question} onChange={e => setFaqForm({ ...faqForm, question: e.target.value })} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm" /></div>
                       <div>
-                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Daily Hydration Target Goal (ml)</label>
-                        <input
-                          type="number"
-                          min="500"
-                          max="10000"
-                          step="50"
-                          required
-                          value={paymentConfig.hydrationDailyLimitMl !== undefined ? paymentConfig.hydrationDailyLimitMl : 3000}
-                          onChange={(e) => setPaymentConfig({ ...paymentConfig, hydrationDailyLimitMl: parseInt(e.target.value) || 0 })}
-                          className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold bg-white focus:ring-2 focus:ring-primary/20"
+                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Answer</label>
+                        <ReactQuill
+                          theme="snow"
+                          value={faqForm.answer}
+                          onChange={value => setFaqForm({ ...faqForm, answer: value })}
+                          className="bg-white rounded-xl overflow-hidden border border-slate-200"
+                          style={{ height: '220px', marginBottom: '45px' }}
                         />
                       </div>
-                    </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div><label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Platform</label><select value={faqForm.platform} onChange={e => setFaqForm({ ...faqForm, platform: e.target.value as any })} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm"><option value="App">App</option><option value="Website">Website</option><option value="Both">Both</option></select></div>
+                        <div><label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Category</label><input type="text" required value={faqForm.category} onChange={e => setFaqForm({ ...faqForm, category: e.target.value })} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm" /></div>
+                      </div>
+                      <div className="flex space-x-3 pt-2">
+                        <button type="button" onClick={() => setShowFaqModal(false)} className="flex-1 py-2 bg-slate-100 rounded-xl font-semibold">Cancel</button>
+                        <button type="submit" className="flex-1 py-2 bg-primary text-white font-bold rounded-xl">Save FAQ</button>
+                      </div>
+                    </form>
                   </div>
+                </div>
+              )}
+            </div>
+          )}
 
-                  {/* Workout Tracker Settings */}
-                  <div className="border-t border-slate-100 pt-6">
-                    <h3 className="text-sm font-bold text-slate-700 mb-4 flex items-center space-x-2">
-                      <span>🏃</span>
-                      <span>Workout Tracker Configuration</span>
-                    </h3>
+          {/* VIEW 6.1b: HEALTH INSIGHTS */}
+          {activeView === 'healthInsights' && (
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-xl font-bold text-slate-800">Health Insights</h2>
+                <p className="text-xs text-slate-400 font-semibold mt-0.5">Manage the daily health insight shown on the patient dashboard.</p>
+              </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Active Daily Insight Form */}
+                <div className="lg:col-span-2 bg-white p-6 rounded-3xl border border-slate-200 shadow-soft">
+                  <h3 className="text-sm font-black text-slate-800 mb-4 flex items-center space-x-2">
+                    <Activity className="h-5 w-5 text-primary" />
+                    <span>Active Daily Insight</span>
+                  </h3>
+                  <form onSubmit={handleCustomInsightSubmit} className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Insight Text Content</label>
+                      <textarea
+                        required
+                        value={activeInsightText}
+                        onChange={(e) => setActiveInsightText(e.target.value)}
+                        placeholder="Type a custom daily tip or select one from the templates..."
+                        className="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm font-medium h-32 focus:outline-none focus:border-primary transition-all leading-relaxed"
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={insightSaving}
+                      className="w-full bg-primary hover:bg-primary-dark text-white font-bold py-3.5 px-4 rounded-xl shadow-soft flex items-center justify-center space-x-2 transition-all disabled:opacity-50"
+                    >
+                      {insightSaving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
+                      <span>{insightSaving ? 'Saving...' : 'Set Active for Patients'}</span>
+                    </button>
+                  </form>
+                </div>
+
+                {/* Templated / Prefilled Insights */}
+                <div className="bg-slate-50 p-6 rounded-3xl border border-slate-200/60">
+                  <h3 className="text-sm font-black text-slate-800 mb-4 flex items-center space-x-2">
+                    <Award className="h-5 w-5 text-secondary" />
+                    <span>Easy Access Templates</span>
+                  </h3>
+                  <p className="text-xs text-slate-400 font-semibold mb-4">Click any template below to load it into the editor or activate it directly.</p>
+                  <div className="space-y-3 max-h-[350px] overflow-y-auto pr-1">
+                    {healthInsights.map((insight) => (
+                      <div
+                        key={insight._id}
+                        onClick={() => setActiveInsightText(insight.content)}
+                        className={`p-3.5 rounded-2xl border text-xs font-semibold leading-relaxed transition-all cursor-pointer ${insight.isActive
+                          ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                          : 'bg-white border-slate-200 hover:border-slate-300 text-slate-600'
+                          }`}
+                      >
+                        <div className="flex justify-between items-start mb-2">
+                          <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${insight.isActive ? 'bg-emerald-200 text-emerald-900' : 'bg-slate-100 text-slate-500'
+                            }`}>
+                            {insight.isActive ? 'Active Now' : insight.isTemplate ? 'Template' : 'Custom'}
+                          </span>
+                          {!insight.isActive && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSetInsightActive(insight._id);
+                              }}
+                              className="text-[9px] font-extrabold text-primary hover:underline"
+                            >
+                              Set Active
+                            </button>
+                          )}
+                        </div>
+                        <p>{insight.content}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          {activeView === 'product-support' && (
+            <SupportPortal />
+          )}
+
+          {/* VIEW 6.2: TICKETS */}
+          {activeView === 'tickets' && (
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="text-xl font-bold text-slate-800">Support Q&A</h2>
+                  <p className="text-xs text-slate-400 font-semibold mt-0.5">Answer questions submitted from the website or app.</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4">
+                {tickets.map(t => (
+                  <div key={t._id} className="bg-white rounded-2xl border border-slate-200 shadow-soft p-5">
+                    <div className="flex justify-between items-start mb-2">
                       <div>
-                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Enable Workout Tracker</label>
-                        <div className="flex items-center space-x-3 mt-1">
-                          <input
-                            type="checkbox"
-                            checked={paymentConfig.enableWorkoutTracker !== false}
-                            onChange={(e) => setPaymentConfig({ ...paymentConfig, enableWorkoutTracker: e.target.checked })}
-                            className="h-5 w-5 text-primary border-slate-300 rounded focus:ring-primary"
-                            id="enableWorkoutTracker"
-                          />
-                          <label htmlFor="enableWorkoutTracker" className="text-xs font-bold text-slate-600">
-                            {paymentConfig.enableWorkoutTracker !== false ? 'Enabled (ON)' : 'Disabled (OFF)'}
-                          </label>
+                        <h4 className="text-sm font-bold text-slate-800">{t.name} <span className="text-slate-400 font-medium text-xs">({t.email})</span></h4>
+                        <p className="text-xs text-slate-500 mt-1">{new Date(t.createdAt).toLocaleString()}</p>
+                      </div>
+                      <span className={`px-2 py-1 rounded text-[10px] font-bold ${t.status === 'Open' ? 'bg-orange-50 text-orange-600' : 'bg-green-50 text-success'}`}>{t.status}</span>
+                    </div>
+                    <div className="bg-slate-50 p-3 rounded-xl mt-2">
+                      <p className="text-sm font-semibold text-slate-700">Q: {t.question}</p>
+                    </div>
+                    {t.status === 'Answered' ? (
+                      <div className="bg-blue-50 p-3 rounded-xl mt-2 border border-blue-100">
+                        <p className="text-sm font-semibold text-primary">A: {t.answer}</p>
+                      </div>
+                    ) : (
+                      <div className="mt-3 flex justify-end">
+                        <button onClick={() => { setSelectedTicket(t); setTicketAnswer(''); setShowTicketModal(true); }} className="px-4 py-2 bg-primary text-white rounded-xl text-xs font-bold flex items-center space-x-1"><MessageSquare className="h-4 w-4" /> <span>Answer & Email</span></button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {showTicketModal && (
+                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                  <div className="bg-white p-6 rounded-3xl border border-slate-200 max-w-md w-full shadow-lg">
+                    <h3 className="text-base font-bold text-slate-800 mb-4">Reply to Ticket</h3>
+                    <div className="bg-slate-50 p-3 rounded-xl mb-4"><p className="text-xs font-bold text-slate-600">{selectedTicket?.question}</p></div>
+                    <form onSubmit={handleTicketAnswer} className="space-y-4">
+                      <div><label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Your Answer</label><textarea required value={ticketAnswer} onChange={e => setTicketAnswer(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm h-32" placeholder="This will be emailed to the user..." /></div>
+                      <div className="flex space-x-3 pt-2">
+                        <button type="button" onClick={() => setShowTicketModal(false)} className="flex-1 py-2 bg-slate-100 rounded-xl font-semibold">Cancel</button>
+                        <button type="submit" className="flex-1 py-2 bg-primary text-white font-bold rounded-xl">Send Answer</button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* VIEW 7: SUBSCRIPTION PLANS MANAGEMENT */}
+          {activeView === 'plans' && (
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="text-xl font-bold text-slate-800">Subscription Plans Master</h2>
+                  <p className="text-xs text-slate-400 font-semibold mt-0.5">Configure billing tiers and feature-level access controls.</p>
+                </div>
+                <button
+                  onClick={() => {
+                    setEditingPlanId(null);
+                    setPlanForm({
+                      name: '',
+                      code: '',
+                      description: '',
+                      monthlyPrice: 1000,
+                      yearlyPrice: 1000,
+                      originalMonthlyPrice: 0,
+                      originalYearlyPrice: 3600,
+                      monthlyFreeQuestions: 1,
+                      yearlyFreeQuestions: 10,
+                      trialDays: 2,
+                      displayOrder: 1,
+                      badge: 'None',
+                      color: '#2563EB',
+                      isActive: true,
+                      features: {
+                        unlimitedReports: false,
+                        advancedAnalysis: false,
+                        premiumVideos: false,
+                        foodInsights: false,
+                        exportReports: false,
+                        notifications: false,
+                        aiCoaching: false,
+                        foodScanner: false
+                      }
+                    });
+                    setShowPlanModal(true);
+                  }}
+                  className="bg-primary hover:bg-primary-dark text-white font-bold px-4 py-2 rounded-xl text-sm flex items-center space-x-1.5 shadow-soft"
+                >
+                  <Plus className="h-4.5 w-4.5" />
+                  <span>Create Plan</span>
+                </button>
+              </div>
+
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-soft overflow-x-auto">
+                <table className="min-w-full divide-y divide-slate-200">
+                  <thead className="bg-slate-50 text-slate-400 text-xs font-bold uppercase tracking-wider text-left">
+                    <tr>
+                      <th className="px-6 py-4">Plan Name</th>
+                      <th className="px-6 py-4">Code</th>
+                      <th className="px-6 py-4">Prices</th>
+                      <th className="px-6 py-4">Doctor Qs Quota</th>
+                      <th className="px-6 py-4">Trial Period</th>
+                      <th className="px-6 py-4">Features Check</th>
+                      <th className="px-6 py-4">Display Order</th>
+                      <th className="px-6 py-4">Status</th>
+                      <th className="px-6 py-4 text-center">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 text-sm font-semibold text-slate-700">
+                    {plans.length === 0 ? (
+                      <tr>
+                        <td colSpan={9} className="text-center py-8 text-slate-400">No subscription plans seeded. Create one.</td>
+                      </tr>
+                    ) : (
+                      plans.map((p) => {
+                        const activeFeatures = Object.entries(p.features || {})
+                          .filter(([_, enabled]) => !!enabled)
+                          .map(([key]) => key);
+
+                        return (
+                          <tr key={p._id} className="hover:bg-slate-50/50">
+                            <td className="px-6 py-4 font-bold text-slate-800 flex items-center space-x-2">
+                              <span className="w-3.5 h-3.5 rounded-full shrink-0" style={{ backgroundColor: p.color || '#2563EB' }}></span>
+                              <span className="whitespace-nowrap">{p.name}</span>
+                              {p.badge && p.badge !== 'None' && (
+                                <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold text-white whitespace-nowrap shrink-0" style={{ backgroundColor: p.color || '#2563EB' }}>
+                                  {p.badge}
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-6 py-4 text-slate-500 font-bold uppercase">{p.code}</td>
+                            <td className="px-6 py-4">
+                              <span className="text-slate-800 block font-bold">₹{p.monthlyPrice}/mo</span>
+                              <span className="text-[10px] text-slate-400 font-bold block">₹{p.yearlyPrice}/yr</span>
+                            </td>
+                            <td className="px-6 py-4">
+                              <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 block whitespace-nowrap">
+                                {p.monthlyFreeQuestions ?? 1}/mo
+                              </span>
+                              <span className="text-[10px] font-bold text-slate-500 block mt-0.5">
+                                {p.yearlyFreeQuestions ?? 10}/yr
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 font-medium text-slate-500">{p.trialDays} days</td>
+                            <td className="px-6 py-4">
+                              <span className="text-xs text-primary font-bold bg-blue-50 px-2 py-1 rounded">
+                                {activeFeatures.length} / 8 features
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 font-medium text-slate-500">{p.displayOrder}</td>
+                            <td className="px-6 py-4">
+                              {p.isActive ? (
+                                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-green-50 text-success border border-green-100">
+                                  Active
+                                </span>
+                              ) : (
+                                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-50 text-slate-400 border border-slate-100">
+                                  Inactive
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="flex justify-center space-x-2">
+                                <button
+                                  onClick={() => {
+                                    setEditingPlanId(p._id);
+                                    setPlanForm({
+                                      name: p.name,
+                                      code: p.code,
+                                      description: p.description || '',
+                                      monthlyPrice: p.monthlyPrice,
+                                      yearlyPrice: p.yearlyPrice,
+                                      originalMonthlyPrice: p.originalMonthlyPrice ?? 0,
+                                      originalYearlyPrice: p.originalYearlyPrice ?? 0,
+                                      monthlyFreeQuestions: p.monthlyFreeQuestions ?? 1,
+                                      yearlyFreeQuestions: p.yearlyFreeQuestions ?? 10,
+                                      trialDays: p.trialDays,
+                                      displayOrder: p.displayOrder,
+                                      badge: p.badge || 'None',
+                                      color: p.color || '#2563EB',
+                                      isActive: p.isActive,
+                                      features: {
+                                        unlimitedReports: !!p.features?.unlimitedReports,
+                                        advancedAnalysis: !!p.features?.advancedAnalysis,
+                                        premiumVideos: !!p.features?.premiumVideos,
+                                        foodInsights: !!p.features?.foodInsights,
+                                        exportReports: !!p.features?.exportReports,
+                                        notifications: !!p.features?.notifications,
+                                        aiCoaching: !!p.features?.aiCoaching,
+                                        foodScanner: !!p.features?.foodScanner
+                                      }
+                                    });
+                                    setShowPlanModal(true);
+                                  }}
+                                  className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-primary transition-all"
+                                >
+                                  <Edit className="h-4.5 w-4.5" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeletePlan(p._id)}
+                                  className="p-1.5 hover:bg-red-50 rounded-lg text-slate-400 hover:text-danger transition-all"
+                                >
+                                  <Trash2 className="h-4.5 w-4.5" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* VIEW 7.5: PROMO COUPONS MANAGEMENT */}
+          {activeView === 'coupons' && (
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="text-xl font-bold text-slate-800">Promo Discount Coupons</h2>
+                  <p className="text-xs text-slate-400 font-semibold mt-0.5">Manage and issue promotional discount coupon codes for plans.</p>
+                </div>
+                <button
+                  onClick={() => {
+                    setEditingCouponId(null);
+                    setCouponForm({
+                      code: '',
+                      discountType: 'percentage',
+                      discountValue: 10,
+                      expiryDate: '',
+                      maxRedemptions: '',
+                      isActive: true
+                    });
+                    setShowCouponModal(true);
+                  }}
+                  className="bg-primary hover:bg-primary-dark text-white font-bold px-4 py-2 rounded-xl text-sm flex items-center space-x-1.5 shadow-soft"
+                >
+                  <Plus className="h-4.5 w-4.5" />
+                  <span>Create Coupon</span>
+                </button>
+              </div>
+
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-soft overflow-x-auto">
+                <table className="min-w-full divide-y divide-slate-200">
+                  <thead className="bg-slate-50 text-slate-400 text-xs font-bold uppercase tracking-wider text-left">
+                    <tr>
+                      <th className="px-6 py-4">Coupon Code</th>
+                      <th className="px-6 py-4">Discount Type</th>
+                      <th className="px-6 py-4">Discount Value</th>
+                      <th className="px-6 py-4">Redemptions</th>
+                      <th className="px-6 py-4">Expiry Date</th>
+                      <th className="px-6 py-4">Status</th>
+                      <th className="px-6 py-4 text-center">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 text-sm font-semibold text-slate-700">
+                    {coupons.length === 0 ? (
+                      <tr>
+                        <td colSpan={7} className="text-center py-8 text-slate-400">No discount coupons found. Create one.</td>
+                      </tr>
+                    ) : (
+                      coupons.map((c) => {
+                        const isExpired = c.expiryDate && new Date(c.expiryDate) < new Date();
+                        const isLimitReached = c.maxRedemptions !== undefined && c.redemptionsCount >= c.maxRedemptions;
+
+                        return (
+                          <tr key={c._id} className="hover:bg-slate-50/50">
+                            <td className="px-6 py-4 font-bold text-slate-800 tracking-wider">
+                              {c.code}
+                            </td>
+                            <td className="px-6 py-4 capitalize text-xs">
+                              {c.discountType}
+                            </td>
+                            <td className="px-6 py-4 text-slate-800 font-extrabold">
+                              {c.discountType === 'percentage' ? `${c.discountValue}%` : `₹${c.discountValue}`}
+                            </td>
+                            <td className="px-6 py-4 text-xs font-medium">
+                              <span className="text-slate-800 font-bold">{c.redemptionsCount}</span>
+                              {c.maxRedemptions !== undefined ? ` / ${c.maxRedemptions} max` : ' (unlimited)'}
+                            </td>
+                            <td className="px-6 py-4 text-xs font-medium text-slate-400">
+                              {c.expiryDate ? new Date(c.expiryDate).toLocaleDateString() : 'Never'}
+                              {isExpired && <span className="text-[10px] text-red-500 font-bold ml-1.5">(Expired)</span>}
+                            </td>
+                            <td className="px-6 py-4">
+                              <button
+                                onClick={() => toggleCouponStatus(c)}
+                                className={`px-2.5 py-0.5 rounded-full text-xs font-bold border transition-all ${c.isActive && !isExpired && !isLimitReached
+                                  ? 'bg-green-50 text-success border-green-100 hover:bg-green-100'
+                                  : 'bg-red-50 text-danger border-red-100 hover:bg-red-100'
+                                  }`}
+                              >
+                                {c.isActive && !isExpired && !isLimitReached ? 'Active' : 'Inactive'}
+                              </button>
+                            </td>
+                            <td className="px-6 py-4 text-center">
+                              <div className="flex justify-center space-x-1.5">
+                                <button
+                                  onClick={() => {
+                                    setEditingCouponId(c._id);
+                                    setCouponForm({
+                                      code: c.code,
+                                      discountType: c.discountType,
+                                      discountValue: c.discountValue,
+                                      expiryDate: c.expiryDate ? new Date(c.expiryDate).toISOString().split('T')[0] : '',
+                                      maxRedemptions: c.maxRedemptions !== undefined ? c.maxRedemptions.toString() : '',
+                                      isActive: c.isActive
+                                    });
+                                    setShowCouponModal(true);
+                                  }}
+                                  className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-primary transition-all"
+                                >
+                                  <Edit className="h-4.5 w-4.5" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteCoupon(c._id)}
+                                  className="p-1.5 hover:bg-red-50 rounded-lg text-slate-400 hover:text-danger transition-all"
+                                >
+                                  <Trash2 className="h-4.5 w-4.5" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* VIEW 8: PAYMENTS AND SUBSCRIPTIONS AUDIT & WIDGETS */}
+          {activeView === 'payments' && (
+            <div className="space-y-6">
+              <div className="flex justify-between items-center">
+                <h2 className="text-xl font-bold text-slate-800">Branding & Payments Control</h2>
+                {/* Sub-tab navigation */}
+                <div className="flex bg-slate-100 p-1.5 rounded-xl border border-slate-200">
+                  <button
+                    onClick={() => setPaymentTab('billing')}
+                    className={`py-1.5 px-4 font-bold text-xs rounded-lg uppercase tracking-wider transition-all ${paymentTab === 'billing'
+                      ? 'bg-white text-primary shadow-sm'
+                      : 'text-slate-500 hover:text-slate-800'
+                      }`}
+                  >
+                    Billing & Gateway
+                  </button>
+                  <button
+                    onClick={() => setPaymentTab('common')}
+                    className={`py-1.5 px-4 font-bold text-xs rounded-lg uppercase tracking-wider transition-all ${paymentTab === 'common'
+                      ? 'bg-white text-primary shadow-sm'
+                      : 'text-slate-500 hover:text-slate-800'
+                      }`}
+                  >
+                    General App Config
+                  </button>
+                  <button
+                    onClick={() => setPaymentTab('transactions')}
+                    className={`py-1.5 px-4 font-bold text-xs rounded-lg uppercase tracking-wider transition-all ${paymentTab === 'transactions'
+                      ? 'bg-white text-primary shadow-sm'
+                      : 'text-slate-500 hover:text-slate-800'
+                      }`}
+                  >
+                    Transactions & Manual Control
+                  </button>
+                  <button
+                    onClick={() => setPaymentTab('branding')}
+                    className={`py-1.5 px-4 font-bold text-xs rounded-lg uppercase tracking-wider transition-all ${paymentTab === 'branding'
+                      ? 'bg-white text-primary shadow-sm'
+                      : 'text-slate-500 hover:text-slate-800'
+                      }`}
+                  >
+                    App Branding
+                  </button>
+                </div>
+              </div>
+
+              {/* TAB 1: BILLING & GATEWAY SETTINGS */}
+              {paymentTab === 'billing' && (
+                <div className="space-y-6 animate-fadeIn">
+                  {/* Gateway Toggle Config Form (Billing Only) */}
+                  {paymentConfig && (
+                    <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-soft">
+                      <h3 className="text-sm font-bold text-slate-600 uppercase tracking-wider mb-4 flex items-center space-x-1.5">
+                        <CreditCard className="h-4 w-4" />
+                        <span>Gateway Integrations Settings</span>
+                      </h3>
+                      <form onSubmit={handleConfigSubmit} className="space-y-4">
+                        <div className="grid grid-cols-3 gap-6">
+                          <div>
+                            <label className="flex items-center space-x-2.5 text-xs font-bold text-slate-600 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={paymentConfig.enableSubscriptions}
+                                onChange={(e) => setPaymentConfig({ ...paymentConfig, enableSubscriptions: e.target.checked })}
+                                className="h-4 w-4 text-primary rounded border-slate-300 focus:ring-primary"
+                              />
+                              <span>Enforce Subscription Wall globally</span>
+                            </label>
+                            <p className="text-[10px] text-slate-400 font-semibold mt-1">If unchecked, all app premium sections are available freely.</p>
+                          </div>
+
+                          <div>
+                            <label className="flex items-center space-x-2.5 text-xs font-bold text-slate-600 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={paymentConfig.enableTwilioOtp}
+                                onChange={(e) => setPaymentConfig({ ...paymentConfig, enableTwilioOtp: e.target.checked })}
+                                className="h-4 w-4 text-primary rounded border-slate-300 focus:ring-primary"
+                              />
+                              <span>Enable Twilio SMS OTP</span>
+                            </label>
+                            <p className="text-[10px] text-slate-400 font-semibold mt-1">If unchecked, OTPs will be sent via Email instead of SMS.</p>
+                          </div>
+
+                          <div>
+                            <label className="flex items-center space-x-2.5 text-xs font-bold text-slate-600 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={paymentConfig.enablePayments}
+                                onChange={(e) => setPaymentConfig({ ...paymentConfig, enablePayments: e.target.checked })}
+                                className="h-4 w-4 text-primary rounded border-slate-300 focus:ring-primary"
+                              />
+                              <span>Enable Live Razorpay checkout</span>
+                            </label>
+                            <p className="text-[10px] text-slate-400 font-semibold mt-1">If unchecked, checkout runs mock success modes.</p>
+                          </div>
+
+                          <div>
+                            <label className="flex items-center space-x-2.5 text-xs font-bold text-slate-600 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={!paymentConfig.isSandbox}
+                                onChange={(e) => setPaymentConfig({ ...paymentConfig, isSandbox: !e.target.checked })}
+                                className="h-4 w-4 text-primary rounded border-slate-300 focus:ring-primary"
+                              />
+                              <span>Production Live Gateway Mode</span>
+                            </label>
+                            <p className="text-[10px] text-slate-400 font-semibold mt-1">Sandbox toggle for API client runs.</p>
+                          </div>
+
+                          <div>
+                            <label className="flex items-center space-x-2.5 text-xs font-bold text-slate-600 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={paymentConfig.enableExternalPayments ?? false}
+                                onChange={(e) => setPaymentConfig({ ...paymentConfig, enableExternalPayments: e.target.checked })}
+                                className="h-4 w-4 text-primary rounded border-slate-300 focus:ring-primary"
+                              />
+                              <span>Enable External Payments (Shop)</span>
+                            </label>
+                            <p className="text-[10px] text-slate-400 font-semibold mt-1">Enable external payments and checkout flow.</p>
+                          </div>
+
+                          <div>
+                            <label className="flex items-center space-x-2.5 text-xs font-bold text-slate-600 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={paymentConfig.enableIOSExternalPayments ?? false}
+                                onChange={(e) => setPaymentConfig({ ...paymentConfig, enableIOSExternalPayments: e.target.checked })}
+                                className="h-4 w-4 text-primary rounded border-slate-300 focus:ring-primary"
+                              />
+                              <span>Enable iOS External Payments (Razorpay/Promo)</span>
+                            </label>
+                            <p className="text-[10px] text-slate-400 font-semibold mt-1">If unchecked, iOS App hides Razorpay and Promo Code to comply with Apple Guideline 3.1.1.</p>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-6 pt-3 border-t border-slate-100 mt-4">
+                          <div>
+                            <label className="flex items-center space-x-2.5 text-xs font-bold text-slate-600 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={paymentConfig.enableSubscriptionCoupons ?? true}
+                                onChange={(e) => setPaymentConfig({ ...paymentConfig, enableSubscriptionCoupons: e.target.checked })}
+                                className="h-4 w-4 text-primary rounded border-slate-300 focus:ring-primary"
+                              />
+                              <span>Enable Subscription Coupon Code Section</span>
+                            </label>
+                            <p className="text-[10px] text-slate-400 font-semibold mt-1">If unchecked, the promo code section in subscriptions is hidden.</p>
+                          </div>
+
+                          <div>
+                            <label className="flex items-center space-x-2.5 text-xs font-bold text-slate-600 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={paymentConfig.enableSaferFoodCoupons ?? true}
+                                onChange={(e) => setPaymentConfig({ ...paymentConfig, enableSaferFoodCoupons: e.target.checked })}
+                                className="h-4 w-4 text-primary rounded border-slate-300 focus:ring-primary"
+                              />
+                              <span>Enable Safer Food (Non-Cancer) Coupon Section</span>
+                            </label>
+                            <p className="text-[10px] text-slate-400 font-semibold mt-1">If unchecked, the promo code section in shop basket is hidden.</p>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-3 border-t border-slate-100">
+                          <div>
+                            <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Subscription GST (%)</label>
+                            <input
+                              type="number"
+                              min="0"
+                              max="100"
+                              required
+                              value={paymentConfig.gstPercentage !== undefined ? paymentConfig.gstPercentage : 18}
+                              onChange={(e) => setPaymentConfig({ ...paymentConfig, gstPercentage: parseInt(e.target.value) || 0 })}
+                              placeholder="18"
+                              className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold bg-white"
+                            />
+                            <p className="text-[10px] text-slate-400 font-semibold mt-1">GST percentage rate applied to subscriptions (e.g., 0, 5, 12, 18).</p>
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Subscription GST Mode</label>
+                            <div className="mt-1.5 p-2 bg-slate-50 border border-slate-200 rounded-xl">
+                              <label className="flex items-center space-x-2 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={paymentConfig.subscriptionGstInclusive ?? true}
+                                  onChange={(e) => setPaymentConfig({ ...paymentConfig, subscriptionGstInclusive: e.target.checked })}
+                                  className="h-4 w-4 text-primary rounded border-slate-300 focus:ring-primary"
+                                />
+                                <span className="text-xs font-bold text-slate-800">GST Included in Plan Price</span>
+                              </label>
+                            </div>
+                            <p className="text-[10px] text-slate-500 font-semibold mt-1">
+                              {(paymentConfig.subscriptionGstInclusive ?? true)
+                                ? 'Inclusive: Customer pays exactly ₹1000 (tax is factored inside).'
+                                : 'Exclusive: Tax is added on top of ₹1000 at checkout.'}
+                            </p>
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Ask Mito 48h Fee (₹)</label>
+                            <input
+                              type="number"
+                              min="0"
+                              required
+                              value={paymentConfig.askMitoQuestionFee !== undefined ? paymentConfig.askMitoQuestionFee : 100}
+                              onChange={(e) => setPaymentConfig({ ...paymentConfig, askMitoQuestionFee: parseFloat(e.target.value) || 0 })}
+                              placeholder="100"
+                              className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold bg-white"
+                            />
+                            <p className="text-[10px] text-slate-400 font-semibold mt-1">Fee per question (Default ₹100).</p>
+                          </div>
+                        </div>
+
+                        {paymentConfig.enablePayments && (
+                          <div className="grid grid-cols-2 gap-4 pt-3 border-t border-slate-100">
+                            <div>
+                              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Razorpay Key ID</label>
+                              <input
+                                type="text"
+                                required
+                                value={paymentConfig.razorpayKeyId || ''}
+                                onChange={(e) => setPaymentConfig({ ...paymentConfig, razorpayKeyId: e.target.value })}
+                                placeholder="rzp_test_..."
+                                className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Razorpay Key Secret</label>
+                              <input
+                                type="password"
+                                required
+                                value={paymentConfig.razorpayKeySecret || ''}
+                                onChange={(e) => setPaymentConfig({ ...paymentConfig, razorpayKeySecret: e.target.value })}
+                                placeholder="••••••••••••"
+                                className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold"
+                              />
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="flex justify-end">
+                          <button
+                            type="submit"
+                            className="bg-primary hover:bg-primary-dark text-white font-bold py-2 px-5 rounded-xl text-xs shadow-soft transition-all"
+                          >
+                            Save Integration Settings
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  )}
+
+                  {/* Aggregates Dashboard widgets */}
+                  {paymentStats && (
+                    <div className="space-y-6">
+                      <div className="grid grid-cols-4 gap-6">
+                        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-soft flex items-center space-x-4">
+                          <div className="p-3 bg-blue-50 text-primary rounded-xl">
+                            <DollarSign className="h-6 w-6" />
+                          </div>
+                          <div>
+                            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Total Revenue</span>
+                            <span className="text-2xl font-extrabold text-slate-800">₹{Number(paymentStats.totalRevenue || 0).toFixed(2)}</span>
+                          </div>
+                        </div>
+
+                        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-soft flex items-center space-x-4">
+                          <div className="p-3 bg-teal-50 text-secondary rounded-xl">
+                            <Users className="h-6 w-6" />
+                          </div>
+                          <div>
+                            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Active Subscribers</span>
+                            <span className="text-2xl font-extrabold text-slate-800">{paymentStats.activeSubscribers}</span>
+                          </div>
+                        </div>
+
+                        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-soft flex items-center space-x-4">
+                          <div className="p-3 bg-orange-50 text-warning rounded-xl">
+                            <Percent className="h-6 w-6" />
+                          </div>
+                          <div>
+                            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Monthly Revenue</span>
+                            <span className="text-2xl font-extrabold text-slate-800">₹{Number(paymentStats.monthlyRevenue || 0).toFixed(2)}</span>
+                          </div>
+                        </div>
+
+                        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-soft flex items-center space-x-4">
+                          <div className="p-3 bg-purple-50 text-purple-600 rounded-xl">
+                            <Award className="h-6 w-6" />
+                          </div>
+                          <div>
+                            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Today's Sales</span>
+                            <span className="text-2xl font-extrabold text-slate-800">₹{Number(paymentStats.todayRevenue || 0).toFixed(2)}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Graphs for analytics */}
+                      <div className="grid grid-cols-2 gap-6">
+                        {/* Revenue Trend line */}
+                        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-soft">
+                          <h3 className="text-sm font-bold text-slate-600 uppercase tracking-wider mb-4">6-Month Revenue Trend (INR)</h3>
+                          <div className="h-64">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <BarChart data={paymentStats.revenueTrend}>
+                                <XAxis dataKey="month" tick={{ fontSize: 11, fontWeight: 'semibold' }} axisLine={false} tickLine={false} />
+                                <YAxis tick={{ fontSize: 11, fontWeight: 'semibold' }} axisLine={false} tickLine={false} />
+                                <Tooltip />
+                                <Bar dataKey="revenue" fill="#3B82F6" radius={[6, 6, 0, 0]} />
+                              </BarChart>
+                            </ResponsiveContainer>
+                          </div>
+                        </div>
+
+                        {/* Plan share distributions */}
+                        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-soft">
+                          <h3 className="text-sm font-bold text-slate-600 uppercase tracking-wider mb-4">Plan Share Distribution</h3>
+                          <div className="h-64 flex justify-center items-center">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <PieChart>
+                                <Pie
+                                  data={paymentStats.planWiseRevenue}
+                                  dataKey="value"
+                                  nameKey="name"
+                                  cx="50%"
+                                  cy="50%"
+                                  outerRadius={80}
+                                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                                >
+                                  {paymentStats.planWiseRevenue.map((_: any, index: number) => (
+                                    <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                                  ))}
+                                </Pie>
+                                <Tooltip />
+                              </PieChart>
+                            </ResponsiveContainer>
+                          </div>
                         </div>
                       </div>
                     </div>
+                  )}
+                </div>
+              )}
+
+              {/* TAB 2: GENERAL APP CONFIG (Glucose Limits & Alerts) */}
+              {paymentTab === 'common' && (
+                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-soft animate-fadeIn">
+                  <h3 className="text-sm font-bold text-slate-600 uppercase tracking-wider mb-4 flex items-center space-x-1.5">
+                    <Activity className="h-4 w-4 text-primary" />
+                    <span>General App Configuration Settings</span>
+                  </h3>
+                  {paymentConfig ? (
+                    <form onSubmit={handleConfigSubmit} className="space-y-4">
+                      <div className="grid grid-cols-3 gap-6">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Safe Glucose Limit (mg/dL)</label>
+                          <input
+                            type="number"
+                            min="50"
+                            max="200"
+                            required
+                            value={paymentConfig.safeGlucoseThreshold !== undefined ? paymentConfig.safeGlucoseThreshold : 90}
+                            onChange={(e) => setPaymentConfig({ ...paymentConfig, safeGlucoseThreshold: parseInt(e.target.value) || 0 })}
+                            placeholder="90"
+                            className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold bg-white"
+                          />
+                          <p className="text-[10px] text-slate-400 font-semibold mt-1">Blood sugar levels at or below this are marked as Safe.</p>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Moderate Glucose Limit (mg/dL)</label>
+                          <input
+                            type="number"
+                            min="50"
+                            max="300"
+                            required
+                            value={paymentConfig.moderateGlucoseThreshold !== undefined ? paymentConfig.moderateGlucoseThreshold : 110}
+                            onChange={(e) => setPaymentConfig({ ...paymentConfig, moderateGlucoseThreshold: parseInt(e.target.value) || 0 })}
+                            placeholder="110"
+                            className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold bg-white"
+                          />
+                          <p className="text-[10px] text-slate-400 font-semibold mt-1">Levels above this are Avoid; levels in between are Moderate.</p>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Alert Min Interval (hours)</label>
+                          <input
+                            type="number"
+                            min="1"
+                            max="24"
+                            required
+                            value={paymentConfig.glucoseAlertMinIntervalHours !== undefined ? paymentConfig.glucoseAlertMinIntervalHours : 2}
+                            onChange={(e) => setPaymentConfig({ ...paymentConfig, glucoseAlertMinIntervalHours: parseInt(e.target.value) || 2 })}
+                            placeholder="2"
+                            className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold bg-white"
+                          />
+                          <p className="text-[10px] text-slate-400 font-semibold mt-1">Prevents alert emails from spamming; consecutive alerts wait at least this long.</p>
+                        </div>
+                      </div>
+
+                      <div className="flex justify-end">
+                        <button
+                          type="submit"
+                          disabled={savingPaymentConfig}
+                          className="bg-primary hover:bg-primary-dark text-white font-bold py-2 px-5 rounded-xl text-xs shadow-soft transition-all"
+                        >
+                          {savingPaymentConfig ? 'Saving Settings...' : 'Save Settings'}
+                        </button>
+                      </div>
+                    </form>
+                  ) : (
+                    <p className="text-xs font-bold text-slate-400">Loading configurations...</p>
+                  )}
+                </div>
+              )}
+
+              {/* TAB: APP BRANDING CONFIG */}
+              {paymentTab === 'branding' && (
+                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-soft animate-fadeIn">
+                  <h3 className="text-sm font-bold text-slate-600 uppercase tracking-wider mb-4 flex items-center space-x-1.5">
+                    <Award className="h-4 w-4 text-primary" />
+                    <span>App Branding Settings</span>
+                  </h3>
+                  {paymentConfig ? (
+                    <form onSubmit={handleConfigSubmit} className="space-y-6">
+                      <div className="grid grid-cols-2 gap-6">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Application Name</label>
+                          <input
+                            type="text"
+                            required
+                            value={paymentConfig.appName !== undefined ? paymentConfig.appName : 'Mito_Reboot'}
+                            onChange={(e) => setPaymentConfig({ ...paymentConfig, appName: e.target.value })}
+                            placeholder="Mito_Reboot"
+                            className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold bg-white"
+                          />
+                          <p className="text-[10px] text-slate-400 font-semibold mt-1">Displayed in headers, sidebars, emails, and notifications. Fallback is Mito_Reboot.</p>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Application Tagline</label>
+                          <input
+                            type="text"
+                            required
+                            value={paymentConfig.appTagline !== undefined ? paymentConfig.appTagline : 'Preventive Lifestyle App'}
+                            onChange={(e) => setPaymentConfig({ ...paymentConfig, appTagline: e.target.value })}
+                            placeholder="Preventive Lifestyle App"
+                            className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold bg-white"
+                          />
+                          <p className="text-[10px] text-slate-400 font-semibold mt-1">Displayed in user app, website pages, and footer areas.</p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 gap-6 pt-4 border-t border-slate-100">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">App Logo URL</label>
+                          <div className="flex space-x-3">
+                            <input
+                              type="text"
+                              value={paymentConfig.appLogoUrl || ''}
+                              onChange={(e) => setPaymentConfig({ ...paymentConfig, appLogoUrl: e.target.value })}
+                              placeholder="https://example.com/logo.png"
+                              className="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold bg-white"
+                            />
+                            <div className="relative">
+                              <input
+                                type="file"
+                                accept="image/*"
+                                id="logo-upload-input"
+                                onChange={handleLogoUpload}
+                                className="hidden"
+                              />
+                              <label
+                                htmlFor="logo-upload-input"
+                                className="cursor-pointer bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 px-4 rounded-xl text-xs border border-slate-200 shadow-soft transition-all inline-block"
+                              >
+                                {uploadingLogo ? 'Uploading...' : 'Upload Image'}
+                              </label>
+                            </div>
+                          </div>
+                          <p className="text-[10px] text-slate-400 font-semibold mt-1">Enter a direct image link or upload a logo file. Leave blank to default to the red heart icon.</p>
+                        </div>
+                      </div>
+
+                      {paymentConfig.appLogoUrl && (
+                        <div className="pt-2">
+                          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Logo Preview</label>
+                          <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 inline-block">
+                            <img src={paymentConfig.appLogoUrl} alt="App Logo Preview" className="h-12 w-auto object-contain rounded-md" />
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="grid grid-cols-1 gap-6 pt-4 border-t border-slate-100">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Cancer Treatment Disclaimer</label>
+                          <div className="bg-white [&_.ql-container]:rounded-b-2xl [&_.ql-toolbar]:rounded-t-2xl [&_.ql-editor]:min-h-[150px]">
+                            <ReactQuill
+                              theme="snow"
+                              value={paymentConfig.cancerTreatmentDisclaimer !== undefined ? paymentConfig.cancerTreatmentDisclaimer : ''}
+                              onChange={(val) => setPaymentConfig({ ...paymentConfig, cancerTreatmentDisclaimer: val })}
+                              placeholder="Enter Cancer Treatment Disclaimer..."
+                            />
+                          </div>
+                          <p className="text-[10px] text-slate-400 font-semibold mt-1.5">This disclaimer popup is shown to users during registration if they select "CANCER TREATMENT".</p>
+                        </div>
+
+                        <div className="pt-4 border-t border-slate-100/50">
+                          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Cancer Secondary Prevention Disclaimer</label>
+                          <div className="bg-white [&_.ql-container]:rounded-b-2xl [&_.ql-toolbar]:rounded-t-2xl [&_.ql-editor]:min-h-[150px]">
+                            <ReactQuill
+                              theme="snow"
+                              value={paymentConfig.cancerSecondaryDisclaimer !== undefined ? paymentConfig.cancerSecondaryDisclaimer : ''}
+                              onChange={(val) => setPaymentConfig({ ...paymentConfig, cancerSecondaryDisclaimer: val })}
+                              placeholder="Enter Cancer Secondary Prevention Disclaimer..."
+                            />
+                          </div>
+                          <p className="text-[10px] text-slate-400 font-semibold mt-1.5">This disclaimer popup is shown to users during registration if they select "CANCER SECONDARY PREVENTION".</p>
+                        </div>
+
+                        <div className="pt-4 border-t border-slate-100/50">
+                          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Cancer Prevention / General Public Disclaimer</label>
+                          <div className="bg-white [&_.ql-container]:rounded-b-2xl [&_.ql-toolbar]:rounded-t-2xl [&_.ql-editor]:min-h-[150px]">
+                            <ReactQuill
+                              theme="snow"
+                              value={paymentConfig.cancerPreventionDisclaimer !== undefined ? paymentConfig.cancerPreventionDisclaimer : ''}
+                              onChange={(val) => setPaymentConfig({ ...paymentConfig, cancerPreventionDisclaimer: val })}
+                              placeholder="Enter General Public Disclaimer..."
+                            />
+                          </div>
+                          <p className="text-[10px] text-slate-400 font-semibold mt-1.5">This disclaimer popup is shown to users during registration if they select "CANCER PREVENTION [NO HISTORY OF CANCER]".</p>
+                        </div>
+
+                        <div className="pt-4 border-t border-slate-100/50">
+                          <div className="flex items-center justify-between mb-2">
+                            <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider">A Note from the Founder (Founder's Vision)</label>
+                            <span className="text-[10px] font-bold text-rose-600 bg-rose-50 border border-rose-200/60 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                              <span>👑 App & Web Founder Note</span>
+                            </span>
+                          </div>
+                          <div className="bg-white [&_.ql-container]:rounded-b-2xl [&_.ql-toolbar]:rounded-t-2xl [&_.ql-editor]:min-h-[220px]">
+                            <ReactQuill
+                              theme="snow"
+                              value={paymentConfig.founderNote !== undefined ? paymentConfig.founderNote : ''}
+                              onChange={(val) => setPaymentConfig({ ...paymentConfig, founderNote: val })}
+                              placeholder="Enter Note from the Founder..."
+                            />
+                          </div>
+                          <p className="text-[10px] text-slate-400 font-semibold mt-1.5">
+                            Displayed under Help & Support → Founder Note and Profile in the mobile app, and on the public website.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex justify-end pt-4 border-t border-slate-100">
+                        <button
+                          type="submit"
+                          disabled={savingPaymentConfig}
+                          className="bg-primary hover:bg-primary-dark text-white font-bold py-2 px-5 rounded-xl text-xs shadow-soft transition-all"
+                        >
+                          {savingPaymentConfig ? 'Saving Settings...' : 'Save Settings'}
+                        </button>
+                      </div>
+                    </form>
+                  ) : (
+                    <p className="text-xs font-bold text-slate-400">Loading configurations...</p>
+                  )}
+                </div>
+              )}
+
+              {/* TAB 3: TRANSACTIONS DIRECTORY & MANUAL OVERRIDES */}
+              {paymentTab === 'transactions' && (
+                <div className="space-y-4 animate-fadeIn">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-sm font-bold text-slate-600 uppercase tracking-wider">Transaction Records & Manual Controls</h3>
+                    <div className="relative w-64">
+                      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                        <Search className="h-4 w-4" />
+                      </span>
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Search order or email..."
+                        className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary text-sm bg-white"
+                      />
+                    </div>
                   </div>
 
-                  <div className="flex justify-end pt-4">
+                  <div className="bg-white rounded-2xl border border-slate-200 shadow-soft overflow-x-auto">
+                    <table className="min-w-full divide-y divide-slate-200">
+                      <thead className="bg-slate-50 text-slate-400 text-xs font-bold uppercase tracking-wider text-left">
+                        <tr>
+                          <th className="px-6 py-4">User</th>
+                          <th className="px-6 py-4">Plan & Cycle</th>
+                          <th className="px-6 py-4">Amount</th>
+                          <th className="px-6 py-4">Date</th>
+                          <th className="px-6 py-4">Gateway Info</th>
+                          <th className="px-6 py-4">Status</th>
+                          <th className="px-6 py-4 text-center">Manage</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 text-sm font-semibold text-slate-700">
+                        {transactions.length === 0 ? (
+                          <tr>
+                            <td colSpan={7} className="text-center py-8 text-slate-400">No payment transaction logs matching criteria.</td>
+                          </tr>
+                        ) : (
+                          transactions.map((tx) => (
+                            <tr key={tx._id} className="hover:bg-slate-50/50">
+                              <td className="px-6 py-4">
+                                <span className="text-slate-800 font-bold block">{tx.userId?.name || 'Mito_Reboot Patient'}</span>
+                                <span className="text-[10px] text-slate-400 block">{tx.userId?.email || '--'}</span>
+                              </td>
+                              <td className="px-6 py-4">
+                                <span className="text-slate-800 uppercase font-bold block">{tx.planId?.name || '--'}</span>
+                                <span className="text-[10px] text-slate-400 capitalize block">{tx.billingCycle || 'monthly'}</span>
+                              </td>
+                              <td className="px-6 py-4 text-slate-800 font-extrabold">₹{tx.amount}</td>
+                              <td className="px-6 py-4 text-xs font-medium text-slate-400">
+                                {new Date(tx.createdAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
+                              </td>
+                              <td className="px-6 py-4">
+                                <span className="text-xs text-slate-500 font-semibold block">Order: {tx.gatewayOrderId || '--'}</span>
+                                <span className="text-[9px] text-slate-400 font-semibold block">Pay ID: {tx.gatewayPaymentId || '--'}</span>
+                              </td>
+                              <td className="px-6 py-4">
+                                <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${tx.status === 'success' ? 'bg-green-50 text-success border-green-100' :
+                                  tx.status === 'pending' ? 'bg-amber-50 text-amber-600 border-amber-100' :
+                                    tx.status === 'refunded' ? 'bg-purple-50 text-purple-600 border-purple-100' :
+                                      'bg-red-50 text-danger border-red-100'
+                                  }`}>
+                                  {tx.status}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 text-center">
+                                <div className="flex justify-center space-x-2">
+                                  {tx.status === 'success' && (
+                                    <button
+                                      onClick={() => {
+                                        setSelectedTx(tx);
+                                        setRefundAmount(tx.amount.toString());
+                                      }}
+                                      className="px-2 py-1 bg-purple-50 hover:bg-purple-100 border border-purple-100 rounded-lg text-xs font-bold text-purple-700 transition-all"
+                                    >
+                                      Refund
+                                    </button>
+                                  )}
+                                  {tx.subscriptionId && (
+                                    <>
+                                      <button
+                                        onClick={() => {
+                                          setSelectedSubId(tx.subscriptionId);
+                                          setOverrideForm({
+                                            action: 'extend',
+                                            days: 30,
+                                            planId: plans[0]?._id || '',
+                                            billingCycle: 'monthly'
+                                          });
+                                          setShowOverrideModal(true);
+                                        }}
+                                        className="px-2 py-1 bg-blue-50 hover:bg-blue-100 border border-blue-100 rounded-lg text-xs font-bold text-primary transition-all"
+                                      >
+                                        Override
+                                      </button>
+                                      <button
+                                        onClick={async () => {
+                                          if (confirm('Are you sure you want to cancel and force-expire this user subscription immediately?')) {
+                                            try {
+                                              const response = await fetch(`${apiUrl}/admin/payments/subscriptions/${tx.subscriptionId}/cancel`, {
+                                                method: 'POST',
+                                                headers: {
+                                                  'Content-Type': 'application/json',
+                                                  'Authorization': `Bearer ${token}`
+                                                }
+                                              });
+                                              const data = await response.json();
+                                              if (response.ok) {
+                                                alert('Subscription cancelled successfully.');
+                                                fetchTransactions(txPagination.page);
+                                                fetchPaymentStats();
+                                              } else {
+                                                alert(data.message || 'Failed to cancel subscription.');
+                                              }
+                                            } catch (err) {
+                                              console.error(err);
+                                              alert('Error cancelling subscription.');
+                                            }
+                                          }
+                                        }}
+                                        className="px-2 py-1 bg-red-50 hover:bg-red-100 border border-red-100 rounded-lg text-xs font-bold text-danger transition-all"
+                                      >
+                                        Cancel Sub
+                                      </button>
+                                    </>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Tx Pagination */}
+                  {txPagination.pages > 1 && (
+                    <div className="flex justify-between items-center pt-2">
+                      <span className="text-xs font-bold text-slate-400">Total: {txPagination.total} payments</span>
+                      <div className="flex space-x-2">
+                        <button
+                          disabled={txPagination.page === 1}
+                          onClick={() => fetchTransactions(txPagination.page - 1)}
+                          className="px-3 py-1 bg-white border border-slate-200 rounded-lg text-xs font-bold disabled:opacity-50"
+                        >
+                          Prev
+                        </button>
+                        <span className="text-xs font-bold text-slate-600 px-3 py-1">
+                          Page {txPagination.page} of {txPagination.pages}
+                        </span>
+                        <button
+                          disabled={txPagination.page === txPagination.pages}
+                          onClick={() => fetchTransactions(txPagination.page + 1)}
+                          className="px-3 py-1 bg-white border border-slate-200 rounded-lg text-xs font-bold disabled:opacity-50"
+                        >
+                          Next
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* MODAL 1: CREATE / EDIT PLAN DIALOG */}
+          {showPlanModal && (
+            <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+              <div className="bg-white rounded-3xl p-6 border border-slate-100 w-full max-w-xl shadow-2xl max-h-[90vh] overflow-y-auto no-scrollbar">
+                <div className="flex justify-between items-center pb-3 border-b border-slate-100 mb-4">
+                  <h3 className="text-sm font-extrabold text-slate-800 uppercase tracking-wide">
+                    {editingPlanId ? 'Edit Subscription Plan' : 'Create Subscription Plan'}
+                  </h3>
+                  <button
+                    onClick={() => setShowPlanModal(false)}
+                    className="text-slate-400 hover:text-slate-600 text-xs font-bold"
+                  >
+                    Close
+                  </button>
+                </div>
+
+                <form onSubmit={handlePlanSubmit} className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Plan Name</label>
+                      <input
+                        type="text"
+                        required
+                        value={planForm.name}
+                        onChange={(e) => setPlanForm({ ...planForm, name: e.target.value })}
+                        placeholder="Premium Plan"
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Plan Code</label>
+                      <input
+                        type="text"
+                        required
+                        disabled={!!editingPlanId}
+                        value={planForm.code}
+                        onChange={(e) => setPlanForm({ ...planForm, code: e.target.value.toLowerCase().replace(/\s+/g, '') })}
+                        placeholder="premium"
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-bold uppercase focus:outline-none disabled:bg-slate-50"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Description</label>
+                    <textarea
+                      value={planForm.description}
+                      onChange={(e) => setPlanForm({ ...planForm, description: e.target.value })}
+                      placeholder="Provide description of what is included in this tier."
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-medium h-16 focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 bg-amber-50/70 p-3.5 rounded-2xl border border-amber-200/80">
+                    <div>
+                      <label className="block text-xs font-bold text-amber-900 uppercase mb-1">
+                        Original / MRP Monthly Price (Slashed)
+                      </label>
+                      <input
+                        type="number"
+                        placeholder="e.g. 350"
+                        value={planForm.originalMonthlyPrice || ''}
+                        onChange={(e) => setPlanForm({ ...planForm, originalMonthlyPrice: parseFloat(e.target.value) || 0 })}
+                        className="w-full px-3 py-2 bg-white border border-amber-200 rounded-xl text-xs font-bold focus:outline-none"
+                      />
+                      <span className="text-[10px] text-amber-700 font-medium mt-0.5 block">App displays as ~~₹350~~ (Intro Offer)</span>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-amber-900 uppercase mb-1">
+                        Original / MRP Yearly Price (Slashed)
+                      </label>
+                      <input
+                        type="number"
+                        placeholder="e.g. 3500"
+                        value={planForm.originalYearlyPrice || ''}
+                        onChange={(e) => setPlanForm({ ...planForm, originalYearlyPrice: parseFloat(e.target.value) || 0 })}
+                        className="w-full px-3 py-2 bg-white border border-amber-200 rounded-xl text-xs font-bold focus:outline-none"
+                      />
+                      <span className="text-[10px] text-amber-700 font-medium mt-0.5 block">App displays as ~~₹3,500~~ (Intro Offer)</span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Selling Monthly Price (INR)</label>
+                      <input
+                        type="number"
+                        required
+                        value={planForm.monthlyPrice}
+                        onChange={(e) => setPlanForm({ ...planForm, monthlyPrice: parseFloat(e.target.value) })}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-bold focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Selling Yearly Price (INR)</label>
+                      <input
+                        type="number"
+                        required
+                        value={planForm.yearlyPrice}
+                        onChange={(e) => setPlanForm({ ...planForm, yearlyPrice: parseFloat(e.target.value) })}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-bold focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Trial Period (Days)</label>
+                      <input
+                        type="number"
+                        required
+                        value={planForm.trialDays}
+                        onChange={(e) => setPlanForm({ ...planForm, trialDays: parseInt(e.target.value, 10) })}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-bold focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 bg-emerald-50/60 p-3.5 rounded-2xl border border-emerald-100">
+                    <div>
+                      <label className="block text-xs font-bold text-emerald-800 uppercase mb-1">Free Qs / Month (Ask Mito)</label>
+                      <input
+                        type="number"
+                        required
+                        min={0}
+                        value={planForm.monthlyFreeQuestions}
+                        onChange={(e) => setPlanForm({ ...planForm, monthlyFreeQuestions: parseInt(e.target.value, 10) || 0 })}
+                        className="w-full px-3 py-2 bg-white border border-emerald-200 rounded-xl text-xs font-bold text-emerald-900 focus:outline-none focus:border-emerald-400"
+                      />
+                      <p className="text-[10px] text-emerald-600 font-semibold mt-1">Included for monthly subscribers (e.g. 1)</p>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-emerald-800 uppercase mb-1">Free Qs / Year (Ask Mito)</label>
+                      <input
+                        type="number"
+                        required
+                        min={0}
+                        value={planForm.yearlyFreeQuestions}
+                        onChange={(e) => setPlanForm({ ...planForm, yearlyFreeQuestions: parseInt(e.target.value, 10) || 0 })}
+                        className="w-full px-3 py-2 bg-white border border-emerald-200 rounded-xl text-xs font-bold text-emerald-900 focus:outline-none focus:border-emerald-400"
+                      />
+                      <p className="text-[10px] text-emerald-600 font-semibold mt-1">Included for annual subscribers (e.g. 10)</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Badge</label>
+                      <select
+                        value={planForm.badge}
+                        onChange={(e) => setPlanForm({ ...planForm, badge: e.target.value as any })}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none"
+                      >
+                        <option value="None">None</option>
+                        <option value="Popular">Popular</option>
+                        <option value="Recommended">Recommended</option>
+                        <option value="Best Value">Best Value</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Plan Accent Color</label>
+                      <input
+                        type="color"
+                        value={planForm.color}
+                        onChange={(e) => setPlanForm({ ...planForm, color: e.target.value })}
+                        className="w-full h-8 border border-slate-200 rounded-xl cursor-pointer p-0.5"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Display Order</label>
+                      <input
+                        type="number"
+                        required
+                        value={planForm.displayOrder}
+                        onChange={(e) => setPlanForm({ ...planForm, displayOrder: parseInt(e.target.value, 10) })}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-bold focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="border-t border-slate-100 pt-3">
+                    <span className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Features Entitlements Checklist</span>
+                    <div className="grid grid-cols-2 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                      <label className="flex items-center space-x-2 text-xs font-bold text-slate-600 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={planForm.features.unlimitedReports}
+                          onChange={(e) => setPlanForm({ ...planForm, features: { ...planForm.features, unlimitedReports: e.target.checked } })}
+                          className="h-4 w-4 text-primary rounded border-slate-300 focus:ring-primary"
+                        />
+                        <span>Unlimited Report Uploads</span>
+                      </label>
+
+                      <label className="flex items-center space-x-2 text-xs font-bold text-slate-600 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={planForm.features.advancedAnalysis}
+                          onChange={(e) => setPlanForm({ ...planForm, features: { ...planForm.features, advancedAnalysis: e.target.checked } })}
+                          className="h-4 w-4 text-primary rounded border-slate-300 focus:ring-primary"
+                        />
+                        <span>Advanced Spikes Analysis</span>
+                      </label>
+
+                      <label className="flex items-center space-x-2 text-xs font-bold text-slate-600 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={planForm.features.premiumVideos}
+                          onChange={(e) => setPlanForm({ ...planForm, features: { ...planForm.features, premiumVideos: e.target.checked } })}
+                          className="h-4 w-4 text-primary rounded border-slate-300 focus:ring-primary"
+                        />
+                        <span>Premium Guides & Videos</span>
+                      </label>
+
+                      <label className="flex items-center space-x-2 text-xs font-bold text-slate-600 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={planForm.features.foodInsights}
+                          onChange={(e) => setPlanForm({ ...planForm, features: { ...planForm.features, foodInsights: e.target.checked } })}
+                          className="h-4 w-4 text-primary rounded border-slate-300 focus:ring-primary"
+                        />
+                        <span>Top Foods Glycemic Insights</span>
+                      </label>
+
+                      <label className="flex items-center space-x-2 text-xs font-bold text-slate-600 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={planForm.features.exportReports}
+                          onChange={(e) => setPlanForm({ ...planForm, features: { ...planForm.features, exportReports: e.target.checked } })}
+                          className="h-4 w-4 text-primary rounded border-slate-300 focus:ring-primary"
+                        />
+                        <span>Export Comprehensive PDF Reports</span>
+                      </label>
+
+                      <label className="flex items-center space-x-2 text-xs font-bold text-slate-600 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={planForm.features.notifications}
+                          onChange={(e) => setPlanForm({ ...planForm, features: { ...planForm.features, notifications: e.target.checked } })}
+                          className="h-4 w-4 text-primary rounded border-slate-300 focus:ring-primary"
+                        />
+                        <span>Custom Reminders & Alerts</span>
+                      </label>
+
+                      <label className="flex items-center space-x-2 text-xs font-bold text-slate-600 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={planForm.features.aiCoaching}
+                          onChange={(e) => setPlanForm({ ...planForm, features: { ...planForm.features, aiCoaching: e.target.checked } })}
+                          className="h-4 w-4 text-primary rounded border-slate-300 focus:ring-primary"
+                        />
+                        <span>AI Coaching Assistant</span>
+                      </label>
+
+                      <label className="flex items-center space-x-2 text-xs font-bold text-slate-600 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={planForm.features.foodScanner}
+                          onChange={(e) => setPlanForm({ ...planForm, features: { ...planForm.features, foodScanner: e.target.checked } })}
+                          className="h-4 w-4 text-primary rounded border-slate-300 focus:ring-primary"
+                        />
+                        <span>Food Scanner</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between items-center pt-3 border-t border-slate-100">
+                    <label className="flex items-center space-x-2 text-xs font-bold text-slate-500 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={planForm.isActive}
+                        onChange={(e) => setPlanForm({ ...planForm, isActive: e.target.checked })}
+                        className="h-4 w-4 text-primary rounded border-slate-300 focus:ring-primary"
+                      />
+                      <span>Active Plan Template</span>
+                    </label>
                     <button
                       type="submit"
-                      disabled={savingPaymentConfig}
-                      className="px-8 py-3 bg-primary text-white rounded-xl font-bold shadow-md hover:bg-primary-dark transition-all disabled:opacity-50 flex items-center"
+                      className="bg-primary hover:bg-primary-dark text-white font-bold py-2.5 px-6 rounded-xl text-xs shadow-soft transition-all"
                     >
-                      {savingPaymentConfig ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <Save className="h-5 w-5 mr-2" />}
-                      {savingPaymentConfig ? 'Saving...' : 'Save AI Settings'}
+                      Save Plan Template
                     </button>
                   </div>
                 </form>
               </div>
-            ) : (
-              <div className="text-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
-              </div>
-            )}
-          </div>
-        )}
+            </div>
+          )}
 
-        {/* VIEW 10: PATIENT DETAILS & ACTIVITY LOG — DEDICATED FULL PAGE */}
-        {activeView === 'patient-details' && (
-          <div className="space-y-6">
-            {/* Back + Header */}
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => setActiveView('users')}
-                className="flex items-center space-x-2 text-xs font-bold text-slate-500 hover:text-primary bg-white border border-slate-200 px-3 py-2 rounded-xl shadow-sm transition-all hover:border-primary/30"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-                <span>Back to Users</span>
-              </button>
-              <div>
-                <h2 className="text-xl font-extrabold text-slate-800">Patient Details &amp; Activity Log</h2>
-                <p className="text-xs text-slate-400 font-semibold mt-0.5">Full clinical overview, glucose tracking, meal logs, and AI coaching history.</p>
+          {/* MODAL 2: TRANSACTION REFUND DIALOG */}
+          {selectedTx && (
+            <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+              <div className="bg-white rounded-3xl p-6 border border-slate-100 w-full max-w-sm shadow-2xl">
+                <div className="flex justify-between items-center pb-3 border-b border-slate-100 mb-4">
+                  <h3 className="text-xs font-extrabold text-slate-800 uppercase tracking-wide">
+                    Refund Payment Order
+                  </h3>
+                  <button
+                    onClick={() => setSelectedTx(null)}
+                    className="text-slate-400 hover:text-slate-600 text-xs font-bold"
+                  >
+                    Cancel
+                  </button>
+                </div>
+
+                <div className="mb-4 bg-slate-50 p-4 rounded-2xl border border-slate-100 text-xs font-semibold text-slate-600 space-y-2">
+                  <div className="flex justify-between">
+                    <span>Transaction ID:</span>
+                    <span className="text-slate-800 font-bold">{selectedTx.gatewayOrderId}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Original Amount:</span>
+                    <span className="text-slate-800 font-bold">₹{selectedTx.amount}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Billing Name:</span>
+                    <span className="text-slate-800 font-bold">{selectedTx.userId?.name || 'Mito_Reboot User'}</span>
+                  </div>
+                </div>
+
+                <form onSubmit={handleRefundSubmit} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Refund Amount (INR)</label>
+                    <input
+                      type="number"
+                      required
+                      min={1}
+                      max={selectedTx.amount}
+                      value={refundAmount}
+                      onChange={(e) => setRefundAmount(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-bold focus:outline-none"
+                    />
+                    <p className="text-[10px] text-slate-400 font-semibold mt-1">
+                      Defaults to maximum amount: ₹{selectedTx.amount}. Will trigger automatic API SDK refunds if active.
+                    </p>
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-xl text-xs shadow-soft transition-all"
+                  >
+                    Process Cryptographic Refund
+                  </button>
+                </form>
               </div>
             </div>
+          )}
 
-            {!selectedUserActivity ? (
-              <div className="flex flex-col items-center justify-center py-24">
-                <Loader2 className="h-10 w-10 animate-spin text-primary mb-3" />
-                <p className="text-slate-400 font-semibold text-sm">Loading patient data...</p>
-              </div>
-            ) : (
-              <>
-                {/* HERO PATIENT CARD */}
-                <div className="relative overflow-hidden bg-gradient-to-br from-indigo-600 via-purple-600 to-primary rounded-3xl p-6 shadow-2xl text-white">
-                  <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 80% 20%, white 0%, transparent 60%)' }} />
-                  <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                    <div className="flex items-center space-x-4">
-                      <div className="h-16 w-16 rounded-2xl bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center text-2xl font-black shadow-lg">
-                        {(selectedUserActivity.user.name || 'U').charAt(0).toUpperCase()}
-                      </div>
+          {/* MODAL 3: MANUAL SUBSCRIPTION OVERRIDE DIALOG */}
+          {showOverrideModal && (
+            <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+              <div className="bg-white rounded-3xl p-6 border border-slate-100 w-full max-w-sm shadow-2xl">
+                <div className="flex justify-between items-center pb-3 border-b border-slate-100 mb-4">
+                  <h3 className="text-xs font-extrabold text-slate-800 uppercase tracking-wide">
+                    Manual Subscription Override
+                  </h3>
+                  <button
+                    onClick={() => setShowOverrideModal(false)}
+                    className="text-slate-400 hover:text-slate-600 text-xs font-bold"
+                  >
+                    Cancel
+                  </button>
+                </div>
+
+                <form onSubmit={handleOverrideSubmit} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Select Action</label>
+                    <select
+                      value={overrideForm.action}
+                      onChange={(e) => setOverrideForm({ ...overrideForm, action: e.target.value as any })}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none"
+                    >
+                      <option value="extend">Extend Subscription Expiry Date</option>
+                      <option value="change-plan">Upgrade / Downgrade Plan Tier</option>
+                      <option value="cancel">Force Expire / Cancel Plan</option>
+                    </select>
+                  </div>
+
+                  {overrideForm.action === 'extend' && (
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Extend Period by (Days)</label>
+                      <input
+                        type="number"
+                        required
+                        min={1}
+                        value={overrideForm.days}
+                        onChange={(e) => setOverrideForm({ ...overrideForm, days: parseInt(e.target.value, 10) })}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-bold focus:outline-none"
+                      />
+                    </div>
+                  )}
+
+                  {overrideForm.action === 'change-plan' && (
+                    <div className="space-y-3">
                       <div>
-                        <h3 className="text-xl font-black">{selectedUserActivity.user.name || 'Unknown Patient'}</h3>
-                        <p className="text-white/70 text-xs font-semibold">{selectedUserActivity.user.email}</p>
-                        <div className="flex items-center space-x-2 mt-1.5">
-                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black ${selectedUserActivity.user.isDeleted ? 'bg-rose-500/40 text-rose-100 border border-rose-300/40' : selectedUserActivity.user.isBlocked ? 'bg-red-400/30 text-red-100' : 'bg-green-400/30 text-green-100'}`}>
-                            {selectedUserActivity.user.isDeleted ? '🗑️ Deleted (30d Grace)' : selectedUserActivity.user.isBlocked ? '⛔ Blocked' : '✅ Active'}
-                          </span>
-                          {selectedUserActivity.user.isDeleted && selectedUserActivity.user.deletionScheduledFor && (
-                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-rose-500/30 text-rose-100">
-                              {Math.max(0, Math.ceil((new Date(selectedUserActivity.user.deletionScheduledFor).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))}d left
-                            </span>
-                          )}
-                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-white/20 text-white">
-                            ID: {selectedUserActivity.user._id?.slice(-8)}
-                          </span>
-                        </div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Select Target Plan</label>
+                        <select
+                          value={overrideForm.planId}
+                          onChange={(e) => setOverrideForm({ ...overrideForm, planId: e.target.value })}
+                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none"
+                        >
+                          {plans.map((p) => (
+                            <option key={p._id} value={p._id}>{p.name} ({p.code})</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Billing Cycle</label>
+                        <select
+                          value={overrideForm.billingCycle}
+                          onChange={(e) => setOverrideForm({ ...overrideForm, billingCycle: e.target.value as any })}
+                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-[11px] font-semibold focus:outline-none"
+                        >
+                          <option value="monthly">Monthly Cycle (30 days)</option>
+                          <option value="yearly">Yearly Cycle (365 days)</option>
+                        </select>
                       </div>
                     </div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                      {[
-                        { label: 'Age', value: selectedUserActivity.user.age ? `${selectedUserActivity.user.age} yrs` : '--' },
-                        { label: 'Weight', value: selectedUserActivity.user.weight ? `${selectedUserActivity.user.weight} kg` : '--' },
-                        { label: 'Height', value: selectedUserActivity.user.height ? `${selectedUserActivity.user.height} cm` : '--' },
-                        { label: 'Goal', value: selectedUserActivity.user.goal?.replace('-', ' ') || '--' },
-                      ].map((stat: any) => (
-                        <div key={stat.label} className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 text-center">
-                          <span className="block text-[9px] font-bold uppercase text-white/60">{stat.label}</span>
-                          <span className="block text-sm font-black text-white capitalize">{stat.value}</span>
-                        </div>
+                  )}
+
+                  {overrideForm.action === 'cancel' && (
+                    <div className="p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start space-x-2 text-[10px] font-bold text-danger">
+                      <ShieldAlert className="h-4 w-4 shrink-0 text-danger mt-0.5" />
+                      <span>Warning: Forcefully expiring a user subscription cuts off premium feature access immediately. An FCM notification will be sent.</span>
+                    </div>
+                  )}
+
+                  <button
+                    type="submit"
+                    className="w-full bg-primary hover:bg-primary-dark text-white font-bold py-3 px-4 rounded-xl text-xs shadow-soft transition-all"
+                  >
+                    Apply Subscription Override
+                  </button>
+                </form>
+              </div>
+            </div>
+          )}
+          {/* MODAL 4: CREATE / EDIT COUPON DIALOG */}
+          {showCouponModal && (
+            <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+              <div className="bg-white rounded-3xl p-6 border border-slate-100 w-full max-w-md shadow-2xl">
+                <div className="flex justify-between items-center pb-3 border-b border-slate-100 mb-4">
+                  <h3 className="text-sm font-extrabold text-slate-800 uppercase tracking-wide">
+                    {editingCouponId ? 'Edit Coupon Code' : 'Create Promo Coupon'}
+                  </h3>
+                  <button
+                    onClick={() => setShowCouponModal(false)}
+                    className="text-slate-400 hover:text-slate-600 text-xs font-bold"
+                  >
+                    Close
+                  </button>
+                </div>
+
+                <form onSubmit={handleCouponSubmit} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Coupon Code</label>
+                    <input
+                      type="text"
+                      required
+                      disabled={!!editingCouponId}
+                      value={couponForm.code}
+                      onChange={(e) => setCouponForm({ ...couponForm, code: e.target.value.toUpperCase().replace(/\s+/g, '') })}
+                      placeholder="E.G. WELCOME50"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-bold uppercase focus:outline-none disabled:bg-slate-50"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Discount Type</label>
+                      <select
+                        value={couponForm.discountType}
+                        onChange={(e) => setCouponForm({ ...couponForm, discountType: e.target.value as any })}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none"
+                      >
+                        <option value="percentage">Percentage (%)</option>
+                        <option value="fixed">Fixed Amount (₹)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Discount Value</label>
+                      <input
+                        type="number"
+                        required
+                        min={1}
+                        max={couponForm.discountType === 'percentage' ? 100 : undefined}
+                        value={couponForm.discountValue}
+                        onChange={(e) => setCouponForm({ ...couponForm, discountValue: parseFloat(e.target.value) })}
+                        placeholder={couponForm.discountType === 'percentage' ? '50' : '99'}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-extrabold focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Expiry Date (Optional)</label>
+                      <input
+                        type="date"
+                        value={couponForm.expiryDate}
+                        onChange={(e) => setCouponForm({ ...couponForm, expiryDate: e.target.value })}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Max Redemptions (Optional)</label>
+                      <input
+                        type="number"
+                        min={1}
+                        value={couponForm.maxRedemptions}
+                        onChange={(e) => setCouponForm({ ...couponForm, maxRedemptions: e.target.value })}
+                        placeholder="Unlimited"
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-2 pt-2">
+                    <input
+                      type="checkbox"
+                      id="isActiveCoupon"
+                      checked={couponForm.isActive}
+                      onChange={(e) => setCouponForm({ ...couponForm, isActive: e.target.checked })}
+                      className="h-4.5 w-4.5 border-slate-200 rounded-md focus:ring-primary text-primary"
+                    />
+                    <label htmlFor="isActiveCoupon" className="text-xs font-bold text-slate-600 uppercase select-none">
+                      Coupon Active
+                    </label>
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="w-full bg-primary hover:bg-primary-dark text-white font-bold py-3 px-4 rounded-xl text-xs shadow-soft transition-all"
+                  >
+                    {editingCouponId ? 'Update Coupon' : 'Create Coupon'}
+                  </button>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* MODAL 5: USER ACTIVITY DETAILS DIALOG */}
+          {showUserModal && (
+            <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+              <div className="bg-white rounded-3xl p-6 border border-slate-200 w-full max-w-4xl shadow-2xl flex flex-col max-h-[90vh]">
+                <div className="flex justify-between items-center pb-3 border-b border-slate-100 mb-4 shrink-0">
+                  <div>
+                    <h3 className="text-xs font-extrabold text-slate-800 uppercase tracking-wide">
+                      Patient Details & Activity Log
+                    </h3>
+                    {selectedUserActivity?.user && (
+                      <p className="text-[11px] text-slate-400 font-semibold mt-0.5">{selectedUserActivity.user.name} ({selectedUserActivity.user.email})</p>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => setShowUserModal(false)}
+                    className="text-slate-400 hover:text-slate-600 text-xs font-bold"
+                  >
+                    Close
+                  </button>
+                </div>
+
+                {!selectedUserActivity ? (
+                  <div className="flex-1 flex flex-col items-center justify-center py-12 text-slate-400">
+                    <Loader2 className="h-8 w-8 animate-spin mb-2 text-primary" />
+                    <span className="font-semibold text-xs">Loading patient history...</span>
+                  </div>
+                ) : (
+                  <>
+                    {/* Tab Navigation */}
+                    <div className="flex border-b border-slate-100 mb-4 shrink-0 overflow-x-auto no-scrollbar">
+                      {(['overview', 'food', 'glucose', 'reports', 'coaching', 'notify'] as const).map((tab) => (
+                        <button
+                          key={tab}
+                          onClick={() => setUserModalTab(tab)}
+                          className={`px-4 py-2 text-xs font-extrabold uppercase border-b-2 transition-all -mb-[2px] whitespace-nowrap ${userModalTab === tab
+                            ? 'border-primary text-primary'
+                            : 'border-transparent text-slate-400 hover:text-slate-600'
+                            }`}
+                        >
+                          {tab === 'notify' ? 'Send Alert' : tab}
+                        </button>
                       ))}
                     </div>
-                  </div>
-                </div>
 
-                {/* STAT CARDS ROW */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {[
-                    { label: 'Meals Logged', value: selectedUserActivity.foodLogs?.length ?? 0, icon: <Utensils className="h-5 w-5" />, gradient: 'from-orange-400 to-amber-500', text: 'text-amber-600' },
-                    { label: 'Glucose Readings', value: selectedUserActivity.glucoseReadings?.length ?? 0, icon: <Activity className="h-5 w-5" />, gradient: 'from-blue-400 to-indigo-500', text: 'text-blue-600' },
-                    { label: 'CGM Reports', value: selectedUserActivity.cgmReports?.length ?? 0, icon: <FileUp className="h-5 w-5" />, gradient: 'from-purple-400 to-violet-500', text: 'text-purple-600' },
-                    { label: 'AI Sessions', value: coachingSessions.length ?? 0, icon: <Bot className="h-5 w-5" />, gradient: 'from-green-400 to-emerald-500', text: 'text-green-600' },
-                  ].map((card: any) => (
-                    <div key={card.label} className="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm flex items-center space-x-3">
-                      <div className={`h-11 w-11 rounded-xl bg-gradient-to-br ${card.gradient} flex items-center justify-center text-white shadow-md shrink-0`}>
-                        {card.icon}
-                      </div>
-                      <div>
-                        <span className="block text-[10px] font-bold uppercase text-slate-400">{card.label}</span>
-                        <span className={`block text-2xl font-black ${card.text}`}>{card.value}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    {/* Scrollable Content Container */}
+                    <div className="flex-1 overflow-y-auto pr-1 text-xs text-slate-700 font-semibold space-y-4">
+                      {/* TAB 1: OVERVIEW */}
+                      {userModalTab === 'overview' && (
+                        <div className="space-y-4">
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                              <span className="block text-[10px] uppercase font-bold text-slate-400 mb-1">Age</span>
+                              <span className="text-slate-800 font-bold">{selectedUserActivity.user.age ?? '--'} yrs</span>
+                            </div>
+                            <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                              <span className="block text-[10px] uppercase font-bold text-slate-400 mb-1">Gender</span>
+                              <span className="text-slate-800 font-bold capitalize">{selectedUserActivity.user.gender ?? '--'}</span>
+                            </div>
+                            <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                              <span className="block text-[10px] uppercase font-bold text-slate-400 mb-1">Height / Weight</span>
+                              <span className="text-slate-800 font-bold">
+                                {selectedUserActivity.user.height ? `${selectedUserActivity.user.height} cm` : '--'} / {selectedUserActivity.user.weight ? `${selectedUserActivity.user.weight} kg` : '--'}
+                              </span>
+                            </div>
+                            <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                              <span className="block text-[10px] uppercase font-bold text-slate-400 mb-1">Activity Level</span>
+                              <span className="text-slate-800 font-bold capitalize">{selectedUserActivity.user.activityLevel?.replace('-', ' ') ?? '--'}</span>
+                            </div>
+                          </div>
 
-                {/* TABBED CONTENT CARD */}
-                <div className="bg-white rounded-3xl border border-slate-100 shadow-soft overflow-hidden">
-                  {/* Tab Bar */}
-                  <div className="flex border-b border-slate-100 overflow-x-auto">
-                    {[
-                      { key: 'overview', label: '📋 Overview' },
-                      { key: 'habits', label: '🌱 Habits' },
-                      { key: 'food', label: '🍽 Food Logs' },
-                      { key: 'glucose', label: '📈 Glucose' },
-                      { key: 'reports', label: '📄 CGM Reports' },
-                      { key: 'coaching', label: '🤖 AI Coaching' },
-                      { key: 'notify', label: '🔔 Send Alert' },
-                      { key: 'subscription', label: '💳 Subscription & Billing' },
-                    ].map((tab) => (
-                      <button
-                        key={tab.key}
-                        onClick={() => setUserModalTab(tab.key as any)}
-                        className={`px-5 py-3.5 text-[11px] font-bold whitespace-nowrap transition-all border-b-2 ${userModalTab === tab.key
-                            ? 'border-primary text-primary bg-primary/5'
-                            : 'border-transparent text-slate-400 hover:text-slate-700 hover:bg-slate-50'
-                          }`}
-                      >
-                        {tab.label}
-                      </button>
-                    ))}
-                  </div>
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100 col-span-1">
+                              <span className="block text-[10px] uppercase font-bold text-slate-400 mb-1">Target Calories</span>
+                              <span className="text-slate-800 font-extrabold text-sm">{selectedUserActivity.user.dailyCalorieTarget ? `${selectedUserActivity.user.dailyCalorieTarget} kcal` : '--'}</span>
+                            </div>
+                            <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100 col-span-1">
+                              <span className="block text-[10px] uppercase font-bold text-slate-400 mb-1">Diabetes Goal</span>
+                              <span className="text-slate-800 font-bold capitalize">{selectedUserActivity.user.goal?.replace('-', ' ') ?? '--'}</span>
+                            </div>
+                            <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100 col-span-1">
+                              <span className="block text-[10px] uppercase font-bold text-slate-400 mb-1">TDEE / BMR</span>
+                              <span className="text-slate-800 font-bold">
+                                {selectedUserActivity.user.tdee ? `${Math.round(selectedUserActivity.user.tdee)} kcal` : '--'} / {selectedUserActivity.user.bmr ? `${Math.round(selectedUserActivity.user.bmr)} kcal` : '--'}
+                              </span>
+                            </div>
+                          </div>
 
-                  <div className="p-6">
-
-                    {/* OVERVIEW TAB */}
-                    {userModalTab === 'overview' && (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-3">
-                          <h4 className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Health Profile</h4>
-                          <div className="bg-slate-50/70 rounded-2xl p-4 space-y-0">
-                            {[
-                              { label: 'Gender', value: selectedUserActivity.user.gender || '--' },
-                              { label: 'Activity Level', value: selectedUserActivity.user.activityLevel?.replace('-', ' ') || '--' },
-                              { label: 'Daily Calorie Target', value: selectedUserActivity.user.dailyCalorieTarget ? `${selectedUserActivity.user.dailyCalorieTarget} kcal` : '--' },
-                              { label: 'TDEE / BMR', value: `${selectedUserActivity.user.tdee ? Math.round(selectedUserActivity.user.tdee) + ' kcal' : '--'} / ${selectedUserActivity.user.bmr ? Math.round(selectedUserActivity.user.bmr) + ' kcal' : '--'}` },
-                              { label: 'Health Goal', value: selectedUserActivity.user.goal?.replace('-', ' ') || '--' },
-                            ].map((item: any) => (
-                              <div key={item.label} className="flex justify-between items-center py-2.5 border-b border-slate-100 last:border-0">
-                                <span className="text-[11px] font-semibold text-slate-500 uppercase">{item.label}</span>
-                                <span className="text-xs font-bold text-slate-800 capitalize">{item.value}</span>
-                              </div>
-                            ))}
+                          <div className="bg-blue-50/30 border border-blue-100/50 p-4 rounded-3xl space-y-2">
+                            <h4 className="text-[10px] font-bold text-primary uppercase tracking-wider">Activity Summary</h4>
+                            <ul className="space-y-1 text-slate-600 font-medium text-[11px]">
+                              <li>• Total Meals Logged: <strong className="text-slate-800">{selectedUserActivity.foodLogs?.length ?? 0}</strong></li>
+                              <li>• Glucose Readings: <strong className="text-slate-800">{selectedUserActivity.glucoseReadings?.length ?? 0}</strong></li>
+                              <li>• CGM Reports Uploaded: <strong className="text-slate-800">{selectedUserActivity.cgmReports?.length ?? 0}</strong></li>
+                            </ul>
                           </div>
                         </div>
-                        <div className="space-y-3">
-                          <h4 className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Activity Summary</h4>
-                          <div className="bg-slate-50/70 rounded-2xl p-4 space-y-0">
-                            {[
-                              { label: 'Total Meals Logged', value: `${selectedUserActivity.foodLogs?.length ?? 0} meals` },
-                              { label: 'Glucose Readings', value: `${selectedUserActivity.glucoseReadings?.length ?? 0} readings` },
-                              { label: 'CGM Reports Uploaded', value: `${selectedUserActivity.cgmReports?.length ?? 0} files` },
-                              { label: 'AI Coaching Sessions', value: `${coachingSessions.length} sessions` },
-                              { label: 'Active AI Sessions', value: `${coachingSessions.filter((s: any) => s.status === 'active').length} active` },
-                            ].map((item: any) => (
-                              <div key={item.label} className="flex justify-between items-center py-2.5 border-b border-slate-100 last:border-0">
-                                <span className="text-[11px] font-semibold text-slate-500 uppercase">{item.label}</span>
-                                <span className="text-xs font-black text-primary">{item.value}</span>
-                              </div>
-                            ))}
-                          </div>
-                          <div className="bg-gradient-to-r from-slate-800 to-slate-700 rounded-2xl p-4 text-white">
-                            <p className="text-[10px] font-bold uppercase text-white/50 mb-1">Member Since</p>
-                            <p className="text-sm font-black">{selectedUserActivity.user.createdAt ? new Date(selectedUserActivity.user.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' }) : '--'}</p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
+                      )}
 
-                    {/* HABITS TAB */}
-                    {userModalTab === 'habits' && (
-                      <div className="space-y-3">
-                        <h4 className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Habit Logs ({selectedUserActivity.habitLogs?.length ?? 0})</h4>
-                        {!selectedUserActivity.habitLogs || selectedUserActivity.habitLogs.length === 0 ? (
-                          <div className="text-center py-12 text-slate-400 font-semibold text-xs border-2 border-dashed border-slate-100 rounded-2xl">No habits logged yet.</div>
-                        ) : (
-                          <div className="overflow-x-auto rounded-2xl border border-slate-100">
-                            <table className="w-full text-xs">
-                              <thead className="bg-slate-50">
+                      {/* TAB 2: FOOD LOGS */}
+                      {userModalTab === 'food' && (
+                        <div className="bg-white rounded-2xl border border-slate-200 overflow-x-auto">
+                          <table className="min-w-full divide-y divide-slate-100 text-[11px]">
+                            <thead className="bg-slate-50 text-slate-400 uppercase font-bold text-left">
+                              <tr>
+                                <th className="px-4 py-3">Logged At</th>
+                                <th className="px-4 py-3">Meal Name</th>
+                                <th className="px-4 py-3">Category</th>
+                                <th className="px-4 py-3">Meal Type</th>
+                                <th className="px-4 py-3">Calories</th>
+                                <th className="px-4 py-3">Macros (C/P/F)</th>
+                                <th className="px-4 py-3">Spike Status</th>
+                                <th className="px-4 py-3">User Feedback</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 text-slate-700 font-medium">
+                              {!selectedUserActivity.foodLogs || selectedUserActivity.foodLogs.length === 0 ? (
                                 <tr>
-                                  {['Habit', 'Value', 'Time'].map(h => (
-                                    <th key={h} className="px-4 py-3 text-left font-extrabold text-slate-500 uppercase text-[10px]">{h}</th>
-                                  ))}
+                                  <td colSpan={8} className="text-center py-6 text-slate-400">No meals logged yet.</td>
                                 </tr>
-                              </thead>
-                              <tbody className="divide-y divide-slate-50">
-                                {selectedUserActivity.habitLogs.slice(0, 100).map((log: any) => (
-                                  <tr key={log._id} className="hover:bg-slate-50/60 transition-colors">
-                                    <td className="px-4 py-3 font-bold text-slate-700 capitalize">{log.type}</td>
-                                    <td className="px-4 py-3 text-slate-600 font-medium">
-                                      {log.value ? (
-                                        typeof log.value === 'object' ? (
-                                          <div className="flex flex-col gap-0.5 text-[11px]">
-                                            {Object.entries(log.value).map(([k, v]) => {
-                                              if (k === 'happy') return <span key={k}><strong className="text-slate-400">Response:</strong> {v ? 'Yes / Good' : 'No'}</span>;
-                                              if (k === 'joyActivity') return <span key={k}><strong className="text-slate-400">Activity:</strong> {String(v)}</span>;
-                                              if (k === 'started' || k === 'ended') return <span key={k}><strong className="text-slate-400">{k === 'started' ? 'Start' : 'End'}:</strong> {new Date(String(v)).toLocaleString('en-IN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short' })}</span>;
-                                              if (k === 'count') return <span key={k}><strong className="text-slate-400">Count/Amount:</strong> {String(v)}</span>;
-                                              if (k === 'hours') return <span key={k}><strong className="text-slate-400">Duration:</strong> {String(v)} hours</span>;
-                                              if (k === 'emoji') return null;
-                                              if (k === 'label') return <span key={k}><strong className="text-slate-400">Feeling:</strong> {log.value.emoji} {String(v)}</span>;
-                                              if (k === 'faceId' && !log.value.label) return <span key={k}><strong className="text-slate-400">Face:</strong> {String(v)}</span>;
-                                              if (k === 'faceId') return null;
-                                              if (k === 'done') return null;
-                                              return <span key={k}><strong className="text-slate-400 capitalize">{k}:</strong> {String(v)}</span>;
-                                            })}
-                                          </div>
-                                        ) : String(log.value)
-                                      ) : '--'}
+                              ) : (
+                                selectedUserActivity.foodLogs.map((log: any) => (
+                                  <tr key={log._id}>
+                                    <td className="px-4 py-3 text-slate-400 whitespace-nowrap">
+                                      {new Date(log.loggedAt).toLocaleString()}
                                     </td>
-                                    <td className="px-4 py-3 text-slate-500 font-medium whitespace-nowrap">
-                                      {log.timestamp ? new Date(log.timestamp).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '--'}
+                                    <td className="px-4 py-3 font-bold text-slate-800">{log.name}</td>
+                                    <td className="px-4 py-3">{log.category}</td>
+                                    <td className="px-4 py-3 capitalize">{log.mealType}</td>
+                                    <td className="px-4 py-3 text-orange-600 font-bold">{log.calories} kcal</td>
+                                    <td className="px-4 py-3 text-slate-500 whitespace-nowrap">
+                                      {log.carbs}g / {log.protein}g / {log.fat}g
                                     </td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* FOOD LOGS TAB */}
-                    {userModalTab === 'food' && (
-                      <div className="space-y-3">
-                        <h4 className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Meal Logs ({selectedUserActivity.foodLogs?.length ?? 0})</h4>
-                        {!selectedUserActivity.foodLogs || selectedUserActivity.foodLogs.length === 0 ? (
-                          <div className="text-center py-12 text-slate-400 font-semibold text-xs border-2 border-dashed border-slate-100 rounded-2xl">No meal logs found.</div>
-                        ) : (
-                          <div className="overflow-x-auto rounded-2xl border border-slate-100">
-                            <table className="w-full text-xs">
-                              <thead className="bg-slate-50">
-                                <tr>
-                                  {['Food', 'Meal Type', 'Quantity', 'Calories', 'Carbs', 'Protein', 'Fat', 'Glucose Status', 'User Feedback', 'Logged At'].map(h => (
-                                    <th key={h} className="px-4 py-3 text-left font-extrabold text-slate-500 uppercase text-[10px] whitespace-nowrap">{h}</th>
-                                  ))}
-                                </tr>
-                              </thead>
-                              <tbody className="divide-y divide-slate-50">
-                                {selectedUserActivity.foodLogs.map((log: any) => (
-                                  <tr key={log._id} className="hover:bg-slate-50/60 transition-colors">
-                                    <td className="px-4 py-3 font-bold text-slate-800 whitespace-nowrap">{log.name}</td>
-                                    <td className="px-4 py-3 text-slate-500 capitalize whitespace-nowrap">{log.mealType}</td>
-                                    <td className="px-4 py-3 text-slate-600 font-semibold whitespace-nowrap">{log.quantity} {log.unit}</td>
-                                    <td className="px-4 py-3 font-bold text-amber-600 whitespace-nowrap">{log.calories} kcal</td>
-                                    <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{log.carbs}g</td>
-                                    <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{log.protein}g</td>
-                                    <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{log.fat}g</td>
-                                    <td className="px-4 py-3 whitespace-nowrap">
+                                    <td className="px-4 py-3">
                                       {log.glucoseAnalysis ? (
-                                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${log.glucoseAnalysis.status === 'Safe' ? 'bg-green-50 text-green-700' : log.glucoseAnalysis.status === 'Moderate' ? 'bg-amber-50 text-amber-600' : 'bg-red-50 text-red-600'}`}>
+                                        <span className={`px-2 py-0.5 rounded font-bold uppercase text-[9px] ${log.glucoseAnalysis.status === 'Safe'
+                                          ? 'bg-green-50 text-success border border-green-100'
+                                          : log.glucoseAnalysis.status === 'Moderate'
+                                            ? 'bg-orange-50 text-warning border border-orange-100'
+                                            : 'bg-red-50 text-danger border border-red-100'
+                                          }`}>
                                           {log.glucoseAnalysis.status} ({log.glucoseAnalysis.peakGlucose} mg/dL)
                                         </span>
-                                      ) : <span className="text-slate-300">—</span>}
+                                      ) : (
+                                        <span className="text-slate-400 text-[10px]">No reading overlap</span>
+                                      )}
                                     </td>
-                                    <td className="px-4 py-3 whitespace-nowrap">
+                                    <td className="px-4 py-3">
                                       {log.feedback ? (
-                                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${log.feedback.isAccurate ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'}`}>
-                                          {log.feedback.isAccurate ? '👍 Accurate' : '👎 Inaccurate'}
+                                        <span className={`px-2 py-0.5 rounded font-bold uppercase text-[9px] ${log.feedback.isAccurate ? 'bg-green-50 text-success' : 'bg-red-50 text-danger'
+                                          }`}>
+                                          {log.feedback.isAccurate ? 'Accurate' : 'Inaccurate'}
                                         </span>
-                                      ) : <span className="text-slate-300">—</span>}
+                                      ) : (
+                                        <span className="text-slate-400 text-[10px]">-</span>
+                                      )}
                                     </td>
-                                    <td className="px-4 py-3 text-slate-400 font-medium whitespace-nowrap">{log.loggedAt ? new Date(log.loggedAt).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '--'}</td>
                                   </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-                        )}
-                      </div>
-                    )}
+                                ))
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
 
-                    {/* GLUCOSE TAB */}
-                    {userModalTab === 'glucose' && (
-                      <div className="space-y-3">
-                        <h4 className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Glucose Readings ({selectedUserActivity.glucoseReadings?.length ?? 0})</h4>
-                        {!selectedUserActivity.glucoseReadings || selectedUserActivity.glucoseReadings.length === 0 ? (
-                          <div className="text-center py-12 text-slate-400 font-semibold text-xs border-2 border-dashed border-slate-100 rounded-2xl">No glucose readings found.</div>
-                        ) : (
-                          <div className="overflow-x-auto rounded-2xl border border-slate-100">
-                            <table className="w-full text-xs">
-                              <thead className="bg-slate-50">
+                      {/* TAB 3: GLUCOSE READINGS */}
+                      {userModalTab === 'glucose' && (
+                        <div className="bg-white rounded-2xl border border-slate-200 overflow-x-auto">
+                          <table className="min-w-full divide-y divide-slate-100 text-[11px]">
+                            <thead className="bg-slate-50 text-slate-400 uppercase font-bold text-left">
+                              <tr>
+                                <th className="px-4 py-3">Timestamp</th>
+                                <th className="px-4 py-3">Glucose Level</th>
+                                <th className="px-4 py-3">Source</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 text-slate-700 font-medium">
+                              {!selectedUserActivity.glucoseReadings || selectedUserActivity.glucoseReadings.length === 0 ? (
                                 <tr>
-                                  {['Value', 'Status', 'Timestamp', 'Source'].map(h => (
-                                    <th key={h} className="px-4 py-3 text-left font-extrabold text-slate-500 uppercase text-[10px]">{h}</th>
-                                  ))}
+                                  <td colSpan={3} className="text-center py-6 text-slate-400">No glucose readings logged yet.</td>
                                 </tr>
-                              </thead>
-                              <tbody className="divide-y divide-slate-50">
-                                {selectedUserActivity.glucoseReadings.slice(0, 100).map((r: any) => (
-                                  <tr key={r._id} className="hover:bg-slate-50/60 transition-colors">
-                                    <td className="px-4 py-3">
-                                      <span className={`font-black text-sm ${r.value > 140 ? 'text-red-500' : r.value > 100 ? 'text-amber-500' : 'text-green-600'}`}>
-                                        {r.value} <span className="text-[10px] font-semibold text-slate-400">mg/dL</span>
-                                      </span>
+                              ) : (
+                                selectedUserActivity.glucoseReadings.map((r: any) => (
+                                  <tr key={r._id}>
+                                    <td className="px-4 py-3 text-slate-400">
+                                      {new Date(r.timestamp).toLocaleString()}
                                     </td>
-                                    <td className="px-4 py-3">
-                                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${r.value > 140 ? 'bg-red-50 text-red-600' : r.value > 100 ? 'bg-amber-50 text-amber-600' : 'bg-green-50 text-green-600'}`}>
-                                        {r.value > 140 ? 'High' : r.value > 100 ? 'Moderate' : 'Normal'}
-                                      </span>
+                                    <td className="px-4 py-3 font-bold text-slate-800 text-sm">
+                                      {r.value} mg/dL
                                     </td>
-                                    <td className="px-4 py-3 text-slate-500 font-medium whitespace-nowrap">
-                                      {r.timestamp ? new Date(r.timestamp).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '--'}
+                                    <td className="px-4 py-3 text-slate-500">{r.source || 'Manual'}</td>
+                                  </tr>
+                                ))
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+
+                      {/* TAB 4: CGM REPORTS */}
+                      {userModalTab === 'reports' && (
+                        <div className="bg-white rounded-2xl border border-slate-200 overflow-x-auto">
+                          <table className="min-w-full divide-y divide-slate-100 text-[11px]">
+                            <thead className="bg-slate-50 text-slate-400 uppercase font-bold text-left">
+                              <tr>
+                                <th className="px-4 py-3">Uploaded At</th>
+                                <th className="px-4 py-3">Report File Name</th>
+                                <th className="px-4 py-3">Data Records</th>
+                                <th className="px-4 py-3">Analysis Range</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 text-slate-700 font-medium">
+                              {!selectedUserActivity.cgmReports || selectedUserActivity.cgmReports.length === 0 ? (
+                                <tr>
+                                  <td colSpan={4} className="text-center py-6 text-slate-400">No reports uploaded yet.</td>
+                                </tr>
+                              ) : (
+                                selectedUserActivity.cgmReports.map((rep: any) => (
+                                  <tr key={rep._id}>
+                                    <td className="px-4 py-3 text-slate-400">
+                                      {new Date(rep.createdAt).toLocaleString()}
                                     </td>
-                                    <td className="px-4 py-3">
-                                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-600 capitalize">{r.source || 'cgm'}</span>
+                                    <td className="px-4 py-3 font-bold text-slate-800">{rep.fileName}</td>
+                                    <td className="px-4 py-3 text-slate-500">{rep.recordCount ?? 0} rows</td>
+                                    <td className="px-4 py-3 text-slate-600">
+                                      {rep.startDate ? new Date(rep.startDate).toLocaleDateString() : '--'} to {rep.endDate ? new Date(rep.endDate).toLocaleDateString() : '--'}
                                     </td>
                                   </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                            {selectedUserActivity.glucoseReadings.length > 100 && (
-                              <p className="text-center text-[10px] text-slate-400 font-semibold py-3 border-t border-slate-100">
-                                Showing latest 100 of {selectedUserActivity.glucoseReadings.length} readings.
-                              </p>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* CGM REPORTS TAB */}
-                    {userModalTab === 'reports' && (
-                      <div className="space-y-3">
-                        <h4 className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">CGM Reports ({selectedUserActivity.cgmReports?.length ?? 0})</h4>
-                        {!selectedUserActivity.cgmReports || selectedUserActivity.cgmReports.length === 0 ? (
-                          <div className="text-center py-12 text-slate-400 font-semibold text-xs border-2 border-dashed border-slate-100 rounded-2xl">No CGM reports uploaded.</div>
-                        ) : (
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            {selectedUserActivity.cgmReports.map((rep: any) => (
-                              <div key={rep._id} className="bg-slate-50 rounded-2xl p-4 border border-slate-100 flex justify-between items-start">
-                                <div>
-                                  <p className="font-bold text-slate-800 text-xs mb-1 flex items-center space-x-1.5">
-                                    <FileText className="h-3.5 w-3.5 text-primary" />
-                                    <span>{rep.fileName || 'CGM Report'}</span>
-                                  </p>
-                                  <p className="text-[10px] text-slate-400 font-semibold">
-                                    {rep.parsedReadingsCount ?? rep.readingsCount ?? '--'} readings · {rep.createdAt ? new Date(rep.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '--'}
-                                  </p>
-                                  <span className={`mt-1.5 inline-block px-2 py-0.5 rounded-full text-[10px] font-black ${rep.status === 'Processed' ? 'bg-green-50 text-green-600' : rep.status === 'Processing' ? 'bg-amber-50 text-amber-600' : rep.status === 'Failed' ? 'bg-red-50 text-red-600' : 'bg-slate-100 text-slate-600'}`}>
-                                    {rep.status || 'pending'}
-                                  </span>
-                                </div>
-                                <button
-                                  onClick={async () => {
-                                    if (!window.confirm(`Delete "${rep.fileName}"? This cannot be undone.`)) return;
-                                    try {
-                                      const userId = selectedUserActivity.user._id;
-                                      // Admin uses the user's report — call generic delete (admin can also use user's token-less route via admin proxy if added, for now show info)
-                                      const r = await fetch(`${apiUrl}/admin/reports/${rep._id}`, {
-                                        method: 'DELETE',
-                                        headers: { 'Authorization': `Bearer ${token}` }
-                                      });
-                                      if (r.ok) {
-                                        fetchUserActivity(userId);
-                                      } else {
-                                        alert('Could not delete report.');
-                                      }
-                                    } catch { alert('Error deleting report.'); }
-                                  }}
-                                  className="p-1.5 rounded-lg text-slate-400 hover:text-danger hover:bg-red-50 transition-all ml-2 shrink-0"
-                                  title="Delete Report"
-                                >
-                                  <Trash2 className="h-3.5 w-3.5" />
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-
-                    {/* AI COACHING TAB */}
-                    {userModalTab === 'coaching' && (
-                      <div className="space-y-4">
-                        <h4 className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">AI Coaching Sessions ({coachingSessions.length})</h4>
-                        {coachingSessions.length === 0 ? (
-                          <div className="text-center py-12 text-slate-400 font-semibold text-xs border-2 border-dashed border-slate-100 rounded-2xl">No AI coaching sessions triggered yet.</div>
-                        ) : (
-                          coachingSessions.map((session: any) => (
-                            <div key={session._id} className="bg-gradient-to-br from-slate-50 to-white rounded-2xl border border-slate-100 p-5 shadow-sm">
-                              <div className="flex justify-between items-start mb-4 pb-3 border-b border-slate-100">
-                                <div>
-                                  <div className="flex items-center space-x-2">
-                                    <Bot className="h-4 w-4 text-primary" />
-                                    <span className="text-sm font-extrabold text-slate-800">
-                                      {session.foodName || session.foodLogId?.name || 'Unknown Food'}
+                                ))
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                      {/* TAB 5: COACHING */}
+                      {userModalTab === 'coaching' && (
+                        <div className="space-y-4">
+                          {coachingSessions.length === 0 ? (
+                            <div className="text-center py-8 text-slate-400 font-semibold text-xs border-2 border-dashed border-slate-100 rounded-2xl">
+                              No AI coaching sessions triggered yet.
+                            </div>
+                          ) : (
+                            coachingSessions.map((session: any) => (
+                              <div key={session._id} className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
+                                <div className="flex justify-between items-center mb-3 pb-3 border-b border-slate-100">
+                                  <div>
+                                    <span className="text-xs font-bold text-slate-800">
+                                      Trigger: {session.foodName || session.foodLogId?.name || 'Unknown Food'}
                                     </span>
-                                  </div>
-                                  <div className="flex items-center space-x-2 mt-1.5">
-                                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-red-50 text-red-600">
+                                    <span className="ml-2 px-2 py-0.5 rounded text-[10px] font-bold bg-red-50 text-red-600">
                                       Spike: {session.peakGlucose} mg/dL
                                     </span>
-                                    <span className="text-[10px] text-slate-400 font-semibold">
-                                      {session.createdAt ? new Date(session.createdAt).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}
-                                    </span>
                                   </div>
+                                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${session.status === 'resolved' ? 'bg-green-50 text-success' : 'bg-amber-50 text-amber-600'
+                                    }`}>
+                                    {session.status}
+                                  </span>
                                 </div>
-                                <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${session.status === 'resolved' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
-                                  {session.status}
-                                </span>
-                              </div>
-                              <div className="space-y-2.5">
-                                {session.messages.map((msg: any, i: number) => (
-                                  <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                    <div className={`max-w-[85%] px-4 py-2.5 rounded-2xl text-[11px] font-medium shadow-sm ${msg.role === 'user'
-                                        ? 'bg-gradient-to-r from-primary to-indigo-600 text-white rounded-br-sm'
-                                        : 'bg-white border border-slate-100 text-slate-700 rounded-bl-sm'
-                                      }`}>
-                                      <span className="block text-[8px] font-black uppercase mb-0.5 opacity-60">{msg.role === 'user' ? '👤 Patient' : '🤖 AI Assistant'}</span>
-                                      {msg.content}
+                                <div className="space-y-3">
+                                  {session.messages.map((msg: any, i: number) => (
+                                    <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                      <div className={`max-w-[85%] p-3 rounded-2xl text-[11px] font-medium ${msg.role === 'user'
+                                        ? 'bg-primary text-white rounded-tr-sm'
+                                        : 'bg-slate-50 text-slate-700 border border-slate-100 rounded-tl-sm'
+                                        }`}>
+                                        <span className="block text-[9px] font-bold uppercase mb-1 opacity-70">
+                                          {msg.role === 'user' ? 'Patient' : 'AI Assistant'}
+                                        </span>
+                                        {msg.content}
+                                      </div>
                                     </div>
-                                  </div>
-                                ))}
+                                  ))}
+                                </div>
                               </div>
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    )}
-
-                    {/* TAB: SEND ALERT */}
-                    {userModalTab === 'notify' && (
-                      <div className="space-y-6">
-                        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 p-5 rounded-2xl flex items-start gap-3.5">
-                          <div className="p-2.5 rounded-xl bg-white border border-blue-200 text-primary shadow-xs">
-                            <Bell className="w-5 h-5 text-primary" />
-                          </div>
-                          <div>
-                            <h4 className="text-sm font-black text-slate-800">Dispatch Push Alert to Patient</h4>
-                            <p className="text-xs text-slate-600 mt-0.5">
-                              This notification will be dispatched instantly to <strong>{selectedUserActivity.user.name || 'Patient'}</strong>'s mobile device via Firebase Cloud Messaging (FCM). Use this to send personalized medical advice, glucose warnings, habit reminders, or subscription notifications.
-                            </p>
-                          </div>
+                            ))
+                          )}
                         </div>
+                      )}
 
-                        {/* Quick Presets */}
-                        <div className="bg-slate-50 border border-slate-200/80 p-4 rounded-2xl space-y-2">
-                          <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider block">
-                            Quick Notification Presets
-                          </span>
-                          <div className="flex flex-wrap gap-2">
-                            {[
-                              {
-                                label: '🩸 High Glucose Warning',
-                                title: 'High Glucose Warning',
-                                body: `Hi ${selectedUserActivity.user.name || 'Patient'}, we noticed a recent spike in your glucose readings. Please review your last meal and stay hydrated.`
-                              },
-                              {
-                                label: '🥗 Log Meal Reminder',
-                                title: 'Log Your Meal',
-                                body: `Hi ${selectedUserActivity.user.name || 'Patient'}, don't forget to take a picture and log your meal today for accurate metabolic coaching.`
-                              },
-                              {
-                                label: '🌱 Habit Check-in',
-                                title: 'Daily Habit Check-in',
-                                body: `Hi ${selectedUserActivity.user.name || 'Patient'}, you're making great progress! Complete today's circadian habits to maintain optimal health.`
-                              },
-                              {
-                                label: '👑 Membership Active',
-                                title: 'Premium Access Unlocked',
-                                body: `Hi ${selectedUserActivity.user.name || 'Patient'}, your Mito_Reboot premium membership has been updated and is fully active. Enjoy your health insights!`
-                              },
-                              {
-                                label: '🩺 Clinical Consultation',
-                                title: 'Doctor Consultation Reminder',
-                                body: `Hi ${selectedUserActivity.user.name || 'Patient'}, your upcoming doctor consultation is scheduled. Please ensure your recent reports are uploaded.`
-                              }
-                            ].map((preset) => (
-                              <button
-                                key={preset.label}
-                                type="button"
-                                onClick={() => setUserModalNotify({ title: preset.title, body: preset.body })}
-                                className="px-3 py-1.5 bg-white hover:bg-primary/5 hover:border-primary/40 border border-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all shadow-2xs cursor-pointer"
-                              >
-                                {preset.label}
-                              </button>
-                            ))}
+                      {/* TAB 6: SEND ALERT */}
+                      {userModalTab === 'notify' && (
+                        <form onSubmit={handleSendUserDirectNotification} className="space-y-4 max-w-md">
+                          <div className="bg-blue-50/30 border border-blue-100/50 p-3 rounded-2xl text-[10px] text-primary">
+                            This alert will dispatch a real-time push notification directly to the user's mobile device via FCM to advise them on their food intake or glycemic spike management.
                           </div>
-                        </div>
 
-                        <form onSubmit={handleSendUserDirectNotification} className="space-y-4 max-w-2xl bg-white border border-slate-200/80 p-5 rounded-2xl shadow-soft">
                           <div>
-                            <label className="block text-[11px] font-extrabold text-slate-500 uppercase tracking-wider mb-1.5">
-                              Alert Title *
-                            </label>
+                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Alert Title</label>
                             <input
                               type="text"
                               required
                               value={userModalNotify.title}
                               onChange={(e) => setUserModalNotify({ ...userModalNotify, title: e.target.value })}
-                              placeholder="e.g. High Glucose Warning / Meal Log Reminder"
-                              className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary font-bold text-xs bg-slate-50/50"
+                              placeholder="E.G. High Glucose Warning"
+                              className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary font-bold text-xs"
                             />
                           </div>
 
                           <div>
-                            <label className="block text-[11px] font-extrabold text-slate-500 uppercase tracking-wider mb-1.5">
-                              Alert Message Content *
-                            </label>
+                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Message Content</label>
                             <textarea
                               required
-                              rows={4}
+                              rows={3}
                               value={userModalNotify.body}
                               onChange={(e) => setUserModalNotify({ ...userModalNotify, body: e.target.value })}
-                              placeholder="Enter the alert instructions or clinical advice..."
-                              className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary font-medium text-xs bg-slate-50/50"
+                              placeholder="Enter the alert advice instructions..."
+                              className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary font-semibold text-xs"
                             />
                           </div>
 
-                          <div className="pt-2">
+                          <button
+                            type="submit"
+                            className="bg-primary hover:bg-primary-dark text-white font-bold px-4 py-2.5 rounded-xl shadow-soft flex items-center space-x-1.5 transition-all text-xs"
+                          >
+                            <Send className="h-4 w-4" />
+                            <span>Dispatch Alert FCM</span>
+                          </button>
+                        </form>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+          {/* VIEW 9: LEGAL DOCUMENTS */}
+          {activeView === 'legal' && (
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-xl font-bold text-slate-800">Legal Documents</h2>
+                <p className="text-xs text-slate-400 font-semibold mt-0.5">Manage Privacy Policy and Terms of Service content (Markdown supported).</p>
+              </div>
+
+              <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-soft space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-sm font-bold text-slate-800">Privacy Policy</h3>
+                  <button
+                    onClick={() => handleSaveLegal('PrivacyPolicy', privacyPolicy)}
+                    disabled={legalSaving}
+                    className="bg-primary hover:bg-primary-dark text-white font-bold py-2 px-4 rounded-xl text-xs flex items-center space-x-1.5 shadow-soft transition-all"
+                  >
+                    <Save className="h-4 w-4" />
+                    <span>{legalSaving ? 'Saving...' : 'Save Privacy Policy'}</span>
+                  </button>
+                </div>
+                <div className="bg-white [&_.ql-container]:rounded-b-2xl [&_.ql-toolbar]:rounded-t-2xl [&_.ql-editor]:min-h-[200px]">
+                  <ReactQuill
+                    theme="snow"
+                    value={privacyPolicy}
+                    onChange={setPrivacyPolicy}
+                    placeholder="Enter Privacy Policy content..."
+                  />
+                </div>
+              </div>
+
+              <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-soft space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-sm font-bold text-slate-800">Terms of Service</h3>
+                  <button
+                    onClick={() => handleSaveLegal('TermsOfService', termsOfService)}
+                    disabled={legalSaving}
+                    className="bg-primary hover:bg-primary-dark text-white font-bold py-2 px-4 rounded-xl text-xs flex items-center space-x-1.5 shadow-soft transition-all"
+                  >
+                    <Save className="h-4 w-4" />
+                    <span>{legalSaving ? 'Saving...' : 'Save Terms'}</span>
+                  </button>
+                </div>
+                <div className="bg-white [&_.ql-container]:rounded-b-2xl [&_.ql-toolbar]:rounded-t-2xl [&_.ql-editor]:min-h-[200px]">
+                  <ReactQuill
+                    theme="snow"
+                    value={termsOfService}
+                    onChange={setTermsOfService}
+                    placeholder="Enter Terms of Service content..."
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* VIEW: APP USER TERMS & CONDITIONS */}
+          {activeView === 'app-user-terms' && (
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-xl font-bold text-slate-800">App User Terms & Conditions</h2>
+                <p className="text-xs text-slate-400 font-semibold mt-0.5">Manage the Master Disclaimer, Privacy Notice & Terms of Use presented to application users during mandatory onboarding.</p>
+              </div>
+
+              <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-soft space-y-4">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-800">Master Disclaimer, Privacy Notice & Terms Content</h3>
+                    <p className="text-xs text-slate-500 mt-0.5">Changes saved here will immediately reflect on the user mobile and web Terms Acceptance page.</p>
+                  </div>
+                  <button
+                    onClick={() => handleSaveLegal('TermsOfService', termsOfService)}
+                    disabled={legalSaving}
+                    className="bg-primary hover:bg-primary-dark text-white font-bold py-2 px-4 rounded-xl text-xs flex items-center space-x-1.5 shadow-soft transition-all"
+                  >
+                    <Save className="h-4 w-4" />
+                    <span>{legalSaving ? 'Saving...' : 'Save App User Terms'}</span>
+                  </button>
+                </div>
+                <div className="bg-white [&_.ql-container]:rounded-b-2xl [&_.ql-toolbar]:rounded-t-2xl [&_.ql-editor]:min-h-[350px]">
+                  <ReactQuill
+                    theme="snow"
+                    value={termsOfService}
+                    onChange={setTermsOfService}
+                    placeholder="Enter complete Master Disclaimer, Privacy Notice & Terms of Use..."
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* VIEW 9.5: FOUNDERS SECTION */}
+          {activeView === 'founders' && (
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="text-xl font-bold text-slate-800">Founders Management</h2>
+                  <p className="text-xs text-slate-400 font-semibold mt-0.5">Manage details and YouTube video links of your company's founders.</p>
+                </div>
+                <button
+                  onClick={() => {
+                    setEditingFounderId(null);
+                    setFounderForm({
+                      name: '',
+                      role: '',
+                      background: '',
+                      workDone: '',
+                      achievements: '',
+                      tryingToSolve: '',
+                      videoUrl: ''
+                    });
+                    setShowFounderModal(true);
+                  }}
+                  className="bg-primary hover:bg-primary-dark text-white font-bold px-4 py-2 rounded-xl text-sm flex items-center space-x-1.5 shadow-soft"
+                >
+                  <Plus className="h-4.5 w-4.5" />
+                  <span>Add Founder</span>
+                </button>
+              </div>
+
+              {/* A Note from the Founder Card */}
+              <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-sm mb-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-4 border-b border-slate-100">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-rose-500 to-amber-500 text-white flex items-center justify-center font-bold text-lg shadow-sm">
+                      👑
+                    </div>
+                    <div>
+                      <h3 className="text-base font-black text-slate-800">A Note from the Founder</h3>
+                      <p className="text-xs text-slate-400 font-medium">
+                        Official message from Dr. Krithikaa Sekar displayed in the mobile app & website.
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setSavingPaymentConfig(true);
+                      try {
+                        const res = await fetch(`${apiUrl}/admin/payments/config`, {
+                          method: 'PUT',
+                          headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                          },
+                          body: JSON.stringify(paymentConfig)
+                        });
+                        if (res.ok) {
+                          alert('Founder Note updated successfully!');
+                          fetchPaymentConfig();
+                        } else {
+                          const data = await res.json();
+                          alert(data.message || 'Failed to update founder note.');
+                        }
+                      } catch (e) {
+                        console.error(e);
+                        alert('Error updating founder note.');
+                      } finally {
+                        setSavingPaymentConfig(false);
+                      }
+                    }}
+                    disabled={savingPaymentConfig || !paymentConfig}
+                    className="bg-primary hover:bg-primary-dark disabled:opacity-50 text-white font-extrabold px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-sm transition-all cursor-pointer self-start sm:self-auto"
+                  >
+                    <Save className="h-4 w-4" />
+                    <span>{savingPaymentConfig ? 'Saving...' : 'Save Founder Note'}</span>
+                  </button>
+                </div>
+
+                {paymentConfig ? (
+                  <div className="bg-white [&_.ql-container]:rounded-b-2xl [&_.ql-toolbar]:rounded-t-2xl [&_.ql-editor]:min-h-[220px]">
+                    <ReactQuill
+                      theme="snow"
+                      value={paymentConfig.founderNote !== undefined ? paymentConfig.founderNote : ''}
+                      onChange={(val) => setPaymentConfig({ ...paymentConfig, founderNote: val })}
+                      placeholder="Enter Note from the Founder..."
+                    />
+                  </div>
+                ) : (
+                  <div className="text-xs text-slate-400 font-semibold py-4 text-center">Loading configuration...</div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {founders.length === 0 ? (
+                  <div className="col-span-full text-center py-12 text-slate-400 font-semibold text-xs border-2 border-dashed border-slate-100 rounded-2xl">
+                    No founders found. Click "Add Founder" to create one.
+                  </div>
+                ) : (
+                  founders.map(f => (
+                    <div key={f._id} className="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm flex flex-col justify-between">
+                      <div>
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h3 className="text-lg font-bold text-slate-800">{f.name}</h3>
+                            <p className="text-xs font-semibold text-primary">{f.role}</p>
+                          </div>
+                          <div className="flex space-x-1">
                             <button
-                              type="submit"
-                              className="bg-primary hover:bg-primary-dark text-white font-black px-6 py-2.5 rounded-xl shadow-sm flex items-center space-x-2 transition-all text-xs cursor-pointer"
+                              onClick={() => {
+                                setEditingFounderId(f._id);
+                                setFounderForm({
+                                  name: f.name,
+                                  role: f.role,
+                                  background: f.background,
+                                  workDone: f.workDone,
+                                  achievements: f.achievements,
+                                  tryingToSolve: f.tryingToSolve,
+                                  videoUrl: f.videoUrl || ''
+                                });
+                                setShowFounderModal(true);
+                              }}
+                              className="p-2 hover:bg-slate-100 rounded-xl text-slate-500 transition-colors"
                             >
-                              <Send className="h-4 w-4" />
-                              <span>Dispatch Alert Push Notification</span>
+                              <Edit className="h-4.5 w-4.5" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteFounder(f._id)}
+                              className="p-2 hover:bg-red-50 rounded-xl text-slate-400 hover:text-red-500 transition-colors"
+                            >
+                              <Trash2 className="h-4.5 w-4.5" />
                             </button>
                           </div>
-                        </form>
-                      </div>
-                    )}
+                        </div>
 
-                    {/* SUBSCRIPTION & BILLING TAB */}
-                    {userModalTab === 'subscription' && (
-                      <div className="space-y-6">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100 p-4 rounded-2xl">
-                          <div>
-                            <h4 className="text-sm font-black text-slate-800 flex items-center gap-2">
-                              <CreditCard className="w-4 h-4 text-primary" />
-                              <span>Patient Subscription &amp; Access Controls</span>
-                            </h4>
-                            <p className="text-xs text-slate-500 font-medium mt-0.5">
-                              View full payment records, promo coupons used, Razorpay transaction IDs, grant complimentary membership, or cancel access.
-                            </p>
+                        <div className="mt-4 space-y-2 text-xs text-slate-600">
+                          <p><strong>Background:</strong> {f.background?.length > 150 ? f.background.slice(0, 150) + '...' : f.background}</p>
+                          <p><strong>Work Done:</strong> {f.workDone?.length > 150 ? f.workDone.slice(0, 150) + '...' : f.workDone}</p>
+                          {f.videoUrl && (
+                            <div className="mt-3 p-2 bg-slate-50 rounded-xl border border-slate-100 flex items-center space-x-2 text-[11px] text-slate-500">
+                              <span className="text-red-500">🎥</span>
+                              <span className="truncate max-w-[280px] font-mono">{f.videoUrl}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {showFounderModal && (
+                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
+                  <div className="bg-white p-6 rounded-3xl border border-slate-200 max-w-2xl w-full shadow-lg my-8">
+                    <h3 className="text-base font-bold text-slate-800 mb-4">{editingFounderId ? 'Edit Founder' : 'Add Founder'}</h3>
+                    <form onSubmit={handleFounderSubmit} className="space-y-4">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Name</label>
+                          <input
+                            type="text"
+                            required
+                            value={founderForm.name}
+                            onChange={e => setFounderForm({ ...founderForm, name: e.target.value })}
+                            className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Role / Designation</label>
+                          <input
+                            type="text"
+                            required
+                            value={founderForm.role}
+                            onChange={e => setFounderForm({ ...founderForm, role: e.target.value })}
+                            placeholder="e.g. Co-Founder & Chief Medical Officer"
+                            className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Background Bio</label>
+                        <textarea
+                          required
+                          rows={3}
+                          value={founderForm.background}
+                          onChange={e => setFounderForm({ ...founderForm, background: e.target.value })}
+                          placeholder="Explain the founder's background, education, and credentials..."
+                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm resize-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Work Done</label>
+                        <textarea
+                          required
+                          rows={3}
+                          value={founderForm.workDone}
+                          onChange={e => setFounderForm({ ...founderForm, workDone: e.target.value })}
+                          placeholder="Describe their past and current work, research, or clinical experience..."
+                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm resize-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Achievements</label>
+                        <textarea
+                          required
+                          rows={3}
+                          value={founderForm.achievements}
+                          onChange={e => setFounderForm({ ...founderForm, achievements: e.target.value })}
+                          placeholder="List their major milestones, awards, or recognized contributions..."
+                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm resize-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">What are we trying to solve?</label>
+                        <textarea
+                          required
+                          rows={3}
+                          value={founderForm.tryingToSolve}
+                          onChange={e => setFounderForm({ ...founderForm, tryingToSolve: e.target.value })}
+                          placeholder="Explain the vision/problems the founder is dedicated to solving with this platform..."
+                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm resize-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">YouTube / Video URL (Optional)</label>
+                        <input
+                          type="url"
+                          value={founderForm.videoUrl}
+                          onChange={e => setFounderForm({ ...founderForm, videoUrl: e.target.value })}
+                          placeholder="e.g. https://www.youtube.com/watch?v=..."
+                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm"
+                        />
+                      </div>
+
+                      <div className="flex space-x-3 pt-2">
+                        <button
+                          type="button"
+                          onClick={() => setShowFounderModal(false)}
+                          className="flex-1 py-2.5 bg-slate-100 text-slate-600 rounded-xl font-semibold hover:bg-slate-200 transition-colors"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          className="flex-1 py-2.5 bg-primary text-white font-bold rounded-xl hover:bg-primary-dark transition-colors"
+                        >
+                          Save Founder
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* DAILY LOGGING WORKFLOWS TAB */}
+          {activeView === 'daily-workflows' && (
+            <AdminDailyLoggingWorkflows apiUrl={apiUrl} token={token} />
+          )}
+
+          {/* ASK MITO WORKFLOWS & Q&A TAB */}
+          {activeView === 'ask-mito-workflows' && (
+            <AdminAskMitoTopics apiUrl={apiUrl} token={token} />
+          )}
+
+          {/* AI COACH SETTINGS TAB */}
+          {activeView === 'aicoach' && (
+            <div className="max-w-3xl">
+              <div className="mb-6 flex justify-between items-center">
+                <div>
+                  <h2 className="text-xl font-bold text-slate-800 flex items-center">
+                    <Bot className="h-6 w-6 text-primary mr-2" />
+                    Advanced AI Coach Configuration
+                  </h2>
+                  <p className="text-sm text-slate-500 font-medium mt-1">
+                    Manage sequential chatbot questions and trigger limits for Premium users.
+                  </p>
+                </div>
+              </div>
+
+              {paymentConfig ? (
+                <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm">
+                  <form onSubmit={handleConfigSubmit} className="space-y-6">
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">AI Trigger Threshold (mg/dL)</label>
+                      <input
+                        type="number"
+                        min="50"
+                        max="300"
+                        required
+                        value={paymentConfig.aiSpikeThreshold !== undefined ? paymentConfig.aiSpikeThreshold : 110}
+                        onChange={(e) => setPaymentConfig({ ...paymentConfig, aiSpikeThreshold: parseInt(e.target.value) || 0 })}
+                        className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold bg-white focus:ring-2 focus:ring-primary/20"
+                      />
+                      <p className="text-[11px] text-slate-400 font-semibold mt-1">If a food logs causes a spike above this value, the AI Coaching Chat will be initiated.</p>
+                    </div>
+
+                    <div className="border-t border-slate-100 pt-6">
+                      <div className="flex justify-between items-center mb-4">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Sequential AI Questions</label>
+                          <p className="text-[11px] text-slate-400 font-semibold mt-1">These questions will be asked one-by-one by the AI assistant.</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newQ = [...(paymentConfig.aiQuestions || [])];
+                            newQ.push('');
+                            setPaymentConfig({ ...paymentConfig, aiQuestions: newQ });
+                          }}
+                          className="px-3 py-1.5 bg-primary/10 text-primary text-xs font-bold rounded-lg hover:bg-primary/20"
+                        >
+                          + Add Question
+                        </button>
+                      </div>
+
+                      <div className="space-y-3">
+                        {(paymentConfig.aiQuestions || []).map((q: string, i: number) => (
+                          <div key={i} className="flex space-x-2">
+                            <div className="flex-1">
+                              <input
+                                type="text"
+                                value={q}
+                                placeholder={`Question ${i + 1}`}
+                                onChange={(e) => {
+                                  const newQ = [...paymentConfig.aiQuestions];
+                                  newQ[i] = e.target.value;
+                                  setPaymentConfig({ ...paymentConfig, aiQuestions: newQ });
+                                }}
+                                className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold bg-white focus:ring-2 focus:ring-primary/20"
+                                required
+                              />
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newQ = paymentConfig.aiQuestions.filter((_: any, idx: number) => idx !== i);
+                                setPaymentConfig({ ...paymentConfig, aiQuestions: newQ });
+                              }}
+                              className="p-3 text-red-500 bg-red-50 hover:bg-red-100 rounded-xl transition-colors"
+                            >
+                              <Trash2 className="h-5 w-5" />
+                            </button>
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const subs = selectedUserActivity.subscriptions || [];
-                              const now = new Date();
-                              const activeSub = subs.find((s: any) =>
-                                (s.status === 'active' && new Date(s.endDate) > now) ||
-                                (s.status === 'trialing' && s.trialEndDate && new Date(s.trialEndDate) > now) ||
-                                (s.status === 'cancelled' && new Date(s.endDate) > now)
-                              );
-                              setSubModalUser({
-                                ...selectedUserActivity.user,
-                                subscription: activeSub,
-                                subscriptionSummary: activeSub ? {
-                                  planName: activeSub.planId?.name || 'Annual Plan',
-                                  status: activeSub.status,
-                                  statusLabel: activeSub.status === 'active' ? 'Active Paid' : activeSub.status === 'trialing' ? 'Free Trial' : 'Cancelled'
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="border-t border-slate-100 pt-6">
+                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">AI Completion / Final Response</label>
+                      <textarea
+                        required
+                        rows={3}
+                        value={paymentConfig.aiCompletionMessage || ''}
+                        onChange={(e) => setPaymentConfig({ ...paymentConfig, aiCompletionMessage: e.target.value })}
+                        placeholder="Thank you for sharing this context. Remember to stay hydrated and walk 15 mins after heavy meals!"
+                        className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold bg-white resize-none focus:ring-2 focus:ring-primary/20"
+                      />
+                      <p className="text-[11px] text-slate-400 font-semibold mt-1">The automated response sent immediately after the user answers the final question.</p>
+                    </div>
+
+                    {/* Hydration Tracker Settings */}
+                    <div className="border-t border-slate-100 pt-6">
+                      <h3 className="text-sm font-bold text-slate-700 mb-4 flex items-center space-x-2">
+                        <span>💧</span>
+                        <span>Hydration Tracker Configuration</span>
+                      </h3>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Enable Hydration Tracker</label>
+                          <div className="flex items-center space-x-3 mt-1">
+                            <input
+                              type="checkbox"
+                              checked={paymentConfig.enableHydrationTracker !== false}
+                              onChange={(e) => setPaymentConfig({ ...paymentConfig, enableHydrationTracker: e.target.checked })}
+                              className="h-5 w-5 text-primary border-slate-300 rounded focus:ring-primary"
+                              id="enableHydrationTracker"
+                            />
+                            <label htmlFor="enableHydrationTracker" className="text-xs font-bold text-slate-600">
+                              {paymentConfig.enableHydrationTracker !== false ? 'Enabled (ON)' : 'Disabled (OFF)'}
+                            </label>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Daily Hydration Target Goal (ml)</label>
+                          <input
+                            type="number"
+                            min="500"
+                            max="10000"
+                            step="50"
+                            required
+                            value={paymentConfig.hydrationDailyLimitMl !== undefined ? paymentConfig.hydrationDailyLimitMl : 3000}
+                            onChange={(e) => setPaymentConfig({ ...paymentConfig, hydrationDailyLimitMl: parseInt(e.target.value) || 0 })}
+                            className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold bg-white focus:ring-2 focus:ring-primary/20"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Workout Tracker Settings */}
+                    <div className="border-t border-slate-100 pt-6">
+                      <h3 className="text-sm font-bold text-slate-700 mb-4 flex items-center space-x-2">
+                        <span>🏃</span>
+                        <span>Workout Tracker Configuration</span>
+                      </h3>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Enable Workout Tracker</label>
+                          <div className="flex items-center space-x-3 mt-1">
+                            <input
+                              type="checkbox"
+                              checked={paymentConfig.enableWorkoutTracker !== false}
+                              onChange={(e) => setPaymentConfig({ ...paymentConfig, enableWorkoutTracker: e.target.checked })}
+                              className="h-5 w-5 text-primary border-slate-300 rounded focus:ring-primary"
+                              id="enableWorkoutTracker"
+                            />
+                            <label htmlFor="enableWorkoutTracker" className="text-xs font-bold text-slate-600">
+                              {paymentConfig.enableWorkoutTracker !== false ? 'Enabled (ON)' : 'Disabled (OFF)'}
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end pt-4">
+                      <button
+                        type="submit"
+                        disabled={savingPaymentConfig}
+                        className="px-8 py-3 bg-primary text-white rounded-xl font-bold shadow-md hover:bg-primary-dark transition-all disabled:opacity-50 flex items-center"
+                      >
+                        {savingPaymentConfig ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <Save className="h-5 w-5 mr-2" />}
+                        {savingPaymentConfig ? 'Saving...' : 'Save AI Settings'}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* VIEW 10: PATIENT DETAILS & ACTIVITY LOG — DEDICATED FULL PAGE */}
+          {activeView === 'patient-details' && (
+            <div className="space-y-6">
+              {/* Back + Header */}
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={() => setActiveView('users')}
+                  className="flex items-center space-x-2 text-xs font-bold text-slate-500 hover:text-primary bg-white border border-slate-200 px-3 py-2 rounded-xl shadow-sm transition-all hover:border-primary/30"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                  <span>Back to Users</span>
+                </button>
+                <div>
+                  <h2 className="text-xl font-extrabold text-slate-800">Patient Details &amp; Activity Log</h2>
+                  <p className="text-xs text-slate-400 font-semibold mt-0.5">Full clinical overview, glucose tracking, meal logs, and AI coaching history.</p>
+                </div>
+              </div>
+
+              {!selectedUserActivity ? (
+                <div className="flex flex-col items-center justify-center py-24">
+                  <Loader2 className="h-10 w-10 animate-spin text-primary mb-3" />
+                  <p className="text-slate-400 font-semibold text-sm">Loading patient data...</p>
+                </div>
+              ) : (
+              <>
+                  {/* HERO PATIENT CARD */}
+                  <div className="relative overflow-hidden bg-gradient-to-br from-indigo-600 via-purple-600 to-primary rounded-3xl p-6 shadow-2xl text-white">
+                    <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 80% 20%, white 0%, transparent 60%)' }} />
+                    <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                      <div className="flex items-center space-x-4">
+                        <div className="h-16 w-16 rounded-2xl bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center text-2xl font-black shadow-lg">
+                          {(selectedUserActivity.user.name || 'U').charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <h3 className="text-xl font-black">{selectedUserActivity.user.name || 'Unknown Patient'}</h3>
+                          <p className="text-white/70 text-xs font-semibold">{selectedUserActivity.user.email}</p>
+                          <div className="flex items-center space-x-2 mt-1.5">
+                            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black ${selectedUserActivity.user.isDeleted ? 'bg-rose-500/40 text-rose-100 border border-rose-300/40' : selectedUserActivity.user.isBlocked ? 'bg-red-400/30 text-red-100' : 'bg-green-400/30 text-green-100'}`}>
+                              {selectedUserActivity.user.isDeleted ? '🗑️ Deleted (30d Grace)' : selectedUserActivity.user.isBlocked ? '⛔ Blocked' : '✅ Active'}
+                            </span>
+                            {selectedUserActivity.user.isDeleted && selectedUserActivity.user.deletionScheduledFor && (
+                              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-rose-500/30 text-rose-100">
+                                {Math.max(0, Math.ceil((new Date(selectedUserActivity.user.deletionScheduledFor).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))}d left
+                              </span>
+                            )}
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-white/20 text-white">
+                              ID: {selectedUserActivity.user._id?.slice(-8)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        {[
+                          { label: 'Age', value: selectedUserActivity.user.age ? `${selectedUserActivity.user.age} yrs` : '--' },
+                          { label: 'Weight', value: selectedUserActivity.user.weight ? `${selectedUserActivity.user.weight} kg` : '--' },
+                          { label: 'Height', value: selectedUserActivity.user.height ? `${selectedUserActivity.user.height} cm` : '--' },
+                          { label: 'Goal', value: selectedUserActivity.user.goal?.replace('-', ' ') || '--' },
+                        ].map((stat: any) => (
+                          <div key={stat.label} className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 text-center">
+                            <span className="block text-[9px] font-bold uppercase text-white/60">{stat.label}</span>
+                            <span className="block text-sm font-black text-white capitalize">{stat.value}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* STAT CARDS ROW */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {[
+                      { label: 'Meals Logged', value: selectedUserActivity.foodLogs?.length ?? 0, icon: <Utensils className="h-5 w-5" />, gradient: 'from-orange-400 to-amber-500', text: 'text-amber-600' },
+                      { label: 'Glucose Readings', value: selectedUserActivity.glucoseReadings?.length ?? 0, icon: <Activity className="h-5 w-5" />, gradient: 'from-blue-400 to-indigo-500', text: 'text-blue-600' },
+                      { label: 'CGM Reports', value: selectedUserActivity.cgmReports?.length ?? 0, icon: <FileUp className="h-5 w-5" />, gradient: 'from-purple-400 to-violet-500', text: 'text-purple-600' },
+                      { label: 'AI Sessions', value: coachingSessions.length ?? 0, icon: <Bot className="h-5 w-5" />, gradient: 'from-green-400 to-emerald-500', text: 'text-green-600' },
+                    ].map((card: any) => (
+                      <div key={card.label} className="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm flex items-center space-x-3">
+                        <div className={`h-11 w-11 rounded-xl bg-gradient-to-br ${card.gradient} flex items-center justify-center text-white shadow-md shrink-0`}>
+                          {card.icon}
+                        </div>
+                        <div>
+                          <span className="block text-[10px] font-bold uppercase text-slate-400">{card.label}</span>
+                          <span className={`block text-2xl font-black ${card.text}`}>{card.value}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* TABBED CONTENT CARD */}
+                  <div className="bg-white rounded-3xl border border-slate-100 shadow-soft overflow-hidden">
+                    {/* Tab Bar */}
+                    <div className="flex border-b border-slate-100 overflow-x-auto">
+                      {[
+                        { key: 'overview', label: '📋 Overview' },
+                        { key: 'habits', label: '🌱 Habits' },
+                        { key: 'food', label: '🍽 Food Logs' },
+                        { key: 'glucose', label: '📈 Glucose' },
+                        { key: 'reports', label: '📄 CGM Reports' },
+                        { key: 'coaching', label: '🤖 AI Coaching' },
+                        { key: 'notify', label: '🔔 Send Alert' },
+                        { key: 'subscription', label: '💳 Subscription & Billing' },
+                      ].map((tab) => (
+                        <button
+                          key={tab.key}
+                          onClick={() => setUserModalTab(tab.key as any)}
+                          className={`px-5 py-3.5 text-[11px] font-bold whitespace-nowrap transition-all border-b-2 ${userModalTab === tab.key
+                            ? 'border-primary text-primary bg-primary/5'
+                            : 'border-transparent text-slate-400 hover:text-slate-700 hover:bg-slate-50'
+                            }`}
+                        >
+                          {tab.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="p-6">
+
+                      {/* OVERVIEW TAB */}
+                      {userModalTab === 'overview' && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div className="space-y-3">
+                            <h4 className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Health Profile</h4>
+                            <div className="bg-slate-50/70 rounded-2xl p-4 space-y-0">
+                              {[
+                                { label: 'Gender', value: selectedUserActivity.user.gender || '--' },
+                                { label: 'Activity Level', value: selectedUserActivity.user.activityLevel?.replace('-', ' ') || '--' },
+                                { label: 'Daily Calorie Target', value: selectedUserActivity.user.dailyCalorieTarget ? `${selectedUserActivity.user.dailyCalorieTarget} kcal` : '--' },
+                                { label: 'TDEE / BMR', value: `${selectedUserActivity.user.tdee ? Math.round(selectedUserActivity.user.tdee) + ' kcal' : '--'} / ${selectedUserActivity.user.bmr ? Math.round(selectedUserActivity.user.bmr) + ' kcal' : '--'}` },
+                                { label: 'Health Goal', value: selectedUserActivity.user.goal?.replace('-', ' ') || '--' },
+                              ].map((item: any) => (
+                                <div key={item.label} className="flex justify-between items-center py-2.5 border-b border-slate-100 last:border-0">
+                                  <span className="text-[11px] font-semibold text-slate-500 uppercase">{item.label}</span>
+                                  <span className="text-xs font-bold text-slate-800 capitalize">{item.value}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="space-y-3">
+                            <h4 className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Activity Summary</h4>
+                            <div className="bg-slate-50/70 rounded-2xl p-4 space-y-0">
+                              {[
+                                { label: 'Total Meals Logged', value: `${selectedUserActivity.foodLogs?.length ?? 0} meals` },
+                                { label: 'Glucose Readings', value: `${selectedUserActivity.glucoseReadings?.length ?? 0} readings` },
+                                { label: 'CGM Reports Uploaded', value: `${selectedUserActivity.cgmReports?.length ?? 0} files` },
+                                { label: 'AI Coaching Sessions', value: `${coachingSessions.length} sessions` },
+                                { label: 'Active AI Sessions', value: `${coachingSessions.filter((s: any) => s.status === 'active').length} active` },
+                              ].map((item: any) => (
+                                <div key={item.label} className="flex justify-between items-center py-2.5 border-b border-slate-100 last:border-0">
+                                  <span className="text-[11px] font-semibold text-slate-500 uppercase">{item.label}</span>
+                                  <span className="text-xs font-black text-primary">{item.value}</span>
+                                </div>
+                              ))}
+                            </div>
+                            <div className="bg-gradient-to-r from-slate-800 to-slate-700 rounded-2xl p-4 text-white">
+                              <p className="text-[10px] font-bold uppercase text-white/50 mb-1">Member Since</p>
+                              <p className="text-sm font-black">{selectedUserActivity.user.createdAt ? new Date(selectedUserActivity.user.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' }) : '--'}</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* HABITS TAB */}
+                      {userModalTab === 'habits' && (
+                        <div className="space-y-3">
+                          <h4 className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Habit Logs ({selectedUserActivity.habitLogs?.length ?? 0})</h4>
+                          {!selectedUserActivity.habitLogs || selectedUserActivity.habitLogs.length === 0 ? (
+                            <div className="text-center py-12 text-slate-400 font-semibold text-xs border-2 border-dashed border-slate-100 rounded-2xl">No habits logged yet.</div>
+                          ) : (
+                            <div className="overflow-x-auto rounded-2xl border border-slate-100">
+                              <table className="w-full text-xs">
+                                <thead className="bg-slate-50">
+                                  <tr>
+                                    {['Habit', 'Value', 'Time'].map(h => (
+                                      <th key={h} className="px-4 py-3 text-left font-extrabold text-slate-500 uppercase text-[10px]">{h}</th>
+                                    ))}
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-50">
+                                  {selectedUserActivity.habitLogs.slice(0, 100).map((log: any) => (
+                                    <tr key={log._id} className="hover:bg-slate-50/60 transition-colors">
+                                      <td className="px-4 py-3 font-bold text-slate-700 capitalize">{log.type}</td>
+                                      <td className="px-4 py-3 text-slate-600 font-medium">
+                                        {log.value ? (
+                                          typeof log.value === 'object' ? (
+                                            <div className="flex flex-col gap-0.5 text-[11px]">
+                                              {Object.entries(log.value).map(([k, v]) => {
+                                                if (k === 'happy') return <span key={k}><strong className="text-slate-400">Response:</strong> {v ? 'Yes / Good' : 'No'}</span>;
+                                                if (k === 'joyActivity') return <span key={k}><strong className="text-slate-400">Activity:</strong> {String(v)}</span>;
+                                                if (k === 'started' || k === 'ended') return <span key={k}><strong className="text-slate-400">{k === 'started' ? 'Start' : 'End'}:</strong> {new Date(String(v)).toLocaleString('en-IN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short' })}</span>;
+                                                if (k === 'count') return <span key={k}><strong className="text-slate-400">Count/Amount:</strong> {String(v)}</span>;
+                                                if (k === 'hours') return <span key={k}><strong className="text-slate-400">Duration:</strong> {String(v)} hours</span>;
+                                                if (k === 'emoji') return null;
+                                                if (k === 'label') return <span key={k}><strong className="text-slate-400">Feeling:</strong> {log.value.emoji} {String(v)}</span>;
+                                                if (k === 'faceId' && !log.value.label) return <span key={k}><strong className="text-slate-400">Face:</strong> {String(v)}</span>;
+                                                if (k === 'faceId') return null;
+                                                if (k === 'done') return null;
+                                                return <span key={k}><strong className="text-slate-400 capitalize">{k}:</strong> {String(v)}</span>;
+                                              })}
+                                            </div>
+                                          ) : String(log.value)
+                                        ) : '--'}
+                                      </td>
+                                      <td className="px-4 py-3 text-slate-500 font-medium whitespace-nowrap">
+                                        {log.timestamp ? new Date(log.timestamp).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '--'}
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* FOOD LOGS TAB */}
+                      {userModalTab === 'food' && (
+                        <div className="space-y-3">
+                          <h4 className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Meal Logs ({selectedUserActivity.foodLogs?.length ?? 0})</h4>
+                          {!selectedUserActivity.foodLogs || selectedUserActivity.foodLogs.length === 0 ? (
+                            <div className="text-center py-12 text-slate-400 font-semibold text-xs border-2 border-dashed border-slate-100 rounded-2xl">No meal logs found.</div>
+                          ) : (
+                            <div className="overflow-x-auto rounded-2xl border border-slate-100">
+                              <table className="w-full text-xs">
+                                <thead className="bg-slate-50">
+                                  <tr>
+                                    {['Food', 'Meal Type', 'Quantity', 'Calories', 'Carbs', 'Protein', 'Fat', 'Glucose Status', 'User Feedback', 'Logged At'].map(h => (
+                                      <th key={h} className="px-4 py-3 text-left font-extrabold text-slate-500 uppercase text-[10px] whitespace-nowrap">{h}</th>
+                                    ))}
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-50">
+                                  {selectedUserActivity.foodLogs.map((log: any) => (
+                                    <tr key={log._id} className="hover:bg-slate-50/60 transition-colors">
+                                      <td className="px-4 py-3 font-bold text-slate-800 whitespace-nowrap">{log.name}</td>
+                                      <td className="px-4 py-3 text-slate-500 capitalize whitespace-nowrap">{log.mealType}</td>
+                                      <td className="px-4 py-3 text-slate-600 font-semibold whitespace-nowrap">{log.quantity} {log.unit}</td>
+                                      <td className="px-4 py-3 font-bold text-amber-600 whitespace-nowrap">{log.calories} kcal</td>
+                                      <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{log.carbs}g</td>
+                                      <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{log.protein}g</td>
+                                      <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{log.fat}g</td>
+                                      <td className="px-4 py-3 whitespace-nowrap">
+                                        {log.glucoseAnalysis ? (
+                                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${log.glucoseAnalysis.status === 'Safe' ? 'bg-green-50 text-green-700' : log.glucoseAnalysis.status === 'Moderate' ? 'bg-amber-50 text-amber-600' : 'bg-red-50 text-red-600'}`}>
+                                            {log.glucoseAnalysis.status} ({log.glucoseAnalysis.peakGlucose} mg/dL)
+                                          </span>
+                                        ) : <span className="text-slate-300">—</span>}
+                                      </td>
+                                      <td className="px-4 py-3 whitespace-nowrap">
+                                        {log.feedback ? (
+                                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${log.feedback.isAccurate ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'}`}>
+                                            {log.feedback.isAccurate ? '👍 Accurate' : '👎 Inaccurate'}
+                                          </span>
+                                        ) : <span className="text-slate-300">—</span>}
+                                      </td>
+                                      <td className="px-4 py-3 text-slate-400 font-medium whitespace-nowrap">{log.loggedAt ? new Date(log.loggedAt).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '--'}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* GLUCOSE TAB */}
+                      {userModalTab === 'glucose' && (
+                        <div className="space-y-3">
+                          <h4 className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Glucose Readings ({selectedUserActivity.glucoseReadings?.length ?? 0})</h4>
+                          {!selectedUserActivity.glucoseReadings || selectedUserActivity.glucoseReadings.length === 0 ? (
+                            <div className="text-center py-12 text-slate-400 font-semibold text-xs border-2 border-dashed border-slate-100 rounded-2xl">No glucose readings found.</div>
+                          ) : (
+                            <div className="overflow-x-auto rounded-2xl border border-slate-100">
+                              <table className="w-full text-xs">
+                                <thead className="bg-slate-50">
+                                  <tr>
+                                    {['Value', 'Status', 'Timestamp', 'Source'].map(h => (
+                                      <th key={h} className="px-4 py-3 text-left font-extrabold text-slate-500 uppercase text-[10px]">{h}</th>
+                                    ))}
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-50">
+                                  {selectedUserActivity.glucoseReadings.slice(0, 100).map((r: any) => (
+                                    <tr key={r._id} className="hover:bg-slate-50/60 transition-colors">
+                                      <td className="px-4 py-3">
+                                        <span className={`font-black text-sm ${r.value > 140 ? 'text-red-500' : r.value > 100 ? 'text-amber-500' : 'text-green-600'}`}>
+                                          {r.value} <span className="text-[10px] font-semibold text-slate-400">mg/dL</span>
+                                        </span>
+                                      </td>
+                                      <td className="px-4 py-3">
+                                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${r.value > 140 ? 'bg-red-50 text-red-600' : r.value > 100 ? 'bg-amber-50 text-amber-600' : 'bg-green-50 text-green-600'}`}>
+                                          {r.value > 140 ? 'High' : r.value > 100 ? 'Moderate' : 'Normal'}
+                                        </span>
+                                      </td>
+                                      <td className="px-4 py-3 text-slate-500 font-medium whitespace-nowrap">
+                                        {r.timestamp ? new Date(r.timestamp).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '--'}
+                                      </td>
+                                      <td className="px-4 py-3">
+                                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-600 capitalize">{r.source || 'cgm'}</span>
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                              {selectedUserActivity.glucoseReadings.length > 100 && (
+                                <p className="text-center text-[10px] text-slate-400 font-semibold py-3 border-t border-slate-100">
+                                  Showing latest 100 of {selectedUserActivity.glucoseReadings.length} readings.
+                                </p>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* CGM REPORTS TAB */}
+                      {userModalTab === 'reports' && (
+                        <div className="space-y-3">
+                          <h4 className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">CGM Reports ({selectedUserActivity.cgmReports?.length ?? 0})</h4>
+                          {!selectedUserActivity.cgmReports || selectedUserActivity.cgmReports.length === 0 ? (
+                            <div className="text-center py-12 text-slate-400 font-semibold text-xs border-2 border-dashed border-slate-100 rounded-2xl">No CGM reports uploaded.</div>
+                          ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              {selectedUserActivity.cgmReports.map((rep: any) => (
+                                <div key={rep._id} className="bg-slate-50 rounded-2xl p-4 border border-slate-100 flex justify-between items-start">
+                                  <div>
+                                    <p className="font-bold text-slate-800 text-xs mb-1 flex items-center space-x-1.5">
+                                      <FileText className="h-3.5 w-3.5 text-primary" />
+                                      <span>{rep.fileName || 'CGM Report'}</span>
+                                    </p>
+                                    <p className="text-[10px] text-slate-400 font-semibold">
+                                      {rep.parsedReadingsCount ?? rep.readingsCount ?? '--'} readings · {rep.createdAt ? new Date(rep.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '--'}
+                                    </p>
+                                    <span className={`mt-1.5 inline-block px-2 py-0.5 rounded-full text-[10px] font-black ${rep.status === 'Processed' ? 'bg-green-50 text-green-600' : rep.status === 'Processing' ? 'bg-amber-50 text-amber-600' : rep.status === 'Failed' ? 'bg-red-50 text-red-600' : 'bg-slate-100 text-slate-600'}`}>
+                                      {rep.status || 'pending'}
+                                    </span>
+                                  </div>
+                                  <button
+                                    onClick={async () => {
+                                      if (!window.confirm(`Delete "${rep.fileName}"? This cannot be undone.`)) return;
+                                      try {
+                                        const userId = selectedUserActivity.user._id;
+                                        // Admin uses the user's report — call generic delete (admin can also use user's token-less route via admin proxy if added, for now show info)
+                                        const r = await fetch(`${apiUrl}/admin/reports/${rep._id}`, {
+                                          method: 'DELETE',
+                                          headers: { 'Authorization': `Bearer ${token}` }
+                                        });
+                                        if (r.ok) {
+                                          fetchUserActivity(userId);
+                                        } else {
+                                          alert('Could not delete report.');
+                                        }
+                                      } catch { alert('Error deleting report.'); }
+                                    }}
+                                    className="p-1.5 rounded-lg text-slate-400 hover:text-danger hover:bg-red-50 transition-all ml-2 shrink-0"
+                                    title="Delete Report"
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+
+                      {/* AI COACHING TAB */}
+                      {userModalTab === 'coaching' && (
+                        <div className="space-y-4">
+                          <h4 className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">AI Coaching Sessions ({coachingSessions.length})</h4>
+                          {coachingSessions.length === 0 ? (
+                            <div className="text-center py-12 text-slate-400 font-semibold text-xs border-2 border-dashed border-slate-100 rounded-2xl">No AI coaching sessions triggered yet.</div>
+                          ) : (
+                            coachingSessions.map((session: any) => (
+                              <div key={session._id} className="bg-gradient-to-br from-slate-50 to-white rounded-2xl border border-slate-100 p-5 shadow-sm">
+                                <div className="flex justify-between items-start mb-4 pb-3 border-b border-slate-100">
+                                  <div>
+                                    <div className="flex items-center space-x-2">
+                                      <Bot className="h-4 w-4 text-primary" />
+                                      <span className="text-sm font-extrabold text-slate-800">
+                                        {session.foodName || session.foodLogId?.name || 'Unknown Food'}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center space-x-2 mt-1.5">
+                                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-red-50 text-red-600">
+                                        Spike: {session.peakGlucose} mg/dL
+                                      </span>
+                                      <span className="text-[10px] text-slate-400 font-semibold">
+                                        {session.createdAt ? new Date(session.createdAt).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${session.status === 'resolved' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
+                                    {session.status}
+                                  </span>
+                                </div>
+                                <div className="space-y-2.5">
+                                  {session.messages.map((msg: any, i: number) => (
+                                    <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                      <div className={`max-w-[85%] px-4 py-2.5 rounded-2xl text-[11px] font-medium shadow-sm ${msg.role === 'user'
+                                        ? 'bg-gradient-to-r from-primary to-indigo-600 text-white rounded-br-sm'
+                                        : 'bg-white border border-slate-100 text-slate-700 rounded-bl-sm'
+                                        }`}>
+                                        <span className="block text-[8px] font-black uppercase mb-0.5 opacity-60">{msg.role === 'user' ? '👤 Patient' : '🤖 AI Assistant'}</span>
+                                        {msg.content}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      )}
+
+                      {/* TAB: SEND ALERT */}
+                      {userModalTab === 'notify' && (
+                        <div className="space-y-6">
+                          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 p-5 rounded-2xl flex items-start gap-3.5">
+                            <div className="p-2.5 rounded-xl bg-white border border-blue-200 text-primary shadow-xs">
+                              <Bell className="w-5 h-5 text-primary" />
+                            </div>
+                            <div>
+                              <h4 className="text-sm font-black text-slate-800">Dispatch Push Alert to Patient</h4>
+                              <p className="text-xs text-slate-600 mt-0.5">
+                                This notification will be dispatched instantly to <strong>{selectedUserActivity.user.name || 'Patient'}</strong>'s mobile device via Firebase Cloud Messaging (FCM). Use this to send personalized medical advice, glucose warnings, habit reminders, or subscription notifications.
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Quick Presets */}
+                          <div className="bg-slate-50 border border-slate-200/80 p-4 rounded-2xl space-y-2">
+                            <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider block">
+                              Quick Notification Presets
+                            </span>
+                            <div className="flex flex-wrap gap-2">
+                              {[
+                                {
+                                  label: '🩸 High Glucose Warning',
+                                  title: 'High Glucose Warning',
+                                  body: `Hi ${selectedUserActivity.user.name || 'Patient'}, we noticed a recent spike in your glucose readings. Please review your last meal and stay hydrated.`
+                                },
+                                {
+                                  label: '🥗 Log Meal Reminder',
+                                  title: 'Log Your Meal',
+                                  body: `Hi ${selectedUserActivity.user.name || 'Patient'}, don't forget to take a picture and log your meal today for accurate metabolic coaching.`
+                                },
+                                {
+                                  label: '🌱 Habit Check-in',
+                                  title: 'Daily Habit Check-in',
+                                  body: `Hi ${selectedUserActivity.user.name || 'Patient'}, you're making great progress! Complete today's circadian habits to maintain optimal health.`
+                                },
+                                {
+                                  label: '👑 Membership Active',
+                                  title: 'Premium Access Unlocked',
+                                  body: `Hi ${selectedUserActivity.user.name || 'Patient'}, your Mito_Reboot premium membership has been updated and is fully active. Enjoy your health insights!`
+                                },
+                                {
+                                  label: '🩺 Clinical Consultation',
+                                  title: 'Doctor Consultation Reminder',
+                                  body: `Hi ${selectedUserActivity.user.name || 'Patient'}, your upcoming doctor consultation is scheduled. Please ensure your recent reports are uploaded.`
+                                }
+                              ].map((preset) => (
+                                <button
+                                  key={preset.label}
+                                  type="button"
+                                  onClick={() => setUserModalNotify({ title: preset.title, body: preset.body })}
+                                  className="px-3 py-1.5 bg-white hover:bg-primary/5 hover:border-primary/40 border border-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all shadow-2xs cursor-pointer"
+                                >
+                                  {preset.label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <form onSubmit={handleSendUserDirectNotification} className="space-y-4 max-w-2xl bg-white border border-slate-200/80 p-5 rounded-2xl shadow-soft">
+                            <div>
+                              <label className="block text-[11px] font-extrabold text-slate-500 uppercase tracking-wider mb-1.5">
+                                Alert Title *
+                              </label>
+                              <input
+                                type="text"
+                                required
+                                value={userModalNotify.title}
+                                onChange={(e) => setUserModalNotify({ ...userModalNotify, title: e.target.value })}
+                                placeholder="e.g. High Glucose Warning / Meal Log Reminder"
+                                className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary font-bold text-xs bg-slate-50/50"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-[11px] font-extrabold text-slate-500 uppercase tracking-wider mb-1.5">
+                                Alert Message Content *
+                              </label>
+                              <textarea
+                                required
+                                rows={4}
+                                value={userModalNotify.body}
+                                onChange={(e) => setUserModalNotify({ ...userModalNotify, body: e.target.value })}
+                                placeholder="Enter the alert instructions or clinical advice..."
+                                className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary font-medium text-xs bg-slate-50/50"
+                              />
+                            </div>
+
+                            <div className="pt-2">
+                              <button
+                                type="submit"
+                                className="bg-primary hover:bg-primary-dark text-white font-black px-6 py-2.5 rounded-xl shadow-sm flex items-center space-x-2 transition-all text-xs cursor-pointer"
+                              >
+                                <Send className="h-4 w-4" />
+                                <span>Dispatch Alert Push Notification</span>
+                              </button>
+                            </div>
+                          </form>
+                        </div>
+                      )}
+
+                      {/* SUBSCRIPTION & BILLING TAB */}
+                      {userModalTab === 'subscription' && (
+                        <div className="space-y-6">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100 p-4 rounded-2xl">
+                            <div>
+                              <h4 className="text-sm font-black text-slate-800 flex items-center gap-2">
+                                <CreditCard className="w-4 h-4 text-primary" />
+                                <span>Patient Subscription &amp; Access Controls</span>
+                              </h4>
+                              <p className="text-xs text-slate-500 font-medium mt-0.5">
+                                View full payment records, promo coupons used, Razorpay transaction IDs, grant complimentary membership, or cancel access.
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const subs = selectedUserActivity.subscriptions || [];
+                                const now = new Date();
+                                const activeSub = subs.find((s: any) =>
+                                  (s.status === 'active' && new Date(s.endDate) > now) ||
+                                  (s.status === 'trialing' && s.trialEndDate && new Date(s.trialEndDate) > now) ||
+                                  (s.status === 'cancelled' && new Date(s.endDate) > now)
+                                );
+                                setSubModalUser({
+                                  ...selectedUserActivity.user,
+                                  subscription: activeSub,
+                                  subscriptionSummary: activeSub ? {
+                                    planName: activeSub.planId?.name || 'Annual Plan',
+                                    status: activeSub.status,
+                                    statusLabel: activeSub.status === 'active' ? 'Active Paid' : activeSub.status === 'trialing' ? 'Free Trial' : 'Cancelled'
+                   
                                 } : undefined
                               });
                               setSubModalMode('grant');
@@ -11526,6 +10761,7 @@ const AdminPanelContent: React.FC = () => {
             </div>
           </div>
         )}
+        </Suspense>
       </main>
     </div>
   );

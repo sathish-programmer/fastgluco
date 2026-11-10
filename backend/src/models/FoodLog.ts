@@ -71,6 +71,11 @@ const foodLogSchema = new Schema<IFoodLog>(
   }
 );
 
+// High-performance compound indexes for user diet history & analysis
+foodLogSchema.index({ userId: 1, loggedAt: -1, isDeleted: 1 });
+foodLogSchema.index({ userId: 1, mealType: 1, loggedAt: -1 });
+foodLogSchema.index({ userId: 1, 'glucoseAnalysis.status': 1 });
+
 foodLogSchema.pre('find', function () {
   this.where({ isDeleted: false });
 });

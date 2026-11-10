@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import crypto from 'crypto';
 import { GlucoseReading } from '../models/GlucoseReading';
 import pdfParse from 'pdf-parse';
 import { PaymentGatewayConfig } from '../models/PaymentGatewayConfig';
@@ -587,15 +588,12 @@ export class ReportParserService {
       let avgMatch = text.match(/Average\s+Glucose\s*(\d{2,3})/i) || text.match(/(\d{2,3})\s*mg\/dL/i);
 
       if (!avgMatch) {
+        const sessionId = crypto.randomUUID();
+        const sessionDir = path.join('/tmp', `pdf_ocr_${sessionId}`);
         try {
+          fs.mkdirSync(sessionDir, { recursive: true });
           const { execSync } = require('child_process');
-          const tmpPng = `/tmp/pdf_ocr_${Date.now()}.png`;
-
-          try {
-            fs.readdirSync('/tmp')
-              .filter(f => f.startsWith('pdf_ocr_page-') && f.endsWith('.png'))
-              .forEach(f => { try { fs.unlinkSync(`/tmp/${f}`); } catch (_) {} });
-          } catch (_) {}
+          const tmpPng = path.join(sessionDir, 'page-fallback.png');
 
           try {
             const swiftCmd = `swift - "${filePath}" << 'EOF'
@@ -636,14 +634,13 @@ EOF`;
             }
           } catch (_) {
             try {
-              execSync(`pdftoppm -png -r 150 "${filePath}" /tmp/pdf_ocr_page 2>/dev/null || sips -s format png "${filePath}" --out "${tmpPng}" 2>/dev/null`, { timeout: 10000 });
+              execSync(`pdftoppm -png -r 150 "${filePath}" "${path.join(sessionDir, 'page')}" 2>/dev/null || sips -s format png "${filePath}" --out "${tmpPng}" 2>/dev/null`, { timeout: 15000 });
             } catch (_) {}
           }
 
-          const allPngs = fs.readdirSync('/tmp')
-            .filter(f => f.startsWith('pdf_ocr_page-') && f.endsWith('.png'))
-            .map(f => `/tmp/${f}`);
-          if (fs.existsSync(tmpPng)) allPngs.push(tmpPng);
+          const allPngs = fs.readdirSync(sessionDir)
+            .filter(f => f.endsWith('.png'))
+            .map(f => path.join(sessionDir, f));
 
           allPngs.sort((a, b) => {
             const numA = parseInt(a.match(/page-(\d+)/)?.[1] || '0', 10);
@@ -660,15 +657,17 @@ EOF`;
                 if (ocrResult?.data?.text) {
                   text += '\n' + ocrResult.data.text;
                 }
-                try { fs.unlinkSync(pngFile); } catch (_) {}
               } catch (_) {}
             }
-            fs.readdirSync('/tmp')
-              .filter(f => f.startsWith('pdf_ocr_page-') && f.endsWith('.png'))
-              .forEach(f => { try { fs.unlinkSync(`/tmp/${f}`); } catch (_) {} });
           }
         } catch (ocrErr) {
           console.warn('Scanned PDF OCR notice:', ocrErr);
+        } finally {
+          try {
+            if (fs.existsSync(sessionDir)) {
+              fs.rmSync(sessionDir, { recursive: true, force: true });
+            }
+          } catch (_) {}
         }
       }
 

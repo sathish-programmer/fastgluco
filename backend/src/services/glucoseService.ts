@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import { GlucoseReading } from '../models/GlucoseReading';
 import { FoodLog } from '../models/FoodLog';
 import { CGMReport } from '../models/CGMReport';
@@ -266,15 +267,48 @@ export class GlucoseService {
   }
 
   /**
-   * Re-analyzes all food logs for a user (e.g. after new CGM report upload)
+   * Fast targeted analysis for food logs within +/- 4 hours of a new glucose reading.
+   */
+  public static async analyzeNearbyFoodLogs(userId: string, targetTime: Date): Promise<number> {
+    const windowStart = new Date(targetTime.getTime() - 4 * 60 * 60 * 1000);
+    const windowEnd = new Date(targetTime.getTime() + 4 * 60 * 60 * 1000);
+
+    const foodLogs = await FoodLog.find({
+      userId,
+      loggedAt: { $gte: windowStart, $lte: windowEnd }
+    });
+
+    if (!foodLogs.length) return 0;
+
+    let updatedCount = 0;
+    const results = await Promise.allSettled(
+      foodLogs.map(log => this.analyzeFoodLog(log.id))
+    );
+
+    for (const res of results) {
+      if (res.status === 'fulfilled' && res.value) updatedCount++;
+    }
+
+    return updatedCount;
+  }
+
+  /**
+   * Re-analyzes all food logs for a user (e.g. after new CGM report upload) in parallel batches
    */
   public static async analyzeAllUserFoodLogs(userId: string): Promise<number> {
     const foodLogs = await FoodLog.find({ userId });
     let updatedCount = 0;
 
-    for (const log of foodLogs) {
-      const analysis = await this.analyzeFoodLog(log.id);
-      if (analysis) updatedCount++;
+    // Process in batches of 10 to prevent blocking the event loop or overwhelming DB connections
+    const BATCH_SIZE = 10;
+    for (let i = 0; i < foodLogs.length; i += BATCH_SIZE) {
+      const batch = foodLogs.slice(i, i + BATCH_SIZE);
+      const results = await Promise.allSettled(
+        batch.map(log => this.analyzeFoodLog(log.id))
+      );
+      for (const res of results) {
+        if (res.status === 'fulfilled' && res.value) updatedCount++;
+      }
     }
 
     return updatedCount;
@@ -282,15 +316,17 @@ export class GlucoseService {
 
   /**
    * Aggregates food logs to rank Top Safe, Moderate, and Avoid foods for the Food Analysis Screen.
+   * Utilizes MongoDB Aggregation pipeline for sub-second execution on indexed fields.
    */
   public static async getTopFoodsReport(userId: string, range?: string): Promise<{
     safe: Array<{ name: string; count: number; avgPeak: number }>;
     moderate: Array<{ name: string; count: number; avgPeak: number }>;
     avoid: Array<{ name: string; count: number; avgPeak: number }>;
   }> {
-    const query: any = {
-      userId,
-      'glucoseAnalysis.status': { $exists: true }
+    const matchStage: any = {
+      userId: new mongoose.Types.ObjectId(userId),
+      isDeleted: false,
+      'glucoseAnalysis.peakGlucose': { $exists: true, $ne: null }
     };
 
     if (range && range !== 'all') {
@@ -298,36 +334,27 @@ export class GlucoseService {
       let limitDate = new Date();
       if (range === 'day') {
         limitDate.setHours(0, 0, 0, 0);
-        query.loggedAt = { $gte: limitDate };
+        matchStage.loggedAt = { $gte: limitDate };
       } else if (range === 'week') {
         limitDate.setDate(now.getDate() - 7);
-        query.loggedAt = { $gte: limitDate };
+        matchStage.loggedAt = { $gte: limitDate };
       } else if (range === 'month') {
         limitDate.setMonth(now.getMonth() - 1);
-        query.loggedAt = { $gte: limitDate };
+        matchStage.loggedAt = { $gte: limitDate };
       }
     }
 
-    const logs = await FoodLog.find(query);
-
-    const foodGroups: Record<string, { name: string; peaks: number[]; status: 'Safe' | 'Moderate' | 'Avoid' }> = {};
-
-    for (const log of logs) {
-      if (!log.glucoseAnalysis) continue;
-      const name = log.name.trim().toLowerCase();
-      
-      // Standardize casing
-      const displayName = log.name.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-
-      if (!foodGroups[name]) {
-        foodGroups[name] = {
-          name: displayName,
-          peaks: [],
-          status: 'Safe'
-        };
+    const aggregated = await FoodLog.aggregate([
+      { $match: matchStage },
+      {
+        $group: {
+          _id: { $toLower: { $trim: { input: '$name' } } },
+          displayName: { $first: '$name' },
+          count: { $sum: 1 },
+          avgPeak: { $avg: '$glucoseAnalysis.peakGlucose' }
+        }
       }
-      foodGroups[name].peaks.push(log.glucoseAnalysis.peakGlucose);
-    }
+    ]);
 
     const result = {
       safe: [] as any[],
@@ -335,15 +362,12 @@ export class GlucoseService {
       avoid: [] as any[]
     };
 
-    const config = await PaymentGatewayConfig.findOne();
+    const config = await PaymentGatewayConfig.findOne().select('safeGlucoseThreshold moderateGlucoseThreshold').lean();
     const safeLimit = config?.safeGlucoseThreshold ?? 90;
     const moderateLimit = config?.moderateGlucoseThreshold ?? 110;
 
-    for (const key in foodGroups) {
-      const group = foodGroups[key];
-      const avgPeak = group.peaks.reduce((a, b) => a + b, 0) / group.peaks.length;
-      
-      // Classify aggregated food based on average peak
+    for (const group of aggregated) {
+      const avgPeak = group.avgPeak || 0;
       let finalStatus: 'Safe' | 'Moderate' | 'Avoid' = 'Safe';
       if (avgPeak > moderateLimit) {
         finalStatus = 'Avoid';
@@ -351,9 +375,14 @@ export class GlucoseService {
         finalStatus = 'Moderate';
       }
 
+      const cleanName = (group.displayName || group._id)
+        .split(' ')
+        .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(' ');
+
       const item = {
-        name: group.name,
-        count: group.peaks.length,
+        name: cleanName,
+        count: group.count,
         avgPeak: parseFloat(avgPeak.toFixed(1))
       };
 

@@ -29,4 +29,8 @@ const habitLogSchema = new Schema<IHabitLog>(
   { timestamps: true }
 );
 
+// High speed indexes for habit tracking & calendar history
+habitLogSchema.index({ userId: 1, type: 1, timestamp: -1 });
+habitLogSchema.index({ userId: 1, timestamp: -1 });
+
 export default mongoose.model<IHabitLog>('HabitLog', habitLogSchema);

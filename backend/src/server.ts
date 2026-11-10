@@ -21,6 +21,7 @@ import { AppHealthSyncService } from './services/appHealthSyncService';
 import { PaymentGatewayConfig } from './models/PaymentGatewayConfig';
 import { Invoice } from './models/Invoice';
 import { UserSubscription } from './models/UserSubscription';
+import { CronLockService } from './utils/cronLock';
 
 const PORT = process.env.PORT || 5001;
 
@@ -94,14 +95,16 @@ const bootstrap = async () => {
       console.log(` Healthcheck: http://localhost:${PORT}/health `);
       console.log(`===================================================`);
 
-      // Initialize Cron Jobs
-      cron.schedule('0 0 * * *', () => {
+      // Initialize Cron Jobs with Distributed Lock (prevents duplicate execution across multi-instance clusters)
+      cron.schedule('0 0 * * *', async () => {
+        if (!await CronLockService.acquire('checkExpiringSubscriptions', 300000)) return;
         console.log('Running daily cron jobs...');
         SubscriptionCron.checkExpiringSubscriptions();
       });
 
       // Weekly food database sync from source URLs at 2:00 AM every Sunday
       cron.schedule('0 2 * * 0', async () => {
+        if (!await CronLockService.acquire('weeklyFoodSync', 600000)) return;
         console.log('Running weekly food database sync...');
         try {
           await FoodSyncService.syncAllDatasets();
@@ -112,6 +115,7 @@ const bootstrap = async () => {
 
       // LLU auto-sync cron job every 10 minutes
       cron.schedule('*/10 * * * *', async () => {
+        if (!await CronLockService.acquire('libreBackgroundSync', 500000)) return;
         console.log('Running background LibreLinkUp sync...');
         try {
           const stats = await LibreSyncService.runGlobalBackgroundSync();
@@ -123,34 +127,40 @@ const bootstrap = async () => {
       // Appointment reminder cron — runs every minute
       // Sends email reminders 30 mins and 10 mins before confirmed appointments
       cron.schedule('* * * * *', async () => {
+        if (!await CronLockService.acquire('appointmentReminders', 50000)) return;
         await AppointmentReminderCron.sendUpcomingReminders();
       });
 
       // Daily Metabolic Check-in reminder cron — runs hourly to check user preferred check-in time
       cron.schedule('0 * * * *', async () => {
+        if (!await CronLockService.acquire('dailyCheckinReminders', 300000)) return;
         await DailyCheckinReminderCron.sendDailyCheckinReminders();
       });
 
       // Daily Motivation 365 Cron — runs every 15 mins to check user preferred motivation time in IST
       // Evaluates suppression: if user already opened app and viewed popup, push is suppressed.
       cron.schedule('*/15 * * * *', async () => {
+        if (!await CronLockService.acquire('dailyMotivationPush', 600000)) return;
         await DailyMotivationCron.sendDailyMotivationPush();
       }, { timezone: 'Asia/Kolkata' });
 
       // Vendor orders status tracking cron (Arivu Foods)
       // Arivu confirmed requirement: Polling at 9 AM and 10 PM IST fetches shipments processed during the day.
       cron.schedule('0 9,22 * * *', async () => {
+        if (!await CronLockService.acquire('vendorOrderStatus', 600000)) return;
         console.log('[VendorOrderStatusCron] Running scheduled 9 AM / 10 PM IST vendor order status sync...');
         await VendorOrderStatusCron.syncActiveVendorOrders();
       }, { timezone: 'Asia/Kolkata' });
 
       // Periodic evaluator (every 15 mins) to also respect any custom interval configured by Admin
       cron.schedule('*/15 * * * *', async () => {
+        if (!await CronLockService.acquire('vendorPeriodicPoll', 600000)) return;
         await VendorOrderStatusCron.checkAndRunPeriodicPoll();
       });
 
       // App Health Store & Telemetry sync (runs every 6 hours)
       cron.schedule('0 */6 * * *', async () => {
+        if (!await CronLockService.acquire('appHealthSync', 1800000)) return;
         console.log('[AppHealthSync] Running scheduled App Store & Play Store metrics sync...');
         try {
           const config = await AppHealthSyncService.getOrCreateConfig();

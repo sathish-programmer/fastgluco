@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import rateLimit from 'express-rate-limit';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
@@ -131,11 +132,26 @@ router.post('/admin/upload-media', authenticateToken, requireRole(['SuperAdmin',
   res.json({ url: `/uploads/${req.file.filename}` });
 });
 
+// Dedicated strict rate limiting for OTP authentication to prevent gateway abuse & brute force
+const otpLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // max 10 OTP requests per 15 mins per IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: 'Too many verification code attempts. Please wait 15 minutes before trying again.' }
+});
+
+// Cache control helper for static/public data (FAQ, videos, founders, legal)
+const publicCache = (maxAgeSeconds: number = 300) => (req: any, res: any, next: any) => {
+  res.setHeader('Cache-Control', `public, max-age=${maxAgeSeconds}, stale-while-revalidate=600`);
+  next();
+};
+
 // ==========================================
 // 1. PUBLIC AUTHENTICATION ENDPOINTS
 // ==========================================
-router.post('/auth/send-otp', AuthController.sendOtp);
-router.post('/auth/verify-otp', AuthController.verifyOtp);
+router.post('/auth/send-otp', otpLimiter, AuthController.sendOtp);
+router.post('/auth/verify-otp', otpLimiter, AuthController.verifyOtp);
 router.post('/auth/firebase-login', AuthController.firebaseLogin);
 router.post('/auth/onboard', authenticateToken, AuthController.onboardNewUser);
 
@@ -371,21 +387,21 @@ router.post('/motivation/viewed', authenticateToken, MotivationController.markVi
 router.put('/motivation/preferences', authenticateToken, MotivationController.updatePreferences);
 router.get('/motivation/day/:dayNumber', authenticateToken, MotivationController.getByDay);
 
-// Public Educational & Support content fetches
-router.get('/guides', EducationalController.getGuides);
-router.get('/guides/:id', EducationalController.getGuideById);
-router.get('/videos', EducationalController.getVideos);
+// Public Educational & Support content fetches (with public HTTP cache headers)
+router.get('/guides', publicCache(600), EducationalController.getGuides);
+router.get('/guides/:id', publicCache(600), EducationalController.getGuideById);
+router.get('/videos', publicCache(600), EducationalController.getVideos);
 
 router.use('/coaching', authenticateToken, requireRole(['User']));
 router.get('/coaching/sessions', CoachingController.getSessions);
 router.post('/coaching/sessions/:id/reply', CoachingController.replyToSession);
 router.post('/coaching/sessions/:id/dismiss', CoachingController.dismissSession);
 
-router.get('/faqs', SupportController.getPublicFAQs);
+router.get('/faqs', publicCache(600), SupportController.getPublicFAQs);
 router.post('/support', SupportController.submitTicket);
-router.get('/legal/:type', AdminController.getLegalDocument);
+router.get('/legal/:type', publicCache(900), AdminController.getLegalDocument);
 router.get('/health-insights/current', authenticateToken, requireRole(['User', 'SuperAdmin', 'Admin', 'Editor']), HealthInsightController.getCurrentInsight);
-router.get('/founders', FounderController.getAll);
+router.get('/founders', publicCache(600), FounderController.getAll);
 
 // ==========================================
 // 2.5 NON-CANCER PATIENT WORKFLOW (USER)
