@@ -3487,4 +3487,42 @@ export const hi = {
   "dashboard.dietBalancedJunk": "संतुलित आहार (+1) · जंक फूड भी खाया (-1)",
   "dashboard.dietJunkOnly": "जंक फूड खाया (-1) · कोई संतुलित आहार नहीं",
   "dashboard.dietChecked": "आहार दर्ज किया गया",
+
+  // --- CONSISTENCY STREAK & HABIT REWARDS ---
+  "streak.day": "दिन",
+  "streak.days": "दिन",
+  "streak.streak": "स्ट्रीक",
+  "streak.consistencyStreak": "निरंतरता स्ट्रीक",
+  "streak.viewStreakTitle": "निरंतरता स्ट्रीक विवरण देखें",
+  "streak.loggedToday": "आज लॉग किया गया",
+  "streak.streakActiveDesc": "उत्कृष्ट! आपने आज अपनी आदतें दर्ज की हैं। कोशिकीय सुरक्षा पूरी तरह सक्रिय है।",
+  "streak.streakPendingDesc": "अपनी निरंतरता बनाए रखें! आधी रात से पहले अपनी दैनिक आदतें पूरी करें।",
+  "streak.thisWeek": "इस सप्ताह",
+  "streak.daysActive": "{{count}} / 7 दिन सक्रिय",
+  "streak.cellularMilestones": "कोशिकीय मील के पत्थर",
+  "streak.nextMilestone": "अगला मील का पत्थर: {{count}} दिन",
+  "streak.daysToGo": "{{count}} दिन शेष",
+  "streak.scienceNote": "लगातार उपवास, शारीरिक गति और शांति माइटोकॉन्ड्रियल ऑटोफैगी और डीएनए मरम्मत एंजाइमों को उत्तेजित करते हैं।",
+  "streak.continueHabitLog": "आदत लॉग जारी रखें",
+  "streak.day_mon": "सो",
+  "streak.day_tue": "मं",
+  "streak.day_wed": "बु",
+  "streak.day_thu": "गु",
+  "streak.day_fri": "शु",
+  "streak.day_sat": "श",
+  "streak.day_sun": "र",
+
+  // --- PULL TO REFRESH & HAPTIC FEEDBACK ---
+  "pullToRefresh.pullToRefresh": "रिफ्रेश करने के लिए नीचे खींचें",
+  "pullToRefresh.releaseToRefresh": "रिफ्रेश करने के लिए छोड़ें",
+  "pullToRefresh.syncingLogs": "डेटा सिंक हो रहा है...",
+  "pullToRefresh.recordsUpToDate": "रिकॉर्ड अपडेट हो गए हैं",
+
+  // --- WHATS NEW RELEASE HIGHLIGHTS (v6.3.3) ---
+  "whatsNew.streak.title": "निरंतरता स्ट्रीक और मील का पत्थर यात्रा",
+  "whatsNew.streak.desc": "अपने डैशबोर्ड पर ही 7-दिवसीय प्रगति बिंदुओं और मील के पत्थर के स्तर के साथ अपनी आदत की निरंतरता को ट्रैक करें।",
+  "whatsNew.pullrefresh.title": "सहज पुल-टू-रिफ्रेश और हैप्टिक्स",
+  "whatsNew.pullrefresh.desc": "लाइव स्थिति और सहज एनिमेशन के साथ डेटा को तुरंत रिफ्रेश करने के लिए अपने डैशबोर्ड पर नीचे खींचें।",
+  "whatsNew.autopay.title": "स्वचालित सदस्यता ऑटोपे",
+  "whatsNew.autopay.desc": "UPI और कार्ड के माध्यम से निर्बाध स्वचालित नवीनीकरण। कभी भी ऑटोपे को प्रबंधित या रोकें।",
 } as const;

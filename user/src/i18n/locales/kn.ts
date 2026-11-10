@@ -3486,4 +3486,42 @@ export const kn = {
   "dashboard.dietBalancedJunk": "ಸಮತೋಲಿತ ಆಹಾರ (+1) · ಜಂಕ್ ಫುಡ್ ಸಹ ಸೇವಿಸಲಾಗಿದೆ (-1)",
   "dashboard.dietJunkOnly": "ಜಂಕ್ ಫುಡ್ ಸೇವಿಸಲಾಗಿದೆ (-1) · ಸಮತೋಲಿತ ಆಹಾರವಿಲ್ಲ",
   "dashboard.dietChecked": "ಆಹಾರ ದಾಖಲಾಗಿದೆ",
+
+  // --- CONSISTENCY STREAK & HABIT REWARDS ---
+  "streak.day": "ದಿನ",
+  "streak.days": "ದಿನಗಳು",
+  "streak.streak": "ಸತತತೆ",
+  "streak.consistencyStreak": "ಸ್ಥಿರತೆ ಸರಣಿ",
+  "streak.viewStreakTitle": "ಸ್ಥಿರತೆಯ ವಿವರಗಳನ್ನು ವೀಕ್ಷಿಸಿ",
+  "streak.loggedToday": "ಇಂದು ದಾಖಲಿಸಲಾಗಿದೆ",
+  "streak.streakActiveDesc": "ಅತ್ಯುತ್ತಮ! ನೀವು ಇಂದು ನಿಮ್ಮ ಅಭ್ಯಾಸಗಳನ್ನು ದಾಖಲಿಸಿದ್ದೀರಿ. ಜೀವಕೋಶದ ರಕ್ಷಣೆ ಸಂಪೂರ್ಣವಾಗಿ ಸಕ್ರಿಯವಾಗಿದೆ.",
+  "streak.streakPendingDesc": "ನಿಮ್ಮ ಸತತತೆಯನ್ನು ಮುಂದುವರಿಸಿ! ಮಧ್ಯರಾತ್ರಿಗೆ ಮುನ್ನ ನಿಮ್ಮ ದೈನಂದಿನ ಅಭ್ಯಾಸಗಳನ್ನು ದಾಖಲಿಸಿ.",
+  "streak.thisWeek": "ಈ ವಾರ",
+  "streak.daysActive": "{{count}} / 7 ದಿನಗಳು ಸಕ್ರಿಯ",
+  "streak.cellularMilestones": "ಕೋಶೀಯ ಮೈಲಿಗಲ್ಲುಗಳು",
+  "streak.nextMilestone": "ಮುಂದಿನ ಮೈಲಿಗಲ್ಲು: {{count}} ದಿನಗಳು",
+  "streak.daysToGo": "ಇನ್ನೂ {{count}} ದಿನಗಳು",
+  "streak.scienceNote": "ಸ್ಥಿರವಾದ ಉಪವಾಸ, ಚಲನೆ ಮತ್ತು ಶಾಂತತೆಯು ಮೈಟೊಕಾಂಡ್ರಿಯಲ್ ಆಟೋಫ್ಯಾಜಿ ಮತ್ತು ಡಿಎನ್‌ಎ ದುರಸ್ತಿ ಕಿಣ್ವಗಳನ್ನು ಉತ್ತೇಜಿಸುತ್ತದೆ.",
+  "streak.continueHabitLog": "ಅಭ್ಯಾಸ ಲಾಗ್ ಮುಂದುವರಿಸಿ",
+  "streak.day_mon": "ಸೋ",
+  "streak.day_tue": "ಮಂ",
+  "streak.day_wed": "ಬು",
+  "streak.day_thu": "ಗು",
+  "streak.day_fri": "ಶು",
+  "streak.day_sat": "ಶ",
+  "streak.day_sun": "ಭಾ",
+
+  // --- PULL TO REFRESH & HAPTIC FEEDBACK ---
+  "pullToRefresh.pullToRefresh": "ನವೀಕರಿಸಲು ಕೆಳಗೆ ಎಳೆಯಿರಿ",
+  "pullToRefresh.releaseToRefresh": "ನವೀಕರಿಸಲು ಬಿಡಿ",
+  "pullToRefresh.syncingLogs": "ಜೀವಕೋಶದ ಲಾಗ್‌ಗಳು ಸಿಂಕ್ ಆಗುತ್ತಿವೆ...",
+  "pullToRefresh.recordsUpToDate": "ದಾಖಲೆಗಳು ನವೀಕೃತಗೊಂಡಿವೆ",
+
+  // --- WHATS NEW RELEASE HIGHLIGHTS (v6.3.3) ---
+  "whatsNew.streak.title": "ಸ್ಥಿರತೆ ಸರಣಿ ಮತ್ತು ಮೈಲಿಗಲ್ಲು ಪಯಣ",
+  "whatsNew.streak.desc": "ನಿಮ್ಮ ಡ್ಯಾಶ್‌ಬೋರ್ಡ್‌ನಲ್ಲಿಯೇ 7-ದಿನಗಳ ಪ್ರಗತಿ ಬಿಂದುಗಳು ಮತ್ತು ಮೈಲಿಗಲ್ಲು ಬಹುಮಾನಗಳೊಂದಿಗೆ ನಿಮ್ಮ ಅಭ್ಯಾಸದ ಸತತತೆಯನ್ನು ಟ್ರ್ಯಾಕ್ ಮಾಡಿ.",
+  "whatsNew.pullrefresh.title": "ಸುಗಮ ಪುಲ್-ಟು-ರಿಫ್ರೆಶ್ ಮತ್ತು ಹ್ಯಾಪ್ಟಿಕ್ಸ್",
+  "whatsNew.pullrefresh.desc": "ಲೈವ್ ಸ್ಥಿತಿ ಮತ್ತು ಸ್ಪರ್ಶ ಅನಿಮೇಷನ್‌ಗಳೊಂದಿಗೆ ಡೇಟಾವನ್ನು ತಕ್ಷಣ ನವೀಕರಿಸಲು ನಿಮ್ಮ ಡ್ಯಾಶ್‌ಬೋರ್ಡ್‌ನಲ್ಲಿ ಕೆಳಗೆ ಎಳೆಯಿರಿ.",
+  "whatsNew.autopay.title": "ಸ್ವಯಂಚಾಲಿತ ಸದಸ್ಯತ್ವ ಆಟೋಪೇ",
+  "whatsNew.autopay.desc": "UPI ಮತ್ತು ಕಾರ್ಡ್‌ಗಳ ಮೂಲಕ ಸುಲಭ ಸ್ವಯಂಚಾಲಿತ ನವೀಕರಣ. ಯಾವುದೇ ಸಮಯದಲ್ಲಿ ಆಟೋಪೇ ಅನ್ನು ವಿರಾಮಗೊಳಿಸಿ ಅಥವಾ ನಿರ್ವಹಿಸಿ.",
 } as const;

@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { RefreshCw, CheckCircle2, ArrowDown, Loader2 } from 'lucide-react';
 import { triggerHaptic } from '../utils/hapticHelper';
+import { useLanguage } from '../context/LanguageContext';
 
 interface PullToRefreshProps {
   onRefresh: () => Promise<void>;
@@ -10,6 +11,7 @@ interface PullToRefreshProps {
 }
 
 export const PullToRefresh: React.FC<PullToRefreshProps> = ({ onRefresh, children, disabled = false }) => {
+  const { t } = useLanguage();
   const [pullDistance, setPullDistance] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -119,21 +121,21 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({ onRefresh, childre
             <>
               <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
               <span className="text-emerald-700 dark:text-emerald-300 font-black text-[11px] tracking-tight">
-                Records Up to Date
+                {t('pullToRefresh.recordsUpToDate', 'Records Up to Date')}
               </span>
             </>
           ) : isRefreshing ? (
             <>
               <Loader2 className="w-4 h-4 text-blue-600 dark:text-blue-400 animate-spin shrink-0" />
               <span className="text-slate-700 dark:text-slate-200 font-extrabold text-[11px] tracking-tight">
-                Syncing Cellular Logs...
+                {t('pullToRefresh.syncingLogs', 'Syncing Cellular Logs...')}
               </span>
             </>
           ) : pullDistance >= THRESHOLD ? (
             <>
               <ArrowDown className="w-4 h-4 text-blue-600 dark:text-blue-400 animate-bounce shrink-0" />
               <span className="text-blue-600 dark:text-blue-400 font-black text-[11px] tracking-tight">
-                Release to Refresh
+                {t('pullToRefresh.releaseToRefresh', 'Release to Refresh')}
               </span>
             </>
           ) : (
@@ -143,7 +145,7 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({ onRefresh, childre
                 style={{ transform: `rotate(${rotation}deg)` }}
               />
               <span className="text-slate-500 font-medium text-[11px]">
-                Pull to Refresh
+                {t('pullToRefresh.pullToRefresh', 'Pull to Refresh')}
               </span>
             </>
           )}

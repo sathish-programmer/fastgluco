@@ -3488,4 +3488,42 @@ export const en = {
   "dashboard.dietBalancedJunk": "Balanced Diet (+1) · Junk Food Eaten (-1)",
   "dashboard.dietJunkOnly": "Junk Food Consumed (-1) · No Balanced Diet",
   "dashboard.dietChecked": "Diet Logged",
+
+  // --- CONSISTENCY STREAK & HABIT REWARDS ---
+  "streak.day": "Day",
+  "streak.days": "Days",
+  "streak.streak": "Streak",
+  "streak.consistencyStreak": "Consistency Streak",
+  "streak.viewStreakTitle": "View consistency streak details",
+  "streak.loggedToday": "Logged today",
+  "streak.streakActiveDesc": "Outstanding! You've logged your habits today. Cellular repair defenses are fully active.",
+  "streak.streakPendingDesc": "Keep your flame alive! Complete your daily habit check-in before midnight.",
+  "streak.thisWeek": "This Week",
+  "streak.daysActive": "{{count}} / 7 Days Active",
+  "streak.cellularMilestones": "Cellular Milestones",
+  "streak.nextMilestone": "Next Milestone: {{count}} Days",
+  "streak.daysToGo": "{{count}} days to go",
+  "streak.scienceNote": "Consistent fasting, movement & stillness stimulate mitochondrial autophagy and DNA repair enzymes.",
+  "streak.continueHabitLog": "Continue Habit Log",
+  "streak.day_mon": "M",
+  "streak.day_tue": "T",
+  "streak.day_wed": "W",
+  "streak.day_thu": "T",
+  "streak.day_fri": "F",
+  "streak.day_sat": "S",
+  "streak.day_sun": "S",
+
+  // --- PULL TO REFRESH & HAPTIC FEEDBACK ---
+  "pullToRefresh.pullToRefresh": "Pull to Refresh",
+  "pullToRefresh.releaseToRefresh": "Release to Refresh",
+  "pullToRefresh.syncingLogs": "Syncing Cellular Logs...",
+  "pullToRefresh.recordsUpToDate": "Records Up to Date",
+
+  // --- WHATS NEW RELEASE HIGHLIGHTS (v6.3.3) ---
+  "whatsNew.streak.title": "Consistency Streak & Milestone Journey",
+  "whatsNew.streak.desc": "Track your habit consistency with a sleek micro-badge, 7-day progress dots, and milestone level rewards right on your dashboard.",
+  "whatsNew.pullrefresh.title": "Smooth Pull-to-Refresh & Haptics",
+  "whatsNew.pullrefresh.desc": "Pull down anywhere on your dashboard to instantly refresh data with smooth tactile animations and live status feedback.",
+  "whatsNew.autopay.title": "Automated Membership AutoPay",
+  "whatsNew.autopay.desc": "Seamless automated membership renewals via UPI and Card mandates. Manage, enable, or pause AutoPay anytime with zero lock-in.",
 } as const;

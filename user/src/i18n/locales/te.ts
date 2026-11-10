@@ -3487,4 +3487,42 @@ export const te = {
   "dashboard.dietBalancedJunk": "సమతుల్య ఆహారం (+1) · జంక్ ఫుడ్ కూడా తిన్నారు (-1)",
   "dashboard.dietJunkOnly": "జంక్ ఫుడ్ మాత్రమే తిన్నారు (-1) · సమతుల్య ఆహారం లేదు",
   "dashboard.dietChecked": "ఆహారం నమోదు చేయబడింది",
+
+  // --- CONSISTENCY STREAK & HABIT REWARDS ---
+  "streak.day": "రోజు",
+  "streak.days": "రోజులు",
+  "streak.streak": "స్ట్రీక్",
+  "streak.consistencyStreak": "స్థిరత్వ స్ట్రీక్",
+  "streak.viewStreakTitle": "స్థిరత్వ స్ట్రీక్ వివరాలను చూడండి",
+  "streak.loggedToday": "ఈ రోజు నమోదు చేయబడింది",
+  "streak.streakActiveDesc": "అద్భుతం! మీరు ఈ రోజు మీ అలవాట్లను నమోదు చేశారు. సెల్యులార్ రక్షణ పూర్తిగా చురుకుగా ఉంది.",
+  "streak.streakPendingDesc": "మీ జ్వాలను సజీవంగా ఉంచండి! అర్ధరాత్రి లోపు మీ రోజువారీ అలవాట్లను నమోదు చేయండి.",
+  "streak.thisWeek": "ఈ వారం",
+  "streak.daysActive": "{{count}} / 7 రోజులు చురుకుగా",
+  "streak.cellularMilestones": "సెల్యులార్ మైలురాళ్ళు",
+  "streak.nextMilestone": "తదుపరి మైలురాయి: {{count}} రోజులు",
+  "streak.daysToGo": "ఇంకా {{count}} రోజులు",
+  "streak.scienceNote": "నిరంతర ఉపవాసం, శారీరక కదలిక & ప్రశాంతత మైటోకాన్డ్రియల్ ఆటోఫాగీ మరియు DNA మరమ్మతు ఎంజైమ్‌లను ఉత్తేజపరుస్తాయి.",
+  "streak.continueHabitLog": "అలవాట్ల లాగ్ కొనసాగించండి",
+  "streak.day_mon": "సో",
+  "streak.day_tue": "మం",
+  "streak.day_wed": "బు",
+  "streak.day_thu": "గు",
+  "streak.day_fri": "శు",
+  "streak.day_sat": "శ",
+  "streak.day_sun": "ఆ",
+
+  // --- PULL TO REFRESH & HAPTIC FEEDBACK ---
+  "pullToRefresh.pullToRefresh": "రిఫ్రెష్ చేయడానికి క్రిందికి లాగండి",
+  "pullToRefresh.releaseToRefresh": "రిఫ్రెష్ చేయడానికి విడుదల చేయండి",
+  "pullToRefresh.syncingLogs": "సెల్యులార్ లాగ్‌లు సమకాలీకరించబడుతున్నాయి...",
+  "pullToRefresh.recordsUpToDate": "రికార్డులు తాజాగా ఉన్నాయి",
+
+  // --- WHATS NEW RELEASE HIGHLIGHTS (v6.3.3) ---
+  "whatsNew.streak.title": "స్థిరత్వ స్ట్రీక్ & మైలురాయి ప్రయాణం",
+  "whatsNew.streak.desc": "మీ డ్యాష్‌బోర్డ్‌లోనే 7-రోజుల పురోగతి చుక్కలు మరియు మైలురాయి రివార్డులతో అలవాటు స్థిరత్వాన్ని ట్రాక్ చేయండి.",
+  "whatsNew.pullrefresh.title": "సులభమైన పుల్-టు-రిఫ్రెష్ & హాప్టిక్స్",
+  "whatsNew.pullrefresh.desc": "సున్నితమైన యానిమేషన్‌లు మరియు ప్రత్యక్ష స్థితితో డేటాను తక్షణమే రిఫ్రెష్ చేయడానికి డ్యాష్‌బోర్డ్‌లో క్రిందికి లాగండి.",
+  "whatsNew.autopay.title": "స్వయంచాలక మెంబర్‌షిప్ ఆటోపే",
+  "whatsNew.autopay.desc": "UPI మరియు కార్డుల ద్వారా సులభమైన స్వయంచాలక పునరుద్ధరణలు. ఎప్పుడైనా ఆటోపేను నిర్వహించండి లేదా పాజ్ చేయండి.",
 } as const;

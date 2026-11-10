@@ -3487,4 +3487,42 @@ export const ta = {
   "dashboard.dietBalancedJunk": "சமச்சீர் உணவு (+1) · ஜங்க் உணவும் உட்கொள்ளப்பட்டது (-1)",
   "dashboard.dietJunkOnly": "ஜங்க் உணவு உட்கொள்ளப்பட்டது (-1) · சமச்சீர் உணவு இல்லை",
   "dashboard.dietChecked": "உணவு பதிவு செய்யப்பட்டது",
+
+  // --- CONSISTENCY STREAK & HABIT REWARDS ---
+  "streak.day": "நாள்",
+  "streak.days": "நாட்கள்",
+  "streak.streak": "தொடர்ச்சி",
+  "streak.consistencyStreak": "தொடர் ஒழுக்கம்",
+  "streak.viewStreakTitle": "தொடர்ச்சி விவரங்களைப் பார்க்கவும்",
+  "streak.loggedToday": "இன்று பதிவு செய்யப்பட்டது",
+  "streak.streakActiveDesc": "அற்புதம்! இன்று உங்கள் பழக்கங்களை பதிவு செய்துள்ளீர்கள். செல்லுலார் பாதுகாப்பு முழுமையாக செயல்படுகிறது.",
+  "streak.streakPendingDesc": "தொடர்ச்சியைத் தக்கவையுங்கள்! நள்ளிரவுக்குள் உங்கள் தினசரி பழக்கங்களை பதிவு செய்யுங்கள்.",
+  "streak.thisWeek": "இந்த வாரம்",
+  "streak.daysActive": "{{count}} / 7 நாட்கள் செயலில்",
+  "streak.cellularMilestones": "செல்லுலார் மைல்கற்கள்",
+  "streak.nextMilestone": "அடுத்த மைல்கல்: {{count}} நாட்கள்",
+  "streak.daysToGo": "இன்னும் {{count}} நாட்கள்",
+  "streak.scienceNote": "தொடர்ச்சியான விரதம், இயக்கம் மற்றும் அமைதி மைட்டோகாண்ட்ரியல் ஆட்டோபேஜி மற்றும் டிஎன்ஏ பழுதுபார்க்கும் என்சைம்களைத் தூண்டுகின்றன.",
+  "streak.continueHabitLog": "பழக்கப் பதிவைத் தொடரவும்",
+  "streak.day_mon": "தி",
+  "streak.day_tue": "செ",
+  "streak.day_wed": "பு",
+  "streak.day_thu": "வி",
+  "streak.day_fri": "வெ",
+  "streak.day_sat": "ச",
+  "streak.day_sun": "ஞ",
+
+  // --- PULL TO REFRESH & HAPTIC FEEDBACK ---
+  "pullToRefresh.pullToRefresh": "புதுப்பிக்க கீழே இழுக்கவும்",
+  "pullToRefresh.releaseToRefresh": "புதுப்பிக்க விடுவிக்கவும்",
+  "pullToRefresh.syncingLogs": "செல்லுலார் தரவுகள் புதுப்பிக்கப்படுகின்றன...",
+  "pullToRefresh.recordsUpToDate": "பதிவுகள் புதுப்பிக்கப்பட்டன",
+
+  // --- WHATS NEW RELEASE HIGHLIGHTS (v6.3.3) ---
+  "whatsNew.streak.title": "தொடர் ஒழுக்கம் & மைல்கல் பயணம்",
+  "whatsNew.streak.desc": "உங்கள் முகப்புப்பக்கத்தில் 7-நாள் முன்னேற்றப் புள்ளிகள் மற்றும் மைல்கல் நிலைகளுடன் பழக்கத் தொடர்ச்சியை எளிதாகக் கண்காணிக்கவும்.",
+  "whatsNew.pullrefresh.title": "மென்மையான புதுப்பித்தல் & தொடு உணர்வு",
+  "whatsNew.pullrefresh.desc": "நேரலை நிலை மற்றும் தொடு உணர்வு அனிமேஷனுடன் தரவை உடனடியாக புதுப்பிக்க முகப்பில் கீழே இழுக்கவும்.",
+  "whatsNew.autopay.title": "தானியங்கி உறுப்பினர் சந்தா புதுப்பித்தல்",
+  "whatsNew.autopay.desc": "யுபிஐ மற்றும் கார்டுகள் மூலம் தடையற்ற தானியங்கி புதுப்பித்தல். எப்போது வேண்டுமானாலும் இடைநிறுத்தலாம் அல்லது நிர்வகிக்கலாம்.",
 } as const;

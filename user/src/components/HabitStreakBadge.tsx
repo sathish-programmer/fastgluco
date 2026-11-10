@@ -2,12 +2,14 @@ import React, { useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Flame, Sparkles, CheckCircle2, ChevronRight, X, Trophy, Shield } from 'lucide-react';
 import { triggerHaptic } from '../utils/hapticHelper';
+import { useLanguage } from '../context/LanguageContext';
 
 interface HabitStreakBadgeProps {
   habits: any[];
 }
 
 export const HabitStreakBadge: React.FC<HabitStreakBadgeProps> = ({ habits }) => {
+  const { t } = useLanguage();
   const [showModal, setShowModal] = useState(false);
 
   // Collect unique logged dates (YYYY-MM-DD)
@@ -67,7 +69,15 @@ export const HabitStreakBadge: React.FC<HabitStreakBadgeProps> = ({ habits }) =>
     monday.setDate(now.getDate() - currentDayOfWeek);
 
     const days = [];
-    const dayLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+    const dayLabels = [
+      t('streak.day_mon', 'M'),
+      t('streak.day_tue', 'T'),
+      t('streak.day_wed', 'W'),
+      t('streak.day_thu', 'T'),
+      t('streak.day_fri', 'F'),
+      t('streak.day_sat', 'S'),
+      t('streak.day_sun', 'S')
+    ];
     const fullDayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
     for (let i = 0; i < 7; i++) {
@@ -117,7 +127,7 @@ export const HabitStreakBadge: React.FC<HabitStreakBadgeProps> = ({ habits }) =>
         type="button"
         onClick={handleOpenModal}
         className="group relative flex items-center gap-2 px-2.5 py-1.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs hover:shadow-md hover:border-orange-300 dark:hover:border-orange-500/40 transition-all cursor-pointer active:scale-95 text-left"
-        title="View consistency streak details"
+        title={t('streak.viewStreakTitle', 'View consistency streak details')}
       >
         {/* Glowing Fiery Icon */}
         <div className="relative flex items-center justify-center shrink-0">
@@ -146,10 +156,10 @@ export const HabitStreakBadge: React.FC<HabitStreakBadgeProps> = ({ habits }) =>
               {streak}
             </span>
             <span className="text-[10px] font-extrabold uppercase tracking-wider text-orange-600 dark:text-orange-400">
-              {streak === 1 ? 'Day' : 'Days'}
+              {streak === 1 ? t('streak.day', 'Day') : t('streak.days', 'Days')}
             </span>
             {isTodayLogged && (
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 ring-2 ring-emerald-500/30 ml-0.5 shrink-0" title="Logged today" />
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 ring-2 ring-emerald-500/30 ml-0.5 shrink-0" title={t('streak.loggedToday', 'Logged today')} />
             )}
           </div>
 
@@ -203,12 +213,12 @@ export const HabitStreakBadge: React.FC<HabitStreakBadgeProps> = ({ habits }) =>
               </div>
 
               <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-                {streak} Day {streak === 1 ? 'Streak' : 'Consistency Streak'}
+                {streak} {streak === 1 ? t('streak.day', 'Day') : t('streak.days', 'Days')} {t('streak.consistencyStreak', 'Consistency Streak')}
               </h3>
               <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-1 max-w-xs mx-auto">
                 {isTodayLogged
-                  ? "Outstanding! You've logged your habits today. Cellular repair defenses are fully active."
-                  : "Keep your flame alive! Complete your daily habit check-in before midnight."}
+                  ? t('streak.streakActiveDesc', "Outstanding! You've logged your habits today. Cellular repair defenses are fully active.")
+                  : t('streak.streakPendingDesc', "Keep your flame alive! Complete your daily habit check-in before midnight.")}
               </p>
             </div>
 
@@ -216,10 +226,10 @@ export const HabitStreakBadge: React.FC<HabitStreakBadgeProps> = ({ habits }) =>
             <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-3.5 border border-slate-100 dark:border-slate-800 mb-4">
               <div className="flex items-center justify-between mb-2 px-1">
                 <span className="text-[11px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                  This Week
+                  {t('streak.thisWeek', 'This Week')}
                 </span>
                 <span className="text-[10px] font-bold text-orange-600 dark:text-orange-400">
-                  {weekDays.filter(d => d.isLogged).length} / 7 Days Active
+                  {t('streak.daysActive', { count: weekDays.filter(d => d.isLogged).length }, `${weekDays.filter(d => d.isLogged).length} / 7 Days Active`)}
                 </span>
               </div>
               <div className="grid grid-cols-7 gap-1.5">
@@ -253,7 +263,7 @@ export const HabitStreakBadge: React.FC<HabitStreakBadgeProps> = ({ habits }) =>
             {/* Milestone Roadmap */}
             <div className="space-y-2 mb-5">
               <span className="text-[11px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 px-1 block">
-                Cellular Milestones
+                {t('streak.cellularMilestones', 'Cellular Milestones')}
               </span>
 
               <div className="p-3 rounded-2xl bg-orange-500/10 dark:bg-orange-500/15 border border-orange-500/20 flex items-center gap-3">
@@ -262,8 +272,10 @@ export const HabitStreakBadge: React.FC<HabitStreakBadgeProps> = ({ habits }) =>
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between text-xs font-black text-slate-900 dark:text-white">
-                    <span>Next Milestone: {nextMilestone} Days</span>
-                    <span className="text-[10px] text-orange-600 dark:text-orange-400 font-extrabold">{daysToNext} days to go</span>
+                    <span>{t('streak.nextMilestone', { count: nextMilestone }, `Next Milestone: ${nextMilestone} Days`)}</span>
+                    <span className="text-[10px] text-orange-600 dark:text-orange-400 font-extrabold">
+                      {t('streak.daysToGo', { count: daysToNext }, `${daysToNext} days to go`)}
+                    </span>
                   </div>
                   <div className="w-full h-1.5 bg-orange-200 dark:bg-orange-950/60 rounded-full mt-1.5 overflow-hidden">
                     <div
@@ -278,7 +290,7 @@ export const HabitStreakBadge: React.FC<HabitStreakBadgeProps> = ({ habits }) =>
               <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 text-[11px] text-slate-600 dark:text-slate-300 flex items-center gap-2.5">
                 <Shield className="w-4 h-4 text-emerald-500 shrink-0" />
                 <span>
-                  Consistent fasting, movement & stillness stimulate mitochondrial autophagy and DNA repair enzymes.
+                  {t('streak.scienceNote', 'Consistent fasting, movement & stillness stimulate mitochondrial autophagy and DNA repair enzymes.')}
                 </span>
               </div>
             </div>
@@ -289,7 +301,7 @@ export const HabitStreakBadge: React.FC<HabitStreakBadgeProps> = ({ habits }) =>
               onClick={handleCloseModal}
               className="w-full py-3 rounded-2xl font-black text-sm bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/25 hover:brightness-105 active:scale-98 transition-all cursor-pointer"
             >
-              Continue Habit Log
+              {t('streak.continueHabitLog', 'Continue Habit Log')}
             </button>
           </div>
         </div>,
