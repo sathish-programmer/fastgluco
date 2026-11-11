@@ -435,6 +435,19 @@ const MainAppContent: React.FC = () => {
     window.addEventListener('subScreenChange', handleSubScreen);
     window.addEventListener('navigateToTab', handleNav);
     window.addEventListener('fcm_navigate_to_route', handleFCMNav);
+
+    // Process any pending FCM navigation stored from cold-launch notification tap
+    try {
+      const pendingNav = sessionStorage.getItem('pending_fcm_nav');
+      if (pendingNav) {
+        sessionStorage.removeItem('pending_fcm_nav');
+        const parsed = JSON.parse(pendingNav);
+        setTimeout(() => handleFCMNav({ detail: parsed }), 200);
+      }
+    } catch (e) {
+      console.warn('Error reading pending FCM navigation:', e);
+    }
+
     return () => {
       window.removeEventListener('subScreenChange', handleSubScreen);
       window.removeEventListener('navigateToTab', handleNav);

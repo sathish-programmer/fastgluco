@@ -426,7 +426,18 @@ export class AppointmentController {
     try {
       const doctorId = (req as any).user.id;
       const { appointmentId } = req.params;
-      const { notes, prescriptionText, prescriptionUrl, status } = req.body;
+      const { 
+        notes, 
+        prescriptionText, 
+        prescriptionUrl, 
+        status, 
+        medicines, 
+        diagnosis, 
+        dietaryAdvice, 
+        lifestyleAdvice, 
+        followUpDate,
+        generatePdf 
+      } = req.body;
 
       const appt = await Appointment.findOne({ _id: appointmentId, doctorId });
       if (!appt) return res.status(404).json({ message: 'Appointment not found or unauthorized.' });
@@ -435,11 +446,16 @@ export class AppointmentController {
       if (prescriptionText !== undefined) appt.prescriptionText = prescriptionText;
       if (prescriptionUrl !== undefined) appt.prescriptionUrl = prescriptionUrl;
       if (status !== undefined) appt.status = status;
+      if (medicines !== undefined) appt.medicines = medicines;
+      if (diagnosis !== undefined) appt.diagnosis = diagnosis;
+      if (dietaryAdvice !== undefined) appt.dietaryAdvice = dietaryAdvice;
+      if (lifestyleAdvice !== undefined) appt.lifestyleAdvice = lifestyleAdvice;
+      if (followUpDate !== undefined) appt.followUpDate = followUpDate;
 
       if (status === 'completed') {
-        const finalNotes = appt.notes || '';
+        const finalNotes = appt.notes || appt.diagnosis || '';
         if (!finalNotes.trim()) {
-          return res.status(400).json({ message: 'Clinical consultation notes are mandatory to complete the appointment.' });
+          return res.status(400).json({ message: 'Clinical consultation notes or diagnosis are mandatory to complete the appointment.' });
         }
         // If offline consultation, we assume payment is collected at clinic
         if (appt.type === 'offline') {
@@ -448,6 +464,23 @@ export class AppointmentController {
       }
 
       await appt.save();
+
+      // Automatically generate professional prescription PDF if requested or if medicines were provided without a manual URL
+      if (generatePdf || (Array.isArray(appt.medicines) && appt.medicines.length > 0 && !prescriptionUrl)) {
+        try {
+          const populatedForPrescription = await Appointment.findById(appt._id)
+            .populate('doctorId')
+            .populate('userId');
+          if (populatedForPrescription) {
+            const { PrescriptionService } = require('../services/prescriptionService');
+            const generatedPdfUrl = await PrescriptionService.generatePrescriptionPDF(populatedForPrescription);
+            appt.prescriptionUrl = generatedPdfUrl;
+            await appt.save();
+          }
+        } catch (pdfErr) {
+          console.error('Error generating prescription PDF in consultation update:', pdfErr);
+        }
+      }
 
       if (status === 'completed') {
         // Populate doctor and user details to generate a complete invoice PDF

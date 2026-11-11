@@ -690,12 +690,20 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                             </div>
                           </div>
 
-                          {/* Pills Row: Recommended + Experience + Duration + Hospital */}
+                          {/* Pills Row: Recommended + Rating + Experience + Duration + Hospital */}
                           <div className="flex items-center gap-1.5 mt-2.5 flex-wrap text-[10px]">
                             {isRec && (
                               <span className="font-bold px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/40 dark:to-orange-950/30 text-amber-700 dark:text-amber-300 border border-amber-300/80 dark:border-amber-700/60 flex items-center gap-1 shadow-2xs">
                                 <Sparkles className="h-2.5 w-2.5 text-amber-600 dark:text-amber-400 fill-amber-500/20" />
                                 {t('appointment.recommended', 'Recommended')}
+                              </span>
+                            )}
+
+                            {doc.avgRating != null && doc.avgRating > 0 && (
+                              <span className="font-bold px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-300/80 dark:border-amber-700/60 flex items-center gap-1 shadow-2xs">
+                                <Star className="h-2.5 w-2.5 fill-amber-400 text-amber-500" />
+                                <span>{doc.avgRating.toFixed(1)}</span>
+                                <span className="text-[9px] text-amber-600/80 dark:text-amber-400/80 font-medium">({doc.ratingCount || 1})</span>
                               </span>
                             )}
 
@@ -1300,6 +1308,13 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                   </p>
 
                   <div className="flex items-center gap-2 mt-2 flex-wrap text-[11px]">
+                    {profileDoctor.avgRating != null && profileDoctor.avgRating > 0 && (
+                      <span className="px-2.5 py-0.5 rounded-md bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-300/80 dark:border-amber-700/60 font-bold flex items-center gap-1 shadow-2xs">
+                        <Star className="h-3 w-3 fill-amber-400 text-amber-500" />
+                        <span>{profileDoctor.avgRating.toFixed(1)}</span>
+                        <span className="text-slate-500 dark:text-slate-400 font-medium">({profileDoctor.ratingCount} {profileDoctor.ratingCount === 1 ? 'review' : 'reviews'})</span>
+                      </span>
+                    )}
                     {profileDoctor.experience != null && (
                       <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold">
                         ⏳ {profileDoctor.experience} yrs experience

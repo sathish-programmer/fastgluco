@@ -547,7 +547,18 @@ export class DoctorController {
     try {
       const doctorId = (req as any).user.id;
       const { appointmentId } = req.params;
-      const { notes, prescriptionText, prescriptionUrl, status } = req.body;
+      const { 
+        notes, 
+        prescriptionText, 
+        prescriptionUrl, 
+        status, 
+        medicines, 
+        diagnosis, 
+        dietaryAdvice, 
+        lifestyleAdvice, 
+        followUpDate,
+        generatePdf 
+      } = req.body;
 
       const appt = await Appointment.findOne({ _id: appointmentId, doctorId });
       if (!appt) return res.status(404).json({ message: 'Appointment not found or not assigned to you.' });
@@ -556,11 +567,214 @@ export class DoctorController {
       if (prescriptionText !== undefined) appt.prescriptionText = prescriptionText;
       if (prescriptionUrl !== undefined) appt.prescriptionUrl = prescriptionUrl;
       if (status !== undefined) appt.status = status;
+      if (medicines !== undefined) appt.medicines = medicines;
+      if (diagnosis !== undefined) appt.diagnosis = diagnosis;
+      if (dietaryAdvice !== undefined) appt.dietaryAdvice = dietaryAdvice;
+      if (lifestyleAdvice !== undefined) appt.lifestyleAdvice = lifestyleAdvice;
+      if (followUpDate !== undefined) appt.followUpDate = followUpDate;
 
       await appt.save();
+
+      // Automatically generate prescription PDF if requested or medicines provided
+      if (generatePdf || (Array.isArray(appt.medicines) && appt.medicines.length > 0 && !prescriptionUrl)) {
+        try {
+          const populatedForPrescription = await Appointment.findById(appt._id)
+            .populate('doctorId')
+            .populate('userId');
+          if (populatedForPrescription) {
+            const { PrescriptionService } = require('../services/prescriptionService');
+            const pdfPath = await PrescriptionService.generatePrescriptionPDF(populatedForPrescription);
+            appt.prescriptionUrl = pdfPath;
+            await appt.save();
+          }
+        } catch (pdfErr) {
+          console.error('Error generating prescription PDF in notes update:', pdfErr);
+        }
+      }
+
       res.json(appt);
     } catch (err: any) {
       res.status(500).json({ message: 'Error updating consultation notes' });
+    }
+  }
+
+  public static async generatePrescription(req: Request, res: Response) {
+    try {
+      const doctorId = (req as any).user.id;
+      const { appointmentId } = req.params;
+      const {
+        medicines,
+        diagnosis,
+        notes,
+        prescriptionText,
+        dietaryAdvice,
+        lifestyleAdvice,
+        followUpDate
+      } = req.body;
+
+      const appt = await Appointment.findOne({ _id: appointmentId, doctorId });
+      if (!appt) return res.status(404).json({ message: 'Appointment not found or unauthorized.' });
+
+      if (medicines !== undefined) appt.medicines = medicines;
+      if (diagnosis !== undefined) appt.diagnosis = diagnosis;
+      if (notes !== undefined) appt.notes = notes;
+      if (prescriptionText !== undefined) appt.prescriptionText = prescriptionText;
+      if (dietaryAdvice !== undefined) appt.dietaryAdvice = dietaryAdvice;
+      if (lifestyleAdvice !== undefined) appt.lifestyleAdvice = lifestyleAdvice;
+      if (followUpDate !== undefined) appt.followUpDate = followUpDate;
+
+      await appt.save();
+
+      const populatedAppt = await Appointment.findById(appt._id)
+        .populate('doctorId')
+        .populate('userId');
+
+      const { PrescriptionService } = require('../services/prescriptionService');
+      const pdfPath = await PrescriptionService.generatePrescriptionPDF(populatedAppt);
+      appt.prescriptionUrl = pdfPath;
+      await appt.save();
+
+      // Send notification & email to patient
+      const { EmailService } = require('../services/emailService');
+      const { FCMService } = require('../services/fcmService');
+
+      EmailService.sendAppointmentEmail('prescription', appt._id.toString()).catch(console.error);
+      FCMService.sendNotificationToUser(appt.userId.toString(), {
+        title: 'Prescription Available',
+        body: `Dr. ${(populatedAppt?.doctorId as any)?.name || 'Specialist'} has generated an official medical prescription.`,
+        type: 'DoctorConsultation',
+        data: {
+          route: 'Appointments',
+          appointmentId: appt._id.toString()
+        }
+      }).catch(console.error);
+
+      res.json({ message: 'Prescription generated successfully', appointment: appt, prescriptionUrl: pdfPath });
+    } catch (err: any) {
+      console.error('Error generating prescription:', err);
+      res.status(500).json({ message: err.message || 'Error generating prescription PDF.' });
+    }
+  }
+
+  public static async uploadPrescriptionFile(req: Request, res: Response) {
+    try {
+      const doctorId = (req as any).user.id;
+      const { appointmentId } = req.params;
+      const file = (req as any).file;
+
+      if (!file) {
+        return res.status(400).json({ message: 'No file uploaded.' });
+      }
+
+      const appt = await Appointment.findOne({ _id: appointmentId, doctorId });
+      if (!appt) return res.status(404).json({ message: 'Appointment not found or unauthorized.' });
+
+      const relativePath = `/uploads/prescriptions/${file.filename}`;
+      appt.prescriptionUrl = relativePath;
+      await appt.save();
+
+      const { EmailService } = require('../services/emailService');
+      const { FCMService } = require('../services/fcmService');
+
+      EmailService.sendAppointmentEmail('prescription', appt._id.toString()).catch(console.error);
+      FCMService.sendNotificationToUser(appt.userId.toString(), {
+        title: 'Prescription Attached',
+        body: 'Your doctor has attached a medical prescription document for your consultation.',
+        type: 'DoctorConsultation',
+        data: {
+          route: 'Appointments',
+          appointmentId: appt._id.toString()
+        }
+      }).catch(console.error);
+
+      res.json({ message: 'Prescription uploaded successfully', appointment: appt, prescriptionUrl: relativePath });
+    } catch (err: any) {
+      console.error('Error uploading prescription file:', err);
+      res.status(500).json({ message: err.message || 'Error uploading prescription file.' });
+    }
+  }
+
+  public static async sendMessageToPatient(req: Request, res: Response) {
+    try {
+      const doctorId = (req as any).user.id;
+      const { appointmentId } = req.params;
+      const { subject, message, patientId } = req.body;
+
+      if (!message || !message.trim()) {
+        return res.status(400).json({ message: 'Message content is required.' });
+      }
+
+      let targetUserId = patientId;
+      let appt: any = null;
+
+      if (appointmentId && appointmentId !== 'direct') {
+        appt = await Appointment.findOne({ _id: appointmentId, doctorId }).populate('doctorId');
+        if (appt && appt.userId) {
+          targetUserId = appt.userId.toString();
+        }
+      }
+
+      if (!targetUserId) {
+        return res.status(400).json({ message: 'Target patient not found.' });
+      }
+
+      const doctor = await Doctor.findById(doctorId);
+      const doctorName = doctor?.name ? (doctor.name.startsWith('Dr.') ? doctor.name : `Dr. ${doctor.name}`) : 'Your Specialist';
+
+      const title = subject && subject.trim() ? subject.trim() : `Clinical Advice from ${doctorName}`;
+
+      const { Notification } = require('../models/Notification');
+      const { FCMService } = require('../services/fcmService');
+      const { EmailService } = require('../services/emailService');
+      const { User } = require('../models/User');
+
+      await Notification.create({
+        userId: targetUserId,
+        title,
+        body: message.trim(),
+        type: 'DoctorConsultation',
+        metadata: {
+          route: 'Appointments',
+          appointmentId: appt?._id ? appt._id.toString() : undefined,
+          status: 'AdviceReceived'
+        },
+        isRead: false,
+        sentAt: new Date(),
+        isSent: true
+      });
+
+      // Send push notification
+      FCMService.sendNotificationToUser(targetUserId, {
+        title,
+        body: message.trim(),
+        type: 'DoctorConsultation',
+        data: {
+          route: 'Appointments',
+          appointmentId: appt?._id ? appt._id.toString() : ''
+        }
+      }).catch(console.error);
+
+      // Send email if user has email
+      const targetUser = await User.findById(targetUserId);
+      if (targetUser && targetUser.email) {
+        EmailService.sendEmail({
+          to: targetUser.email,
+          subject: `[Mito Reboot] ${title}`,
+          html: `<div style="font-family: sans-serif; color: #1e293b; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; rounded: 12px;">
+            <h2 style="color: #0284c7; margin-top: 0;">${title}</h2>
+            <p style="white-space: pre-line; line-height: 1.6; font-size: 14px; color: #334155;">${message.trim()}</p>
+            <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 24px 0;">
+            <p style="font-size: 12px; color: #64748b;">
+              Sent by <strong>${doctorName}</strong> (${doctor?.specialty || 'Consultant Specialist'}) via Mito Reboot Clinical Portal.
+            </p>
+          </div>`
+        }).catch(console.error);
+      }
+
+      res.json({ success: true, message: 'Message and clinical advice sent successfully to patient.' });
+    } catch (err: any) {
+      console.error('Error sending message to patient:', err);
+      res.status(500).json({ message: err.message || 'Error sending message to patient.' });
     }
   }
 

@@ -130,8 +130,7 @@ export class FCMService {
             defaultSound: true,
             defaultVibrateTimings: true,
             icon: 'ic_stat_notification',
-            color: '#0D9488',
-            clickAction: 'FLUTTER_NOTIFICATION_CLICK'
+            color: '#0D9488'
           }
         },
         apns: {

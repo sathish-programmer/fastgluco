@@ -1,14 +1,14 @@
 <en-US>
-• Account Privacy & Security: Added a 30-day account security quarantine with direct rollback and restore support to protect against accidental account deletion.
-• Streamlined Authentication: Enhanced phone and email OTP verification with automated fallback delivery.
-• Terms & Legal Transparency: Updated in-app access to Terms and Conditions and comprehensive privacy policies.
-• Health Data Synchronization: Smoother telemetry sync for CGM glucose reports, food logs, and active subscriptions.
-• Bug Fixes & Performance: General stability enhancements and faster screen transitions across devices.
+• Doctor Ratings & Reviews: Real patient ratings and consultation review counts are now visible right on doctor profiles and booking cards.
+• Instant Push Notifications: Tapping on consultation reminders, lab updates, or doctor advice now seamlessly opens directly to the right screen.
+• Enhanced Digital Prescriptions: Doctors can now issue comprehensive, formatted medical prescriptions with detailed dosage and lifestyle guidance.
+• Calendar & Appointment Improvements: Smoother schedule navigation and quick consultation notes access.
+• Performance & Stability: Enhanced connectivity, fast sync, and overall app reliability fixes.
 </en-US>
 <en-IN>
-• Account Privacy & Security: Added a 30-day account security quarantine with direct rollback and restore support to protect against accidental account deletion.
-• Streamlined Authentication: Enhanced phone and email OTP verification with automated fallback delivery.
-• Terms & Legal Transparency: Updated in-app access to Terms and Conditions and comprehensive privacy policies.
-• Health Data Synchronization: Smoother telemetry sync for CGM glucose reports, food logs, and active subscriptions.
-• Bug Fixes & Performance: General stability enhancements and faster screen transitions across devices.
+• Doctor Ratings & Reviews: Real patient ratings and consultation review counts are now visible right on doctor profiles and booking cards.
+• Instant Push Notifications: Tapping on consultation reminders, lab updates, or doctor advice now seamlessly opens directly to the right screen.
+• Enhanced Digital Prescriptions: Doctors can now issue comprehensive, formatted medical prescriptions with detailed dosage and lifestyle guidance.
+• Calendar & Appointment Improvements: Smoother schedule navigation and quick consultation notes access.
+• Performance & Stability: Enhanced connectivity, fast sync, and overall app reliability fixes.
 </en-IN>

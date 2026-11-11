@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Calendar, Clock, LogOut, FileText, User, Settings, 
-  Users, BarChart3, Star, CheckCircle
+  Users, BarChart3, Star, CheckCircle, ChevronLeft, ChevronRight,
+  Plus, Trash2, Send, Download, Upload, Pill, Eye, MessageSquare,
+  FileCheck, X
 } from 'lucide-react';
 
 // Shared date formatter — handles ISO strings, YYYY-MM-DD, and timestamps
@@ -91,10 +93,45 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLog
   // Note/Prescription consultation editor states
   const [selectedApptForNotes, setSelectedApptForNotes] = useState<any | null>(null);
   const [consultNotes, setConsultNotes] = useState('');
+  const [clinicalDiagnosis, setClinicalDiagnosis] = useState('');
+  const [dietaryAdvice, setDietaryAdvice] = useState('');
+  const [lifestyleAdvice, setLifestyleAdvice] = useState('');
+  const [followUpDate, setFollowUpDate] = useState('');
+  const [medicinesList, setMedicinesList] = useState<Array<{
+    name: string;
+    dosage: string;
+    frequency: string;
+    timing: string;
+    duration: string;
+    instructions: string;
+  }>>([
+    { name: '', dosage: '', frequency: '1-0-1', timing: 'After Food', duration: '5 days', instructions: '' }
+  ]);
   const [prescriptionText, setPrescriptionText] = useState('');
   const [prescriptionUrl, setPrescriptionUrl] = useState('');
   const [savingNotes, setSavingNotes] = useState(false);
+  const [isGeneratingPrescription, setIsGeneratingPrescription] = useState(false);
   const [completingAppt, setCompletingAppt] = useState<any | null>(null);
+
+  // Message Patient Modal state
+  const [messagePatientModal, setMessagePatientModal] = useState<{
+    isOpen: boolean;
+    patientId: string;
+    patientName: string;
+    appointmentId?: string;
+  } | null>(null);
+  const [messageSubject, setMessageSubject] = useState('');
+  const [messageBody, setMessageBody] = useState('');
+  const [sendingMessage, setSendingMessage] = useState(false);
+
+  // Patient History Drawer/Modal state
+  const [patientHistoryModal, setPatientHistoryModal] = useState<any | null>(null);
+
+  // Notes tab filter
+  const [notesFilter, setNotesFilter] = useState<'all' | 'confirmed' | 'completed'>('all');
+
+  // Calendar dynamic date state
+  const [calendarDate, setCalendarDate] = useState<Date>(new Date());
 
   // Accept/Custom link states
   const [acceptingAppt, setAcceptingAppt] = useState<any | null>(null);
@@ -367,15 +404,190 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLog
     }
   };
 
+  const resetPrescriptionFields = () => {
+    setConsultNotes('');
+    setClinicalDiagnosis('');
+    setDietaryAdvice('');
+    setLifestyleAdvice('');
+    setFollowUpDate('');
+    setMedicinesList([
+      { name: '', dosage: '', frequency: '1-0-1', timing: 'After Food', duration: '5 days', instructions: '' }
+    ]);
+    setPrescriptionText('');
+    setPrescriptionUrl('');
+  };
+
+  const openPrescriptionModalForAppt = (appt: any) => {
+    setCompletingAppt(appt);
+    setConsultNotes(appt.notes || '');
+    setClinicalDiagnosis(appt.diagnosis || appt.reason || '');
+    setDietaryAdvice(appt.dietaryAdvice || '');
+    setLifestyleAdvice(appt.lifestyleAdvice || '');
+    setFollowUpDate(appt.followUpDate || '');
+    setPrescriptionUrl(appt.prescriptionUrl || '');
+    setPrescriptionText(appt.prescriptionText || '');
+    
+    if (Array.isArray(appt.medicines) && appt.medicines.length > 0) {
+      setMedicinesList(appt.medicines.map((m: any) => ({
+        name: m.name || '',
+        dosage: m.dosage || '',
+        frequency: m.frequency || '1-0-1',
+        timing: m.timing || 'After Food',
+        duration: m.duration || '5 days',
+        instructions: m.instructions || ''
+      })));
+    } else {
+      setMedicinesList([
+        { name: '', dosage: '', frequency: '1-0-1', timing: 'After Food', duration: '5 days', instructions: '' }
+      ]);
+    }
+  };
+
+  const handleAddMedicineRow = () => {
+    setMedicinesList(prev => [
+      ...prev,
+      { name: '', dosage: '', frequency: '1-0-1', timing: 'After Food', duration: '5 days', instructions: '' }
+    ]);
+  };
+
+  const handleRemoveMedicineRow = (index: number) => {
+    setMedicinesList(prev => {
+      const next = prev.filter((_, i) => i !== index);
+      return next.length > 0 ? next : [{ name: '', dosage: '', frequency: '1-0-1', timing: 'After Food', duration: '5 days', instructions: '' }];
+    });
+  };
+
+  const handleUpdateMedicine = (index: number, field: string, value: string) => {
+    setMedicinesList(prev => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [field]: value };
+      return updated;
+    });
+  };
+
+  const handleGeneratePrescriptionPdf = async () => {
+    const targetAppt = completingAppt || selectedApptForNotes;
+    if (!targetAppt) return;
+    const validMedicines = medicinesList.filter(m => m.name && m.name.trim());
+    setIsGeneratingPrescription(true);
+    try {
+      const res = await fetch(`${apiUrl}/doctor/appointments/${targetAppt._id}/prescription`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          notes: consultNotes,
+          diagnosis: clinicalDiagnosis || targetAppt.reason,
+          dietaryAdvice,
+          lifestyleAdvice,
+          followUpDate,
+          medicines: validMedicines,
+          prescriptionText
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setPrescriptionUrl(data.prescriptionUrl);
+        alert('Official medical prescription PDF generated successfully!');
+        fetchAppointments();
+      } else {
+        const err = await res.json();
+        alert(err.message || 'Error generating prescription PDF.');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Server error generating prescription PDF.');
+    } finally {
+      setIsGeneratingPrescription(false);
+    }
+  };
+
+  const handleUploadPrescriptionFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const targetAppt = completingAppt || selectedApptForNotes;
+    if (!targetAppt || !e.target.files || !e.target.files[0]) return;
+    const file = e.target.files[0];
+    setIsGeneratingPrescription(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch(`${apiUrl}/doctor/appointments/${targetAppt._id}/prescription-file`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setPrescriptionUrl(data.prescriptionUrl);
+        alert('Prescription file uploaded and saved to consultation!');
+        fetchAppointments();
+      } else {
+        const err = await res.json();
+        alert(err.message || 'Error uploading file.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error uploading prescription file.');
+    } finally {
+      setIsGeneratingPrescription(false);
+    }
+  };
+
+  const handleSendMessageToPatient = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!messagePatientModal || !messageBody.trim()) {
+      alert('Please enter your message.');
+      return;
+    }
+    setSendingMessage(true);
+    try {
+      const endpoint = messagePatientModal.appointmentId 
+        ? `${apiUrl}/doctor/appointments/${messagePatientModal.appointmentId}/message`
+        : `${apiUrl}/doctor/patients/${messagePatientModal.patientId}/message`;
+
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          patientId: messagePatientModal.patientId,
+          subject: messageSubject,
+          message: messageBody
+        })
+      });
+
+      if (res.ok) {
+        alert(`Message sent to ${messagePatientModal.patientName} via Push Notification and Email!`);
+        setMessagePatientModal(null);
+        setMessageSubject('');
+        setMessageBody('');
+      } else {
+        const err = await res.json();
+        alert(err.message || 'Error sending message.');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Server error sending message.');
+    } finally {
+      setSendingMessage(false);
+    }
+  };
+
   const handleConsultNotesSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedApptForNotes) return;
-    if (!consultNotes.trim()) {
-      alert('Clinical consultation notes are mandatory to complete the appointment.');
+    if (!consultNotes.trim() && !clinicalDiagnosis.trim()) {
+      alert('Clinical notes or diagnosis summary are required.');
       return;
     }
     setSavingNotes(true);
     try {
+      const validMedicines = medicinesList.filter(m => m.name && m.name.trim());
       const res = await fetch(`${apiUrl}/doctor/appointments/${selectedApptForNotes._id}/consultation`, {
         method: 'PUT',
         headers: {
@@ -384,22 +596,26 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLog
         },
         body: JSON.stringify({
           notes: consultNotes,
+          diagnosis: clinicalDiagnosis,
+          dietaryAdvice,
+          lifestyleAdvice,
+          followUpDate,
+          medicines: validMedicines,
           prescriptionText,
           prescriptionUrl,
-          status: 'completed'
+          generatePdf: true,
+          status: selectedApptForNotes.status === 'confirmed' ? 'completed' : selectedApptForNotes.status
         })
       });
       if (res.ok) {
-        alert('Consultation completed successfully! Confirmation email and SMS sent to doctor and patient.');
+        alert('Consultation details & prescription saved successfully! Confirmation sent to patient.');
         setSelectedApptForNotes(null);
-        setConsultNotes('');
-        setPrescriptionText('');
-        setPrescriptionUrl('');
+        resetPrescriptionFields();
         fetchAppointments();
         fetchDashboardStats();
       } else {
         const errData = await res.json();
-        alert(errData.message || 'Error marking appointment as completed.');
+        alert(errData.message || 'Error saving consultation.');
       }
     } catch (e) {
       console.error(e);
@@ -412,12 +628,13 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLog
   const handlePopupNotesSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!completingAppt) return;
-    if (!consultNotes.trim()) {
-      alert('Clinical consultation notes are mandatory to complete the appointment.');
+    if (!consultNotes.trim() && !clinicalDiagnosis.trim()) {
+      alert('Clinical notes or diagnosis summary are required.');
       return;
     }
     setSavingNotes(true);
     try {
+      const validMedicines = medicinesList.filter(m => m.name && m.name.trim());
       const res = await fetch(`${apiUrl}/doctor/appointments/${completingAppt._id}/consultation`, {
         method: 'PUT',
         headers: {
@@ -426,17 +643,21 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLog
         },
         body: JSON.stringify({
           notes: consultNotes,
+          diagnosis: clinicalDiagnosis,
+          dietaryAdvice,
+          lifestyleAdvice,
+          followUpDate,
+          medicines: validMedicines,
           prescriptionText,
           prescriptionUrl,
-          status: 'completed'
+          generatePdf: true,
+          status: completingAppt.status === 'confirmed' ? 'completed' : completingAppt.status
         })
       });
       if (res.ok) {
-        alert('Consultation completed successfully! Confirmation email and SMS sent to doctor and patient.');
+        alert('Consultation & Medical Prescription saved successfully! Patient notified.');
         setCompletingAppt(null);
-        setConsultNotes('');
-        setPrescriptionText('');
-        setPrescriptionUrl('');
+        resetPrescriptionFields();
         fetchAppointments();
         fetchDashboardStats();
       } else {
@@ -508,19 +729,30 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLog
   };
 
   const getUniquePatients = () => {
-    const list: any[] = [];
-    const patientIds = new Set<string>();
+    const patientMap = new Map<string, any>();
     appointments.forEach(appt => {
-      if (appt.userId && !patientIds.has(appt.userId._id)) {
-        patientIds.add(appt.userId._id);
-        list.push({
-          ...appt.userId,
-          lastVisit: appt.date,
-          lastReason: appt.reason
-        });
+      if (appt.userId && appt.userId._id) {
+        const pId = appt.userId._id;
+        if (!patientMap.has(pId)) {
+          patientMap.set(pId, {
+            ...appt.userId,
+            lastVisit: appt.date,
+            lastReason: appt.reason,
+            latestAppt: appt,
+            allAppointments: [appt]
+          });
+        } else {
+          const existing = patientMap.get(pId);
+          existing.allAppointments.push(appt);
+          if (new Date(appt.date) >= new Date(existing.lastVisit)) {
+            existing.lastVisit = appt.date;
+            existing.lastReason = appt.reason;
+            existing.latestAppt = appt;
+          }
+        }
       }
     });
-    return list;
+    return Array.from(patientMap.values());
   };
 
   const getGoogleCalendarUrl = (appt: any) => {
@@ -937,16 +1169,11 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLog
                             </div>
                             {/* Mark Completed button — opens notes popup */}
                             <button
-                              onClick={() => {
-                                setCompletingAppt(appt);
-                                setConsultNotes(appt.notes || '');
-                                setPrescriptionText(appt.prescriptionText || '');
-                                setPrescriptionUrl(appt.prescriptionUrl || '');
-                              }}
+                              onClick={() => openPrescriptionModalForAppt(appt)}
                               className="w-full py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-1.5"
                             >
                               <CheckCircle className="h-3.5 w-3.5" />
-                              Mark as Completed
+                              Complete & Prescribe
                             </button>
                             {/* Inline feedback display if patient submitted */}
                             {appt.feedback && (
@@ -962,7 +1189,47 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLog
                         )}
 
                         {appt.status === 'completed' && (
-                          <div className="pt-2">
+                          <div className="pt-2 space-y-2.5">
+                            {/* Actions for completed appointments */}
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <button
+                                onClick={() => openPrescriptionModalForAppt(appt)}
+                                className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl text-xs font-bold border border-indigo-200 transition-all flex items-center gap-1.5 shadow-2xs"
+                              >
+                                <Pill className="h-3.5 w-3.5" />
+                                <span>Edit Medicines / Notes</span>
+                              </button>
+
+                              {appt.prescriptionUrl && (
+                                <a
+                                  href={appt.prescriptionUrl.startsWith('http') ? appt.prescriptionUrl : `${apiUrl.replace(/\/api\/?$/, '')}${appt.prescriptionUrl}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-xl text-xs font-bold border border-emerald-200 transition-all flex items-center gap-1.5 shadow-2xs"
+                                >
+                                  <FileCheck className="h-3.5 w-3.5" />
+                                  <span>Prescription PDF</span>
+                                </a>
+                              )}
+
+                              <button
+                                onClick={() => {
+                                  setMessagePatientModal({
+                                    isOpen: true,
+                                    patientId: appt.userId?._id,
+                                    patientName: appt.userId?.name || 'Patient',
+                                    appointmentId: appt._id
+                                  });
+                                  setMessageSubject(`Clinical Advice - Visit on ${formatDate(appt.date)}`);
+                                  setMessageBody('');
+                                }}
+                                className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold border border-slate-200 transition-all flex items-center gap-1.5 shadow-2xs"
+                              >
+                                <MessageSquare className="h-3.5 w-3.5 text-slate-500" />
+                                <span>Message</span>
+                              </button>
+                            </div>
+
                             {appt.feedback ? (
                               <div className="bg-amber-50/60 border border-amber-100 rounded-xl p-2.5 text-xs text-slate-700">
                                 <div className="flex items-center gap-1 text-amber-500 font-bold mb-1">
@@ -972,8 +1239,8 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLog
                                 <p className="italic">"{appt.feedback.feedbackText}"</p>
                               </div>
                             ) : (
-                              <div className="text-center py-2 bg-slate-100 border border-slate-200 rounded-xl text-[11px] font-medium text-slate-500 italic">
-                                Waiting for patient review...
+                              <div className="text-center py-2 bg-slate-50 border border-slate-150 rounded-xl text-[11px] font-medium text-slate-400 italic">
+                                Completed • Waiting for patient review
                               </div>
                             )}
                           </div>
@@ -1032,130 +1299,333 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLog
             )}
 
             {/* TAB CONTENT: CALENDAR */}
-            {activeTab === 'calendar' && (
-              <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-6">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h2 className="text-base font-bold text-slate-800">My Clinical Bookings Calendar</h2>
-                    <p className="text-xs text-slate-400 mt-0.5">Visual monthly scheduler tracker</p>
-                  </div>
-                  <div className="flex gap-2 bg-slate-100 p-1 rounded-xl border border-slate-200">
-                    {(['month', 'week', 'day'] as const).map(tab => (
-                      <button 
-                        key={tab}
-                        onClick={() => setCalendarTab(tab)}
-                        className={`px-3 py-1 rounded-lg text-xs font-bold capitalize transition-all ${
-                          calendarTab === tab ? 'bg-primary text-white shadow' : 'text-slate-500 hover:text-slate-800'
-                        }`}
-                      >
-                        {tab}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+            {activeTab === 'calendar' && (() => {
+              const currentYear = calendarDate.getFullYear();
+              const currentMonth = calendarDate.getMonth();
+              const todayStr = new Date().toISOString().split('T')[0];
 
-                {/* MONTH VIEW */}
-                {calendarTab === 'month' && (
-                  <>
-                    <div className="grid grid-cols-7 gap-2 text-center text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 border-b border-slate-100 pb-2">
-                      {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                        <div key={day} className="py-2">{day}</div>
-                      ))}
+              // Navigation Handlers
+              const handlePrev = () => {
+                const d = new Date(calendarDate);
+                if (calendarTab === 'month') {
+                  d.setMonth(d.getMonth() - 1);
+                } else if (calendarTab === 'week') {
+                  d.setDate(d.getDate() - 7);
+                } else {
+                  d.setDate(d.getDate() - 1);
+                }
+                setCalendarDate(d);
+              };
+
+              const handleNext = () => {
+                const d = new Date(calendarDate);
+                if (calendarTab === 'month') {
+                  d.setMonth(d.getMonth() + 1);
+                } else if (calendarTab === 'week') {
+                  d.setDate(d.getDate() + 7);
+                } else {
+                  d.setDate(d.getDate() + 1);
+                }
+                setCalendarDate(d);
+              };
+
+              const handleToday = () => {
+                setCalendarDate(new Date());
+              };
+
+              // Month View Calculations
+              const firstDayOfWeek = new Date(currentYear, currentMonth, 1).getDay(); // 0 (Sun) to 6 (Sat)
+              const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+              const daysInPrevMonth = new Date(currentYear, currentMonth, 0).getDate();
+
+              const leadingDays = Array.from({ length: firstDayOfWeek }).map((_, idx) => {
+                const dayNum = daysInPrevMonth - firstDayOfWeek + idx + 1;
+                const prevDate = new Date(currentYear, currentMonth - 1, dayNum);
+                const dateStr = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
+                return { dayNum, dateStr, isCurrentMonth: false };
+              });
+
+              const currentMonthDays = Array.from({ length: daysInMonth }).map((_, idx) => {
+                const dayNum = idx + 1;
+                const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
+                return { dayNum, dateStr, isCurrentMonth: true };
+              });
+
+              const totalCellsNeeded = Math.ceil((leadingDays.length + currentMonthDays.length) / 7) * 7;
+              const trailingCount = totalCellsNeeded - (leadingDays.length + currentMonthDays.length);
+              const trailingDays = Array.from({ length: trailingCount }).map((_, idx) => {
+                const dayNum = idx + 1;
+                const nextDate = new Date(currentYear, currentMonth + 1, dayNum);
+                const dateStr = `${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
+                return { dayNum, dateStr, isCurrentMonth: false };
+              });
+
+              const allMonthCells = [...leadingDays, ...currentMonthDays, ...trailingDays];
+
+              // Week View Calculations
+              const startOfWeek = new Date(calendarDate);
+              startOfWeek.setDate(calendarDate.getDate() - calendarDate.getDay());
+              const weekDays = Array.from({ length: 7 }).map((_, idx) => {
+                const d = new Date(startOfWeek);
+                d.setDate(startOfWeek.getDate() + idx);
+                const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
+                const dayNum = d.getDate();
+                return { date: d, dateStr, label: `${dayName} ${dayNum}` };
+              });
+
+              // Day View Calculations
+              const selectedDayStr = `${calendarDate.getFullYear()}-${String(calendarDate.getMonth() + 1).padStart(2, '0')}-${String(calendarDate.getDate()).padStart(2, '0')}`;
+
+              // Title string
+              const headerTitle = calendarTab === 'month' 
+                ? calendarDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+                : calendarTab === 'week'
+                  ? `Week of ${startOfWeek.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+                  : calendarDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
+
+              return (
+                <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-6">
+                  {/* Calendar Top Header */}
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                      <div className="flex items-center gap-3">
+                        <h2 className="text-base font-bold text-slate-800">My Clinical Bookings Calendar</h2>
+                        <span className="text-xs font-extrabold text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-150">
+                          {headerTitle}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-400 mt-0.5">Visual monthly scheduler tracker & booking manager</p>
                     </div>
-                    <div className="grid grid-cols-7 gap-2">
-                      {Array.from({ length: 35 }).map((_, idx) => {
-                        const dayNum = (idx % 31) + 1;
-                        const dateStr = `2026-07-${dayNum < 10 ? '0' + dayNum : dayNum}`;
-                        const dayAppts = appointments.filter(a => a.date === dateStr);
+
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {/* Prev / Today / Next Controls */}
+                      <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
+                        <button
+                          type="button"
+                          onClick={handlePrev}
+                          className="p-1 hover:bg-white text-slate-600 rounded-lg transition-all"
+                          title="Previous"
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleToday}
+                          className="px-2.5 py-1 text-xs font-bold text-slate-700 hover:bg-white rounded-lg transition-all"
+                        >
+                          Today
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleNext}
+                          className="p-1 hover:bg-white text-slate-600 rounded-lg transition-all"
+                          title="Next"
+                        >
+                          <ChevronRight className="h-4 w-4" />
+                        </button>
+                      </div>
+
+                      {/* View Switcher: Month / Week / Day */}
+                      <div className="flex gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
+                        {(['month', 'week', 'day'] as const).map(tab => (
+                          <button 
+                            key={tab}
+                            type="button"
+                            onClick={() => setCalendarTab(tab)}
+                            className={`px-3 py-1 rounded-lg text-xs font-bold capitalize transition-all ${
+                              calendarTab === tab ? 'bg-primary text-white shadow-xs' : 'text-slate-500 hover:text-slate-800'
+                            }`}
+                          >
+                            {tab}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* MONTH VIEW */}
+                  {calendarTab === 'month' && (
+                    <>
+                      <div className="grid grid-cols-7 gap-2 text-center text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 border-b border-slate-100 pb-2">
+                        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                          <div key={day} className="py-1">{day}</div>
+                        ))}
+                      </div>
+                      <div className="grid grid-cols-7 gap-2">
+                        {allMonthCells.map((cell, idx) => {
+                          const dayAppts = appointments.filter(a => a.date === cell.dateStr);
+                          const isToday = cell.dateStr === todayStr;
+                          return (
+                            <div 
+                              key={idx} 
+                              onClick={() => {
+                                setCalendarDate(new Date(cell.dateStr + 'T00:00:00'));
+                                setCalendarTab('day');
+                              }}
+                              className={`border rounded-2xl p-2.5 min-h-[100px] flex flex-col justify-between transition-all cursor-pointer ${
+                                isToday 
+                                  ? 'border-indigo-400 bg-indigo-50/30 ring-2 ring-indigo-400/20' 
+                                  : cell.isCurrentMonth
+                                    ? 'border-slate-200/80 bg-white hover:border-indigo-300 hover:shadow-xs'
+                                    : 'border-slate-100 bg-slate-50/40 text-slate-300'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className={`text-[11px] font-black ${
+                                  isToday ? 'bg-indigo-600 text-white w-5 h-5 rounded-full flex items-center justify-center' :
+                                  cell.isCurrentMonth ? 'text-slate-700' : 'text-slate-350'
+                                }`}>
+                                  {cell.dayNum}
+                                </span>
+                                {dayAppts.length > 0 && (
+                                  <span className="text-[9px] font-extrabold text-indigo-600 bg-indigo-100/70 px-1.5 py-0.2 rounded-full">
+                                    {dayAppts.length}
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="space-y-1 overflow-y-auto max-h-[60px] scrollbar-none mt-1">
+                                {dayAppts.map(appt => (
+                                  <div 
+                                    key={appt._id}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      openPrescriptionModalForAppt(appt);
+                                    }}
+                                    className={`p-1 rounded text-[9px] font-bold text-left truncate leading-tight shadow-2xs ${
+                                      appt.status === 'confirmed' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                                      appt.status === 'completed' ? 'bg-blue-50 text-blue-700 border border-blue-200' :
+                                      appt.status === 'cancelled' ? 'bg-rose-50 text-rose-700 border border-rose-200' :
+                                      'bg-amber-50 text-amber-700 border border-amber-200'
+                                    }`}
+                                    title={`${appt.time} - ${appt.userId?.name || 'Patient'} (${appt.reason}) - Click to manage`}
+                                  >
+                                    {appt.time} {appt.userId?.name || 'Patient'}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </>
+                  )}
+
+                  {/* WEEK VIEW */}
+                  {calendarTab === 'week' && (
+                    <div className="grid grid-cols-7 gap-3">
+                      {weekDays.map((col) => {
+                        const dayAppts = appointments.filter(a => a.date === col.dateStr);
+                        const isToday = col.dateStr === todayStr;
                         return (
-                          <div key={idx} className="border border-slate-100 rounded-2xl p-3 min-h-[90px] bg-slate-50/50 flex flex-col justify-between hover:border-slate-350 transition-all">
-                            <span className="text-[10px] font-black text-slate-400 self-start">{dayNum}</span>
-                            <div className="space-y-1 overflow-y-auto max-h-[50px] scrollbar-none">
+                          <div 
+                            key={col.dateStr} 
+                            className={`border rounded-2xl p-3 min-h-[340px] flex flex-col gap-2 ${
+                              isToday ? 'border-indigo-400 bg-indigo-50/20 ring-1 ring-indigo-400/30' : 'border-slate-200 bg-slate-50/30'
+                            }`}
+                          >
+                            <div className="text-center pb-2 border-b border-slate-150">
+                              <span className={`text-xs font-bold block ${isToday ? 'text-indigo-600' : 'text-slate-800'}`}>
+                                {col.label}
+                              </span>
+                              {isToday && <span className="text-[9px] font-bold text-indigo-500 uppercase">Today</span>}
+                            </div>
+                            <div className="flex-1 space-y-2 overflow-y-auto max-h-[280px] scrollbar-none">
                               {dayAppts.map(appt => (
                                 <div 
-                                  key={appt._id}
-                                  className={`p-1 rounded text-[9px] font-bold text-left truncate leading-tight ${
-                                    appt.status === 'confirmed' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' :
-                                    appt.status === 'completed' ? 'bg-blue-50 text-blue-600 border border-blue-100' :
-                                    appt.status === 'cancelled' ? 'bg-rose-50 text-rose-600 border-rose-100' :
-                                    'bg-amber-50 text-amber-600 border-amber-100'
+                                  key={appt._id} 
+                                  onClick={() => openPrescriptionModalForAppt(appt)}
+                                  className={`p-2.5 rounded-xl text-[10px] font-bold border flex flex-col gap-1 cursor-pointer transition-all hover:shadow-xs ${
+                                    appt.status === 'confirmed' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                                    appt.status === 'completed' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                                    appt.status === 'cancelled' ? 'bg-rose-50 text-rose-700 border-rose-200' :
+                                    'bg-amber-50 text-amber-700 border-amber-200'
                                   }`}
                                 >
-                                  {appt.time} - {appt.userId?.name}
+                                  <div className="flex items-center justify-between">
+                                    <span>🕒 {appt.time}</span>
+                                    <span className="uppercase text-[8px] px-1 rounded bg-white/70">{appt.status}</span>
+                                  </div>
+                                  <span className="truncate text-slate-800 font-extrabold">{appt.userId?.name || 'Patient'}</span>
+                                  <span className="text-[9px] text-slate-500 font-normal truncate">{appt.reason}</span>
                                 </div>
                               ))}
+                              {dayAppts.length === 0 && (
+                                <span className="text-[10px] text-slate-400 italic block text-center mt-12">No bookings</span>
+                              )}
                             </div>
                           </div>
                         );
                       })}
                     </div>
-                  </>
-                )}
+                  )}
 
-                {/* WEEK VIEW */}
-                {calendarTab === 'week' && (
-                  <div className="grid grid-cols-7 gap-4">
-                    {['Mon 13', 'Tue 14', 'Wed 15', 'Thu 16', 'Fri 17', 'Sat 18', 'Sun 19'].map((day, idx) => {
-                      const dateStr = `2026-07-${13 + idx}`;
-                      const dayAppts = appointments.filter(a => a.date === dateStr);
-                      return (
-                        <div key={day} className="border border-slate-200 rounded-2xl p-4 bg-slate-50/40 min-h-[300px] flex flex-col gap-2">
-                          <span className="text-xs font-bold text-slate-800 text-center pb-2 border-b border-slate-100">{day}</span>
-                          <div className="flex-1 space-y-2 overflow-y-auto max-h-[250px] scrollbar-none">
-                            {dayAppts.map(appt => (
-                              <div 
-                                key={appt._id} 
-                                className={`p-2 rounded-xl text-[10px] font-bold border flex flex-col gap-1 ${
-                                  appt.status === 'confirmed' ? 'bg-emerald-555/10 text-emerald-600 border-emerald-100' :
-                                  appt.status === 'completed' ? 'bg-blue-50 text-blue-600 border-blue-100' :
-                                  appt.status === 'cancelled' ? 'bg-rose-50 text-rose-600 border-rose-100' :
-                                  'bg-amber-50 text-amber-600 border-amber-100'
-                                }`}
-                              >
-                                <span>🕒 {appt.time}</span>
-                                <span className="truncate">{appt.userId?.name}</span>
-                              </div>
-                            ))}
-                            {dayAppts.length === 0 && <span className="text-[10px] text-slate-400 italic block text-center mt-10">No visits</span>}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
+                  {/* DAY VIEW */}
+                  {calendarTab === 'day' && (
+                    <div className="space-y-3">
+                      <div className="p-3 bg-indigo-50/50 border border-indigo-150 rounded-2xl flex items-center justify-between">
+                        <span className="text-xs font-bold text-indigo-900">
+                          Consultations for {selectedDayStr} ({appointments.filter(a => a.date === selectedDayStr).length} visits scheduled)
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setCalendarTab('month')}
+                          className="text-xs font-bold text-indigo-600 hover:underline"
+                        >
+                          ← Back to Month View
+                        </button>
+                      </div>
 
-                {/* DAY VIEW */}
-                {calendarTab === 'day' && (
-                  <div className="space-y-2 border border-slate-100 rounded-3xl p-4 bg-slate-50/20 max-h-[400px] overflow-y-auto">
-                    {['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00'].map(hour => {
-                      const hourAppts = appointments.filter(a => a.date === '2026-07-15' && a.time.startsWith(hour.split(':')[0]));
-                      return (
-                        <div key={hour} className="flex gap-4 items-center py-2.5 border-b border-slate-100">
-                          <span className="text-xs font-bold text-slate-400 w-16">{hour}</span>
-                          <div className="flex-1 flex gap-2 overflow-x-auto">
-                            {hourAppts.map(appt => (
-                              <div 
-                                key={appt._id}
-                                className={`px-3 py-1.5 rounded-xl text-xs font-bold border flex items-center gap-3 ${
-                                  appt.status === 'confirmed' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
-                                  appt.status === 'completed' ? 'bg-blue-50 text-blue-600 border-blue-100' :
-                                  appt.status === 'cancelled' ? 'bg-rose-50 text-rose-600 border-rose-100' :
-                                  'bg-amber-50 text-amber-600 border-amber-100'
-                                }`}
-                              >
-                                <span>{appt.userId?.name}</span>
-                                <span className="text-[10px] text-slate-400">Reason: {appt.reason}</span>
+                      <div className="space-y-2 border border-slate-200 rounded-3xl p-4 bg-slate-50/20 max-h-[500px] overflow-y-auto">
+                        {['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00'].map(hour => {
+                          const hourPrefix = hour.split(':')[0];
+                          const hourAppts = appointments.filter(a => a.date === selectedDayStr && a.time && a.time.startsWith(hourPrefix));
+                          return (
+                            <div key={hour} className="flex gap-4 items-center py-3 border-b border-slate-100 last:border-0">
+                              <span className="text-xs font-bold text-slate-400 w-16 shrink-0">{hour}</span>
+                              <div className="flex-1 flex gap-2 overflow-x-auto">
+                                {hourAppts.map(appt => (
+                                  <div 
+                                    key={appt._id}
+                                    onClick={() => openPrescriptionModalForAppt(appt)}
+                                    className={`px-3.5 py-2 rounded-xl text-xs font-bold border flex items-center gap-3 cursor-pointer transition-all hover:shadow-xs ${
+                                      appt.status === 'confirmed' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                                      appt.status === 'completed' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                                      appt.status === 'cancelled' ? 'bg-rose-50 text-rose-700 border-rose-200' :
+                                      'bg-amber-50 text-amber-700 border-amber-200'
+                                    }`}
+                                  >
+                                    <div>
+                                      <div className="flex items-center gap-2">
+                                        <span>{appt.userId?.name || 'Patient'}</span>
+                                        <span className="text-[10px] font-normal px-1.5 py-0.2 rounded bg-white border uppercase text-slate-500">
+                                          {appt.time} • {appt.type || 'consultation'}
+                                        </span>
+                                      </div>
+                                      <span className="text-[10px] text-slate-500 font-normal block mt-0.5">Reason: {appt.reason}</span>
+                                    </div>
+                                    <button 
+                                      type="button"
+                                      className="px-2 py-1 bg-white rounded-lg text-[10px] font-bold text-slate-700 border shadow-2xs hover:bg-slate-50"
+                                    >
+                                      Manage
+                                    </button>
+                                  </div>
+                                ))}
+                                {hourAppts.length === 0 && (
+                                  <span className="text-xs text-slate-350 italic">No bookings scheduled for this hour</span>
+                                )}
                               </div>
-                            ))}
-                            {hourAppts.length === 0 && <span className="text-xs text-slate-400 italic">No bookings scheduled for this hour</span>}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* TAB CONTENT: PATIENTS */}
             {activeTab === 'patients' && (
@@ -1170,23 +1640,104 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLog
                     <thead className="bg-slate-50 font-bold uppercase text-slate-400 border-b border-slate-200">
                       <tr>
                         <th className="p-4">Patient Name</th>
-                        <th className="p-4">Email</th>
-                        <th className="p-4 text-center">Last Appointment</th>
-                        <th className="p-4">Reason</th>
+                        <th className="p-4">Contact Info</th>
+                        <th className="p-4 text-center">Last Visit</th>
+                        <th className="p-4">Consultation Reason</th>
+                        <th className="p-4 text-center">Prescription Status</th>
+                        <th className="p-4 text-right">Actions & Medical Options</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 font-semibold text-slate-700">
-                      {getUniquePatients().map(p => (
-                        <tr key={p._id} className="hover:bg-slate-50/50">
-                          <td className="p-4 font-bold text-slate-800">{p.name}</td>
-                          <td className="p-4">{p.email}</td>
-                          <td className="p-4 text-center font-bold text-indigo-650">{p.lastVisit}</td>
-                          <td className="p-4 font-normal text-slate-555">{p.lastReason}</td>
-                        </tr>
-                      ))}
+                      {getUniquePatients().map(p => {
+                        const hasPrescription = !!p.latestAppt?.prescriptionUrl;
+                        return (
+                          <tr key={p._id} className="hover:bg-slate-50/50 transition-colors">
+                            <td className="p-4">
+                              <span className="font-bold text-slate-800 text-sm block">{p.name}</span>
+                              <span className="text-[10px] text-slate-400 font-normal">
+                                {p.allAppointments ? `${p.allAppointments.length} total consultation${p.allAppointments.length > 1 ? 's' : ''}` : 'Registered Patient'}
+                              </span>
+                            </td>
+                            <td className="p-4 text-slate-600">
+                              <span className="block">{p.email}</span>
+                              {p.mobileNumber && <span className="text-[10px] text-slate-400">{p.mobileNumber}</span>}
+                            </td>
+                            <td className="p-4 text-center">
+                              <span className="font-bold text-indigo-650 block">{formatDate(p.lastVisit)}</span>
+                              <span className="text-[9px] uppercase px-1.5 py-0.5 rounded font-extrabold bg-slate-100 text-slate-500">
+                                {p.latestAppt?.status || 'completed'}
+                              </span>
+                            </td>
+                            <td className="p-4 font-normal text-slate-600 max-w-xs">
+                              <p className="truncate" title={p.lastReason}>{p.lastReason || 'General Consultation'}</p>
+                            </td>
+                            <td className="p-4 text-center">
+                              {hasPrescription ? (
+                                <a
+                                  href={p.latestAppt.prescriptionUrl.startsWith('http') ? p.latestAppt.prescriptionUrl : `${apiUrl.replace(/\/api\/?$/, '')}${p.latestAppt.prescriptionUrl}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition-all shadow-2xs"
+                                >
+                                  <FileCheck className="h-3 w-3" />
+                                  <span>View Rx PDF</span>
+                                </a>
+                              ) : (
+                                <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-400">
+                                  No Rx attached
+                                </span>
+                              )}
+                            </td>
+                            <td className="p-4 text-right">
+                              <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                                {p.latestAppt && (
+                                  <button
+                                    type="button"
+                                    onClick={() => openPrescriptionModalForAppt(p.latestAppt)}
+                                    className="px-2.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl text-xs font-bold border border-indigo-200 transition-all flex items-center gap-1 shadow-2xs"
+                                    title="Edit diagnostic notes, suggest medicines, or create a prescription"
+                                  >
+                                    <Pill className="h-3.5 w-3.5" />
+                                    <span>Prescribe / Edit</span>
+                                  </button>
+                                )}
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setMessagePatientModal({
+                                      isOpen: true,
+                                      patientId: p._id,
+                                      patientName: p.name,
+                                      appointmentId: p.latestAppt?._id
+                                    });
+                                    setMessageSubject(`Advice from Doctor - ${formatDate(p.lastVisit)}`);
+                                    setMessageBody('');
+                                  }}
+                                  className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold border border-slate-200 transition-all flex items-center gap-1 shadow-2xs"
+                                  title="Send push notification & email advice to patient"
+                                >
+                                  <MessageSquare className="h-3.5 w-3.5 text-slate-500" />
+                                  <span>Message</span>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => setPatientHistoryModal(p)}
+                                  className="px-2.5 py-1.5 bg-white hover:bg-slate-50 text-slate-600 rounded-xl text-xs font-bold border border-slate-200 transition-all flex items-center gap-1 shadow-2xs"
+                                  title="View full patient consultation history"
+                                >
+                                  <Eye className="h-3.5 w-3.5 text-slate-400" />
+                                  <span>History</span>
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
                       {getUniquePatients().length === 0 && (
                         <tr>
-                          <td colSpan={4} className="text-center py-6 text-slate-400 italic">No patients listed in directory.</td>
+                          <td colSpan={6} className="text-center py-8 text-slate-400 italic">No registered patient consultations found in directory.</td>
                         </tr>
                       )}
                     </tbody>
@@ -1360,37 +1911,90 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLog
             {activeTab === 'notes' && (
               <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-6">
                 <div>
-                  <h2 className="text-base font-bold text-slate-800">Consultation Notes Writer</h2>
-                  <p className="text-xs text-slate-400 mt-0.5">Select a confirmed appointment to record diagnostic summaries and prescriptions</p>
+                  <h2 className="text-base font-bold text-slate-800">Consultation Notes & Prescription Suite</h2>
+                  <p className="text-xs text-slate-400 mt-0.5">Record diagnostic summaries, suggest medicines, and generate official medical prescriptions</p>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   
-                  {/* Left Sidebar list of confirmed appointments */}
+                  {/* Left Sidebar list of appointments */}
                   <div className="space-y-3 lg:col-span-1">
-                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Confirmed Patients</h3>
-                    <div className="space-y-2 max-h-96 overflow-y-auto scrollbar-thin">
-                      {appointments.filter(a => a.status === 'confirmed').map(appt => (
-                        <div 
-                          key={appt._id} 
-                          onClick={() => {
-                            setSelectedApptForNotes(appt);
-                            setConsultNotes(appt.notes || '');
-                            setPrescriptionText(appt.prescriptionText || '');
-                            setPrescriptionUrl(appt.prescriptionUrl || '');
-                          }}
-                          className={`p-3 border rounded-2xl cursor-pointer transition-all ${
-                            selectedApptForNotes?._id === appt._id 
-                              ? 'border-primary bg-indigo-50/20 text-indigo-755' 
-                              : 'border-slate-200 bg-white hover:border-slate-350 text-slate-700'
-                          }`}
-                        >
-                          <h4 className="font-bold text-xs">{appt.userId?.name}</h4>
-                          <span className="text-[10px] text-slate-400 font-bold block mt-0.5">🕒 {formatDate(appt.date)} at {appt.time}</span>
-                        </div>
-                      ))}
-                      {appointments.filter(a => a.status === 'confirmed').length === 0 && (
-                        <p className="text-xs text-slate-450 italic">No active confirmed appointments.</p>
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Select Patient</h3>
+                      <div className="flex gap-1 bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-[10px]">
+                        {(['all', 'confirmed', 'completed'] as const).map(f => (
+                          <button
+                            key={f}
+                            type="button"
+                            onClick={() => setNotesFilter(f)}
+                            className={`px-2 py-0.5 rounded capitalize font-bold ${
+                              notesFilter === f ? 'bg-white text-indigo-600 shadow-2xs' : 'text-slate-500'
+                            }`}
+                          >
+                            {f}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="space-y-2 max-h-[550px] overflow-y-auto scrollbar-thin">
+                      {appointments
+                        .filter(a => {
+                          if (notesFilter === 'all') return a.status === 'confirmed' || a.status === 'completed';
+                          return a.status === notesFilter;
+                        })
+                        .map(appt => (
+                          <div 
+                            key={appt._id} 
+                            onClick={() => {
+                              setSelectedApptForNotes(appt);
+                              setConsultNotes(appt.notes || '');
+                              setClinicalDiagnosis(appt.diagnosis || appt.reason || '');
+                              setDietaryAdvice(appt.dietaryAdvice || '');
+                              setLifestyleAdvice(appt.lifestyleAdvice || '');
+                              setFollowUpDate(appt.followUpDate || '');
+                              setPrescriptionUrl(appt.prescriptionUrl || '');
+                              setPrescriptionText(appt.prescriptionText || '');
+                              if (Array.isArray(appt.medicines) && appt.medicines.length > 0) {
+                                setMedicinesList(appt.medicines.map((m: any) => ({
+                                  name: m.name || '',
+                                  dosage: m.dosage || '',
+                                  frequency: m.frequency || '1-0-1',
+                                  timing: m.timing || 'After Food',
+                                  duration: m.duration || '5 days',
+                                  instructions: m.instructions || ''
+                                })));
+                              } else {
+                                setMedicinesList([
+                                  { name: '', dosage: '', frequency: '1-0-1', timing: 'After Food', duration: '5 days', instructions: '' }
+                                ]);
+                              }
+                            }}
+                            className={`p-3.5 border rounded-2xl cursor-pointer transition-all ${
+                              selectedApptForNotes?._id === appt._id 
+                                ? 'border-primary bg-indigo-50/30 ring-1 ring-primary/40' 
+                                : 'border-slate-200 bg-white hover:border-slate-350 text-slate-700'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <h4 className="font-bold text-xs text-slate-800">{appt.userId?.name}</h4>
+                              <span className={`text-[9px] font-bold uppercase px-1.5 py-0.2 rounded border ${
+                                appt.status === 'completed' ? 'bg-blue-50 text-blue-600 border-blue-150' : 'bg-emerald-50 text-emerald-600 border-emerald-150'
+                              }`}>
+                                {appt.status}
+                              </span>
+                            </div>
+                            <span className="text-[10px] text-slate-400 font-semibold block mt-1">🕒 {formatDate(appt.date)} at {appt.time}</span>
+                            <span className="text-[10px] text-slate-500 truncate block mt-0.5">Reason: {appt.reason}</span>
+                            {appt.prescriptionUrl && (
+                              <span className="text-[9px] font-bold text-emerald-600 flex items-center gap-1 mt-1">
+                                <FileCheck className="h-3 w-3" /> Rx Attached
+                              </span>
+                            )}
+                          </div>
+                        ))}
+                      {appointments.filter(a => a.status === 'confirmed' || a.status === 'completed').length === 0 && (
+                        <p className="text-xs text-slate-400 italic py-6 text-center">No active or completed visits found.</p>
                       )}
                     </div>
                   </div>
@@ -1398,51 +2002,242 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLog
                   {/* Right Form Editor */}
                   <div className="lg:col-span-2">
                     {selectedApptForNotes ? (
-                      <form onSubmit={handleConsultNotesSubmit} className="bg-slate-50 border border-slate-150 rounded-3xl p-6 space-y-4">
-                        <div className="pb-3 border-b border-slate-200">
-                          <h4 className="font-bold text-sm text-slate-800">Consultation for {selectedApptForNotes.userId?.name}</h4>
-                          <span className="text-[10px] text-slate-400 block font-semibold mt-0.5">Reason: {selectedApptForNotes.reason}</span>
+                      <form onSubmit={handleConsultNotesSubmit} className="bg-slate-50 border border-slate-200 rounded-3xl p-6 space-y-5">
+                        <div className="pb-3 border-b border-slate-200 flex justify-between items-center flex-wrap gap-2">
+                          <div>
+                            <h4 className="font-bold text-sm text-slate-800">
+                              Consultation for {selectedApptForNotes.userId?.name}
+                            </h4>
+                            <span className="text-[11px] text-slate-400 font-medium">
+                              {formatDate(selectedApptForNotes.date)} at {selectedApptForNotes.time} • Reason: {selectedApptForNotes.reason}
+                            </span>
+                          </div>
+                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
+                            selectedApptForNotes.status === 'completed' ? 'bg-blue-50 text-blue-600 border-blue-200' : 'bg-emerald-50 text-emerald-600 border-emerald-200'
+                          }`}>
+                            Status: {selectedApptForNotes.status}
+                          </span>
                         </div>
 
+                        {/* Clinical Diagnosis */}
                         <div className="space-y-1">
-                          <label className="text-[10px] font-bold text-slate-450 uppercase tracking-wider block">Clinical Notes / Diagnostics Summary <span className="text-rose-500">*</span></label>
+                          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                            Clinical Assessment / Diagnosis Summary <span className="text-rose-500">*</span>
+                          </label>
                           <textarea 
                             required
                             value={consultNotes} 
                             onChange={e => setConsultNotes(e.target.value)}
-                            rows={4}
-                            className="w-full border border-slate-200 rounded-xl p-3 text-xs font-semibold focus:outline-none"
-                            placeholder="Describe symptoms, assessment, diagnosis details... (Mandatory)"
-                          />
-                        </div>
-
-                        <div className="space-y-1">
-                          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Digital Prescription Text</label>
-                          <textarea 
-                            value={prescriptionText} 
-                            onChange={e => setPrescriptionText(e.target.value)}
                             rows={3}
-                            className="w-full border border-slate-200 rounded-xl p-3 text-xs font-semibold focus:outline-none"
-                            placeholder="e.g. Paracetamol 500mg - Twice daily after meals - 5 days..."
+                            className="w-full border border-slate-200 rounded-xl p-3 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-primary bg-white"
+                            placeholder="Primary symptoms, clinical findings, diagnostic evaluation..."
                           />
                         </div>
 
-                        <div className="space-y-1">
-                          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Attached File / Prescription PDF URL (Optional)</label>
-                          <input 
-                            type="text" 
-                            value={prescriptionUrl} 
-                            onChange={e => setPrescriptionUrl(e.target.value)}
-                            placeholder="http://example.com/prescription.pdf"
-                            className="w-full border border-slate-200 rounded-xl p-2.5 text-xs font-semibold focus:outline-none"
-                          />
+                        {/* Structured Medicines Section */}
+                        <div className="space-y-3 bg-white p-4 rounded-2xl border border-slate-200">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span className="text-base font-bold text-indigo-600">℞</span>
+                              <h5 className="font-bold text-xs text-slate-800 uppercase tracking-wider">Prescribed Medicines & Dosages</h5>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={handleAddMedicineRow}
+                              className="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg text-xs font-bold border border-indigo-200 flex items-center gap-1 transition-all"
+                            >
+                              <Plus className="h-3.5 w-3.5" />
+                              <span>Add Medicine</span>
+                            </button>
+                          </div>
+
+                          <div className="space-y-2.5">
+                            {medicinesList.map((med, idx) => (
+                              <div key={idx} className="p-3 bg-slate-50/70 border border-slate-200/80 rounded-xl space-y-2">
+                                <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
+                                  {/* Medicine Name */}
+                                  <div className="sm:col-span-5">
+                                    <label className="text-[9px] font-bold text-slate-400 uppercase block mb-0.5">Medicine Name & Strength</label>
+                                    <input
+                                      type="text"
+                                      placeholder="e.g. Paracetamol 500mg, Metformin"
+                                      value={med.name}
+                                      onChange={e => handleUpdateMedicine(idx, 'name', e.target.value)}
+                                      className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs font-semibold focus:outline-none"
+                                    />
+                                  </div>
+
+                                  {/* Dosage */}
+                                  <div className="sm:col-span-3">
+                                    <label className="text-[9px] font-bold text-slate-400 uppercase block mb-0.5">Dosage</label>
+                                    <input
+                                      type="text"
+                                      placeholder="e.g. 1 Tab, 5ml"
+                                      value={med.dosage}
+                                      onChange={e => handleUpdateMedicine(idx, 'dosage', e.target.value)}
+                                      className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs font-semibold focus:outline-none"
+                                    />
+                                  </div>
+
+                                  {/* Frequency */}
+                                  <div className="sm:col-span-4">
+                                    <label className="text-[9px] font-bold text-slate-400 uppercase block mb-0.5">Frequency</label>
+                                    <select
+                                      value={med.frequency}
+                                      onChange={e => handleUpdateMedicine(idx, 'frequency', e.target.value)}
+                                      className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs font-semibold focus:outline-none cursor-pointer"
+                                    >
+                                      <option value="1-0-1">1-0-1 (Twice Daily)</option>
+                                      <option value="1-0-0">1-0-0 (Morning Only)</option>
+                                      <option value="0-0-1">0-0-1 (Night Only)</option>
+                                      <option value="1-1-1">1-1-1 (Thrice Daily)</option>
+                                      <option value="Once Daily">Once Daily</option>
+                                      <option value="SOS / As Needed">SOS / As Needed</option>
+                                    </select>
+                                  </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center">
+                                  {/* Timing */}
+                                  <div className="sm:col-span-4">
+                                    <label className="text-[9px] font-bold text-slate-400 uppercase block mb-0.5">Timing</label>
+                                    <select
+                                      value={med.timing}
+                                      onChange={e => handleUpdateMedicine(idx, 'timing', e.target.value)}
+                                      className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs font-semibold focus:outline-none cursor-pointer"
+                                    >
+                                      <option value="After Food">After Food</option>
+                                      <option value="Before Food">Before Food</option>
+                                      <option value="With Food">With Food</option>
+                                      <option value="At Bedtime">At Bedtime</option>
+                                      <option value="Empty Stomach">Empty Stomach</option>
+                                    </select>
+                                  </div>
+
+                                  {/* Duration */}
+                                  <div className="sm:col-span-3">
+                                    <label className="text-[9px] font-bold text-slate-400 uppercase block mb-0.5">Duration</label>
+                                    <input
+                                      type="text"
+                                      placeholder="e.g. 5 days, 1 month"
+                                      value={med.duration}
+                                      onChange={e => handleUpdateMedicine(idx, 'duration', e.target.value)}
+                                      className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs font-semibold focus:outline-none"
+                                    />
+                                  </div>
+
+                                  {/* Instructions */}
+                                  <div className="sm:col-span-4">
+                                    <label className="text-[9px] font-bold text-slate-400 uppercase block mb-0.5">Instructions</label>
+                                    <input
+                                      type="text"
+                                      placeholder="e.g. With warm water"
+                                      value={med.instructions}
+                                      onChange={e => handleUpdateMedicine(idx, 'instructions', e.target.value)}
+                                      className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs font-semibold focus:outline-none"
+                                    />
+                                  </div>
+
+                                  {/* Delete Button */}
+                                  <div className="sm:col-span-1 flex justify-end pt-3">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRemoveMedicineRow(idx)}
+                                      className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
+                                      title="Remove medicine"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Dietary & Lifestyle Advice */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Dietary & Lifestyle Advice</label>
+                            <input
+                              type="text"
+                              value={dietaryAdvice}
+                              onChange={e => setDietaryAdvice(e.target.value)}
+                              placeholder="e.g. Low glycemic nutrition, 3L water daily, 30m walking"
+                              className="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-xs font-semibold focus:outline-none"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Follow-up Recommendation</label>
+                            <input
+                              type="text"
+                              value={followUpDate}
+                              onChange={e => setFollowUpDate(e.target.value)}
+                              placeholder="e.g. Follow-up in 2 weeks or after fasting blood test"
+                              className="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-xs font-semibold focus:outline-none"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Medical Prescription PDF Generation & Upload Options */}
+                        <div className="space-y-3 bg-indigo-50/40 border border-indigo-150 p-4 rounded-2xl">
+                          <label className="text-[10px] font-bold text-indigo-900 uppercase tracking-wider block">
+                            Official Medical Prescription PDF
+                          </label>
+
+                          {prescriptionUrl ? (
+                            <div className="flex items-center justify-between p-3 bg-white border border-emerald-200 rounded-xl">
+                              <div className="flex items-center gap-2">
+                                <FileCheck className="h-5 w-5 text-emerald-600 shrink-0" />
+                                <div>
+                                  <span className="text-xs font-bold text-emerald-800 block">Medical Prescription Ready</span>
+                                  <span className="text-[10px] text-slate-400 font-mono truncate max-w-xs block">{prescriptionUrl}</span>
+                                </div>
+                              </div>
+                              <a
+                                href={prescriptionUrl.startsWith('http') ? prescriptionUrl : `${apiUrl.replace(/\/api\/?$/, '')}${prescriptionUrl}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 shrink-0"
+                              >
+                                <Download className="h-3.5 w-3.5" />
+                                <span>View PDF</span>
+                              </a>
+                            </div>
+                          ) : null}
+
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <button
+                              type="button"
+                              onClick={handleGeneratePrescriptionPdf}
+                              disabled={isGeneratingPrescription}
+                              className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 disabled:opacity-50"
+                            >
+                              <span>✨</span>
+                              <span>{isGeneratingPrescription ? 'Generating...' : 'Generate Medical Prescription PDF'}</span>
+                            </button>
+
+                            <label className="px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-bold border border-slate-200 transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs">
+                              <Upload className="h-3.5 w-3.5 text-slate-500" />
+                              <span>Upload PDF / Scan</span>
+                              <input
+                                type="file"
+                                accept=".pdf,image/*"
+                                onChange={handleUploadPrescriptionFile}
+                                className="hidden"
+                              />
+                            </label>
+                          </div>
                         </div>
 
                         <div className="flex justify-end gap-2 pt-2 border-t border-slate-200">
                           <button 
                             type="button" 
-                            onClick={() => setSelectedApptForNotes(null)}
-                            className="px-4 py-2 bg-slate-200 rounded-xl text-xs font-bold text-slate-655"
+                            onClick={() => {
+                              setSelectedApptForNotes(null);
+                              resetPrescriptionFields();
+                            }}
+                            className="px-4 py-2 bg-slate-200 rounded-xl text-xs font-bold text-slate-655 hover:bg-slate-300 transition-all"
                           >
                             Cancel
                           </button>
@@ -1451,14 +2246,14 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLog
                             disabled={savingNotes}
                             className="px-5 py-2.5 bg-primary hover:bg-primary/95 text-white rounded-xl text-xs font-bold transition-all shadow-sm disabled:opacity-50"
                           >
-                            {savingNotes ? 'Saving...' : 'Submit Notes & Complete Visit'}
+                            {savingNotes ? 'Saving...' : 'Save Consultation & Update Prescription'}
                           </button>
                         </div>
 
                       </form>
                     ) : (
-                      <div className="border border-dashed border-slate-300 rounded-3xl p-10 text-center text-slate-400 text-xs py-20 bg-slate-50/50">
-                        Choose a patient appointment card from the list to launch the consultation notes editor.
+                      <div className="border border-dashed border-slate-300 rounded-3xl p-10 text-center text-slate-400 text-xs py-24 bg-slate-50/50">
+                        Choose a patient appointment card from the left list to record consultation notes, prescribe medicines, and generate a medical prescription.
                       </div>
                     )}
                   </div>
@@ -1971,65 +2766,256 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLog
         </div>
       )}
       {completingAppt && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl w-full max-w-md p-6 shadow-2xl border border-slate-100 space-y-4 animate-in zoom-in duration-200">
-            <div className="flex items-center gap-2 text-primary">
-              <FileText className="h-5 w-5" />
-              <h3 className="text-base font-bold text-slate-800">Complete Consultation</h3>
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl w-full max-w-2xl p-6 shadow-2xl border border-slate-150 space-y-4 my-8 max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2 text-primary">
+                <Pill className="h-5 w-5" />
+                <h3 className="text-base font-bold text-slate-800">
+                  {completingAppt.status === 'completed' ? 'Edit Consultation & Prescription' : 'Complete Consultation & Issue Prescription'}
+                </h3>
+              </div>
+              <button 
+                type="button" 
+                onClick={() => {
+                  setCompletingAppt(null);
+                  resetPrescriptionFields();
+                }} 
+                className="text-slate-400 hover:text-slate-600 p-1"
+              >
+                <X className="h-5 w-5" />
+              </button>
             </div>
-            <p className="text-[11px] text-slate-400">
-              Please enter consultation notes to complete the appointment with <strong>{completingAppt.userId?.name || 'patient'}</strong>.
-            </p>
 
-            <form onSubmit={handlePopupNotesSubmit} className="space-y-4">
+            <div className="p-3 bg-indigo-50/50 rounded-2xl border border-indigo-150 flex items-center justify-between flex-wrap gap-2 text-xs">
+              <div>
+                <span className="text-slate-500 font-medium">Patient: </span>
+                <strong className="text-slate-900">{completingAppt.userId?.name || 'Patient'}</strong>
+                <span className="text-slate-400 font-normal ml-2">({completingAppt.userId?.email || ''})</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-indigo-700 font-bold">{formatDate(completingAppt.date)} at {completingAppt.time}</span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-white border text-indigo-600">
+                  {completingAppt.type || 'consultation'}
+                </span>
+              </div>
+            </div>
+
+            <form onSubmit={handlePopupNotesSubmit} className="space-y-4 flex-1 overflow-y-auto pr-1">
+              {/* Clinical Assessment / Diagnosis */}
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-450 uppercase tracking-wider block">
-                  Clinical Notes / Diagnostics Summary <span className="text-rose-500">*</span>
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                  Clinical Diagnosis & Assessment <span className="text-rose-500">*</span>
                 </label>
                 <textarea 
                   required
                   value={consultNotes} 
                   onChange={e => setConsultNotes(e.target.value)}
-                  rows={4}
-                  className="w-full border border-slate-200 rounded-xl p-3 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
-                  placeholder="Describe symptoms, assessment, diagnosis details... (Mandatory)"
+                  rows={3}
+                  className="w-full border border-slate-200 rounded-xl p-3 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-primary"
+                  placeholder="Primary diagnosis, symptoms, clinical findings... (Mandatory)"
                 />
               </div>
 
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-450 uppercase tracking-wider block">
-                  Digital Prescription Text (Optional)
+              {/* Medicines Prescription Table */}
+              <div className="space-y-3 bg-slate-50/70 p-4 rounded-2xl border border-slate-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-base font-bold text-indigo-600">℞</span>
+                    <h5 className="font-bold text-xs text-slate-800 uppercase tracking-wider">Prescribed Medicines</h5>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleAddMedicineRow}
+                    className="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg text-xs font-bold border border-indigo-200 flex items-center gap-1 transition-all"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    <span>Add Medicine</span>
+                  </button>
+                </div>
+
+                <div className="space-y-2.5 max-h-56 overflow-y-auto pr-1 scrollbar-thin">
+                  {medicinesList.map((med, idx) => (
+                    <div key={idx} className="p-3 bg-white border border-slate-200 rounded-xl space-y-2">
+                      <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
+                        {/* Medicine Name */}
+                        <div className="sm:col-span-5">
+                          <label className="text-[9px] font-bold text-slate-400 uppercase block mb-0.5">Medicine Name</label>
+                          <input
+                            type="text"
+                            placeholder="e.g. Paracetamol 500mg"
+                            value={med.name}
+                            onChange={e => handleUpdateMedicine(idx, 'name', e.target.value)}
+                            className="w-full bg-slate-50/50 border border-slate-200 rounded-lg p-2 text-xs font-semibold focus:outline-none"
+                          />
+                        </div>
+
+                        {/* Dosage */}
+                        <div className="sm:col-span-3">
+                          <label className="text-[9px] font-bold text-slate-400 uppercase block mb-0.5">Dosage</label>
+                          <input
+                            type="text"
+                            placeholder="e.g. 1 Tab, 5ml"
+                            value={med.dosage}
+                            onChange={e => handleUpdateMedicine(idx, 'dosage', e.target.value)}
+                            className="w-full bg-slate-50/50 border border-slate-200 rounded-lg p-2 text-xs font-semibold focus:outline-none"
+                          />
+                        </div>
+
+                        {/* Frequency */}
+                        <div className="sm:col-span-4">
+                          <label className="text-[9px] font-bold text-slate-400 uppercase block mb-0.5">Frequency</label>
+                          <select
+                            value={med.frequency}
+                            onChange={e => handleUpdateMedicine(idx, 'frequency', e.target.value)}
+                            className="w-full bg-slate-50/50 border border-slate-200 rounded-lg p-2 text-xs font-semibold focus:outline-none cursor-pointer"
+                          >
+                            <option value="1-0-1">1-0-1 (Twice Daily)</option>
+                            <option value="1-0-0">1-0-0 (Morning Only)</option>
+                            <option value="0-0-1">0-0-1 (Night Only)</option>
+                            <option value="1-1-1">1-1-1 (Thrice Daily)</option>
+                            <option value="Once Daily">Once Daily</option>
+                            <option value="SOS / As Needed">SOS / As Needed</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center">
+                        {/* Timing */}
+                        <div className="sm:col-span-4">
+                          <label className="text-[9px] font-bold text-slate-400 uppercase block mb-0.5">Timing</label>
+                          <select
+                            value={med.timing}
+                            onChange={e => handleUpdateMedicine(idx, 'timing', e.target.value)}
+                            className="w-full bg-slate-50/50 border border-slate-200 rounded-lg p-2 text-xs font-semibold focus:outline-none cursor-pointer"
+                          >
+                            <option value="After Food">After Food</option>
+                            <option value="Before Food">Before Food</option>
+                            <option value="With Food">With Food</option>
+                            <option value="At Bedtime">At Bedtime</option>
+                            <option value="Empty Stomach">Empty Stomach</option>
+                          </select>
+                        </div>
+
+                        {/* Duration */}
+                        <div className="sm:col-span-3">
+                          <label className="text-[9px] font-bold text-slate-400 uppercase block mb-0.5">Duration</label>
+                          <input
+                            type="text"
+                            placeholder="e.g. 5 days, 1 month"
+                            value={med.duration}
+                            onChange={e => handleUpdateMedicine(idx, 'duration', e.target.value)}
+                            className="w-full bg-slate-50/50 border border-slate-200 rounded-lg p-2 text-xs font-semibold focus:outline-none"
+                          />
+                        </div>
+
+                        {/* Instructions */}
+                        <div className="sm:col-span-4">
+                          <label className="text-[9px] font-bold text-slate-400 uppercase block mb-0.5">Instructions</label>
+                          <input
+                            type="text"
+                            placeholder="e.g. With warm water"
+                            value={med.instructions}
+                            onChange={e => handleUpdateMedicine(idx, 'instructions', e.target.value)}
+                            className="w-full bg-slate-50/50 border border-slate-200 rounded-lg p-2 text-xs font-semibold focus:outline-none"
+                          />
+                        </div>
+
+                        {/* Delete Button */}
+                        <div className="sm:col-span-1 flex justify-end pt-3">
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveMedicineRow(idx)}
+                            className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
+                            title="Remove medicine"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Lifestyle Guidance & Follow-up */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Dietary & Lifestyle Advice</label>
+                  <input
+                    type="text"
+                    value={dietaryAdvice}
+                    onChange={e => setDietaryAdvice(e.target.value)}
+                    placeholder="e.g. Hydrate 3L daily, Low glycemic carbs"
+                    className="w-full border border-slate-200 rounded-xl p-2.5 text-xs font-semibold focus:outline-none"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Follow-up Recommendation</label>
+                  <input
+                    type="text"
+                    value={followUpDate}
+                    onChange={e => setFollowUpDate(e.target.value)}
+                    placeholder="e.g. Review in 14 days"
+                    className="w-full border border-slate-200 rounded-xl p-2.5 text-xs font-semibold focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Professional Medical Prescription Generator & Upload */}
+              <div className="space-y-2.5 bg-indigo-50/40 border border-indigo-150 p-3.5 rounded-2xl">
+                <label className="text-[10px] font-bold text-indigo-900 uppercase tracking-wider block">
+                  Official Medical Prescription PDF Format
                 </label>
-                <textarea 
-                  value={prescriptionText} 
-                  onChange={e => setPrescriptionText(e.target.value)}
-                  rows={2}
-                  className="w-full border border-slate-200 rounded-xl p-3 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
-                  placeholder="e.g. Paracetamol 500mg - Twice daily after meals - 5 days..."
-                />
+
+                {prescriptionUrl ? (
+                  <div className="flex items-center justify-between p-2.5 bg-white border border-emerald-200 rounded-xl">
+                    <div className="flex items-center gap-2">
+                      <FileCheck className="h-4 w-4 text-emerald-600 shrink-0" />
+                      <span className="text-xs font-bold text-emerald-800">Medical Prescription PDF Ready</span>
+                    </div>
+                    <a
+                      href={prescriptionUrl.startsWith('http') ? prescriptionUrl : `${apiUrl.replace(/\/api\/?$/, '')}${prescriptionUrl}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-all shadow-2xs flex items-center gap-1"
+                    >
+                      <Download className="h-3 w-3" />
+                      <span>View PDF</span>
+                    </a>
+                  </div>
+                ) : null}
+
+                <div className="flex items-center gap-2 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={handleGeneratePrescriptionPdf}
+                    disabled={isGeneratingPrescription}
+                    className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 disabled:opacity-50"
+                  >
+                    <span>✨</span>
+                    <span>{isGeneratingPrescription ? 'Generating...' : 'Generate Medical Prescription PDF'}</span>
+                  </button>
+
+                  <label className="px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-bold border border-slate-200 transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs">
+                    <Upload className="h-3.5 w-3.5 text-slate-500" />
+                    <span>Upload PDF / Scan</span>
+                    <input
+                      type="file"
+                      accept=".pdf,image/*"
+                      onChange={handleUploadPrescriptionFile}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
               </div>
 
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-450 uppercase tracking-wider block">
-                  Attached File / Prescription PDF URL (Optional)
-                </label>
-                <input 
-                  type="text" 
-                  value={prescriptionUrl} 
-                  onChange={e => setPrescriptionUrl(e.target.value)}
-                  placeholder="http://example.com/prescription.pdf"
-                  className="w-full border border-slate-200 rounded-xl p-2.5 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
-                />
-              </div>
-
-              <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
                 <button 
                   type="button" 
                   onClick={() => {
                     setCompletingAppt(null);
-                    setConsultNotes('');
-                    setPrescriptionText('');
-                    setPrescriptionUrl('');
+                    resetPrescriptionFields();
                   }}
                   className="px-4 py-2 bg-slate-100 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-200 transition-all"
                 >
@@ -2037,13 +3023,181 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLog
                 </button>
                 <button 
                   type="submit" 
-                  disabled={savingNotes || !consultNotes.trim()}
-                  className="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold shadow-sm transition-all disabled:opacity-50"
+                  disabled={savingNotes || (!consultNotes.trim() && !clinicalDiagnosis.trim())}
+                  className="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold shadow-sm transition-all disabled:opacity-50 flex items-center gap-1.5"
                 >
-                  {savingNotes ? 'Completing...' : 'Submit & Complete'}
+                  <CheckCircle className="h-4 w-4" />
+                  <span>
+                    {savingNotes 
+                      ? 'Saving & Generating...' 
+                      : completingAppt.status === 'completed' 
+                        ? 'Update Consultation & Prescription' 
+                        : 'Submit & Complete Consultation'}
+                  </span>
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Message Patient Modal */}
+      {messagePatientModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl w-full max-w-lg p-6 shadow-2xl border border-slate-150 space-y-4 animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2 text-primary">
+                <MessageSquare className="h-5 w-5" />
+                <h3 className="text-base font-bold text-slate-800">Send Clinical Advice / Message</h3>
+              </div>
+              <button 
+                type="button"
+                onClick={() => setMessagePatientModal(null)} 
+                className="text-slate-400 hover:text-slate-600 p-1"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-500">
+              Sending direct message to <strong className="text-slate-800">{messagePatientModal.patientName}</strong>. 
+              This will be instantly delivered as an in-app notification, mobile push notification, and email.
+            </p>
+
+            <form onSubmit={handleSendMessageToPatient} className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Subject / Topic</label>
+                <input
+                  type="text"
+                  required
+                  value={messageSubject}
+                  onChange={e => setMessageSubject(e.target.value)}
+                  placeholder="e.g. Dietary Advice & Medication Follow-up"
+                  className="w-full border border-slate-200 rounded-xl p-2.5 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Clinical Message / Advice</label>
+                <textarea
+                  required
+                  rows={5}
+                  value={messageBody}
+                  onChange={e => setMessageBody(e.target.value)}
+                  placeholder="Write clinical advice, suggested dosage alterations, or lifestyle notes..."
+                  className="w-full border border-slate-200 rounded-xl p-3 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setMessagePatientModal(null)}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-bold transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={sendingMessage}
+                  className="px-5 py-2.5 bg-primary hover:bg-primary/95 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm disabled:opacity-50 transition-all"
+                >
+                  <Send className="h-3.5 w-3.5" />
+                  <span>{sendingMessage ? 'Sending...' : 'Send to Patient'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Patient History Modal */}
+      {patientHistoryModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl w-full max-w-2xl p-6 shadow-2xl border border-slate-150 space-y-4 max-h-[85vh] flex flex-col animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <h3 className="text-base font-bold text-slate-800">Consultation History: {patientHistoryModal.name}</h3>
+                <p className="text-xs text-slate-400 mt-0.5">{patientHistoryModal.email} • {patientHistoryModal.mobileNumber || 'No phone'}</p>
+              </div>
+              <button 
+                type="button"
+                onClick={() => setPatientHistoryModal(null)} 
+                className="text-slate-400 hover:text-slate-600 p-1"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto space-y-3 pr-1 scrollbar-thin">
+              {patientHistoryModal.allAppointments?.map((appt: any) => (
+                <div key={appt._id} className="p-4 rounded-2xl border border-slate-200 bg-slate-50/50 space-y-2.5">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <span className="text-xs font-bold text-slate-800">{formatDate(appt.date)} at {appt.time}</span>
+                      <span className="text-[11px] text-slate-500 block">Reason: {appt.reason}</span>
+                    </div>
+                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
+                      appt.status === 'completed' ? 'bg-blue-50 text-blue-600 border-blue-200' :
+                      appt.status === 'confirmed' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' :
+                      'bg-amber-50 text-amber-600 border-amber-200'
+                    }`}>
+                      {appt.status}
+                    </span>
+                  </div>
+
+                  {appt.notes && (
+                    <div className="bg-white p-2.5 rounded-xl border border-slate-150 text-xs text-slate-700">
+                      <strong className="text-[10px] uppercase text-slate-400 block mb-0.5">Clinical Assessment / Notes:</strong>
+                      <p className="whitespace-pre-line">{appt.notes}</p>
+                    </div>
+                  )}
+
+                  {Array.isArray(appt.medicines) && appt.medicines.length > 0 && (
+                    <div className="bg-white p-2.5 rounded-xl border border-slate-150 text-xs">
+                      <strong className="text-[10px] uppercase text-slate-400 block mb-1">Prescribed Medicines:</strong>
+                      <div className="space-y-1">
+                        {appt.medicines.map((m: any, idx: number) => (
+                          <div key={idx} className="flex items-center gap-2 text-[11px] text-slate-700">
+                            <span className="font-bold">{m.name}</span>
+                            <span className="text-slate-400">({m.dosage})</span>
+                            <span className="text-indigo-600 font-semibold">{m.frequency}</span>
+                            <span className="text-slate-500">• {m.timing}</span>
+                            <span className="text-slate-400">• {m.duration}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPatientHistoryModal(null);
+                        openPrescriptionModalForAppt(appt);
+                      }}
+                      className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl text-xs font-bold border border-indigo-200 transition-all flex items-center gap-1 shadow-2xs"
+                    >
+                      <Pill className="h-3.5 w-3.5" />
+                      <span>Edit Notes / Prescribe</span>
+                    </button>
+
+                    {appt.prescriptionUrl && (
+                      <a
+                        href={appt.prescriptionUrl.startsWith('http') ? appt.prescriptionUrl : `${apiUrl.replace(/\/api\/?$/, '')}${appt.prescriptionUrl}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-xl text-xs font-bold border border-emerald-200 transition-all flex items-center gap-1 shadow-2xs"
+                      >
+                        <Download className="h-3.5 w-3.5" />
+                        <span>Prescription PDF</span>
+                      </a>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       )}

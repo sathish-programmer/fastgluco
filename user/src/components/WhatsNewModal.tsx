@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, X, ChevronRight, ShieldCheck, Check, Languages, RefreshCw, Flame, ArrowDownCircle } from 'lucide-react';
+import { Sparkles, X, ChevronRight, ShieldCheck, Check, Languages, RefreshCw, Flame, ArrowDownCircle, Pill, Star, Bell } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import type { SupportedLanguage } from '../i18n/types';
 
-export const CURRENT_APP_VERSION = 'v6.3.3';
+export const CURRENT_APP_VERSION = 'v6.3.4';
 
 interface WhatsNewModalProps {
   isOpen?: boolean;
@@ -46,42 +46,42 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({
 
   if (!isOpen && !shouldShow) return null;
 
-  // v6.3.3 Current Release Features
+  // v6.3.4 Current Release Features
   const features = [
     {
-      key: 'streak',
-      badge: 'NEW',
-      badgeColor: 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30',
-      title: t('whatsNew.streak.title', 'Consistency Streak & Milestone Journey'),
-      description: t('whatsNew.streak.desc', 'Track your habit consistency with a sleek micro-badge, 7-day progress dots, and milestone level rewards right on your dashboard.'),
-      icon: <Flame className="h-5 w-5 text-amber-500" />,
-      bg: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
-    },
-    {
-      key: 'pulltorefresh',
-      badge: 'ENHANCED',
-      badgeColor: 'bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/30',
-      title: t('whatsNew.pullrefresh.title', 'Smooth Pull-to-Refresh & Haptics'),
-      description: t('whatsNew.pullrefresh.desc', 'Pull down anywhere on your dashboard to instantly refresh data with smooth tactile animations and live status feedback.'),
-      icon: <ArrowDownCircle className="h-5 w-5 text-blue-500" />,
-      bg: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
-    },
-    {
-      key: 'autopay',
-      badge: 'BILLING',
+      key: 'prescription',
+      badge: 'CLINICAL',
       badgeColor: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30',
-      title: t('whatsNew.autopay.title', 'Automated Membership AutoPay'),
-      description: t('whatsNew.autopay.desc', 'Seamless automated membership renewals via UPI and Card mandates. Manage, enable, or pause AutoPay anytime with zero lock-in.'),
-      icon: <RefreshCw className="h-5 w-5 text-emerald-500" />,
+      title: t('whatsNew.prescription.title', 'Digital Medical Prescriptions'),
+      description: t('whatsNew.prescription.desc', 'View and download official medical prescriptions with detailed medicine timings, dosages, and doctor advice directly in your appointment history.'),
+      icon: <Pill className="h-5 w-5 text-emerald-500" />,
       bg: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
     },
     {
-      key: 'kitchen',
-      badge: 'HEALTH',
+      key: 'rating',
+      badge: 'REVIEWS',
+      badgeColor: 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30',
+      title: t('whatsNew.rating.title', 'Specialist Ratings & Reviews'),
+      description: t('whatsNew.rating.desc', 'Browse verified patient star ratings and consultation reviews when choosing your specialist physician.'),
+      icon: <Star className="h-5 w-5 text-amber-500" />,
+      bg: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
+    },
+    {
+      key: 'notifications',
+      badge: 'ALERTS',
+      badgeColor: 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-indigo-500/30',
+      title: t('whatsNew.notifications.title', 'Instant Push Notification Navigation'),
+      description: t('whatsNew.notifications.desc', 'Seamlessly open appointments, clinical advice, or orders directly when tapping mobile notifications.'),
+      icon: <Bell className="h-5 w-5 text-indigo-500" />,
+      bg: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20'
+    },
+    {
+      key: 'streak',
+      badge: 'HABITS',
       badgeColor: 'bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/30',
-      title: t('whatsNew.kitchen.title', 'Safe Kitchen & Cooking Audit'),
-      description: t('whatsNew.kitchen.desc', 'Audit for high-temperature frying, charred foods, heated plastics, and toxic cookware to protect cellular health.'),
-      icon: <ShieldCheck className="h-5 w-5 text-purple-500" />,
+      title: t('whatsNew.streak.title', 'Consistency Streak & Milestone Journey'),
+      description: t('whatsNew.streak.desc', 'Track your habit consistency with a sleek micro-badge, 7-day progress dots, and milestone level rewards right on your dashboard.'),
+      icon: <Flame className="h-5 w-5 text-purple-500" />,
       bg: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20'
     }
   ];

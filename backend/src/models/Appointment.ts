@@ -1,5 +1,14 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
+export interface IMedicineItem {
+  name: string;
+  dosage?: string;
+  frequency?: string;
+  timing?: string;
+  duration?: string;
+  instructions?: string;
+}
+
 export interface IAppointment extends Document {
   doctorId: mongoose.Types.ObjectId;
   userId: mongoose.Types.ObjectId;
@@ -9,6 +18,11 @@ export interface IAppointment extends Document {
   status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
   meetingLink?: string;
   notes?: string;
+  diagnosis?: string;
+  dietaryAdvice?: string;
+  lifestyleAdvice?: string;
+  followUpDate?: string;
+  medicines?: IMedicineItem[];
   prescriptionUrl?: string;
   prescriptionText?: string;
   reminders?: { '30min'?: boolean; '10min'?: boolean };
@@ -40,6 +54,20 @@ const AppointmentSchema: Schema = new Schema(
     status: { type: String, enum: ['pending', 'confirmed', 'completed', 'cancelled'], default: 'pending' },
     meetingLink: { type: String },
     notes: { type: String },
+    diagnosis: { type: String },
+    dietaryAdvice: { type: String },
+    lifestyleAdvice: { type: String },
+    followUpDate: { type: String },
+    medicines: [
+      {
+        name: { type: String },
+        dosage: { type: String },
+        frequency: { type: String },
+        timing: { type: String },
+        duration: { type: String },
+        instructions: { type: String }
+      }
+    ],
     prescriptionUrl: { type: String },
     prescriptionText: { type: String },
     reminders: {

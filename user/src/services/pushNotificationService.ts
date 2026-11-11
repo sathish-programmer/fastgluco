@@ -115,15 +115,23 @@ class PushNotificationService {
 
     console.log(`[FCM Navigation] Routing notification tap: route=${route}, type=${notificationType}`);
 
+    const navDetail = {
+      route,
+      notificationType,
+      appointmentId,
+      orderId,
+      data
+    };
+
+    try {
+      if (typeof window !== 'undefined' && window.sessionStorage) {
+        window.sessionStorage.setItem('pending_fcm_nav', JSON.stringify(navDetail));
+      }
+    } catch (e) {}
+
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('fcm_navigate_to_route', {
-        detail: {
-          route,
-          notificationType,
-          appointmentId,
-          orderId,
-          data
-        }
+        detail: navDetail
       }));
     }
   }

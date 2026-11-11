@@ -125,6 +125,24 @@ const mediaUpload = multer({
   limits: { fileSize: 100 * 1024 * 1024 } // 100MB limit for video files
 });
 
+const prescriptionStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const pDir = path.join(process.cwd(), 'uploads/prescriptions');
+    if (!fs.existsSync(pDir)) fs.mkdirSync(pDir, { recursive: true });
+    cb(null, pDir);
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    const apptId = req.params.appointmentId || 'doc';
+    cb(null, `Prescription-${apptId}-${Date.now()}${ext}`);
+  }
+});
+
+const prescriptionUpload = multer({
+  storage: prescriptionStorage,
+  limits: { fileSize: 15 * 1024 * 1024 }
+});
+
 router.post('/admin/upload-media', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), mediaUpload.single('file'), (req: any, res) => {
   if (!req.file) {
     return res.status(400).json({ message: 'No file uploaded' });
@@ -741,12 +759,16 @@ router.put('/doctor/availability', authenticateToken, requireRole(['Doctor']), D
 router.get('/doctor/appointments', authenticateToken, requireRole(['Doctor']), DoctorController.getDoctorAppointments);
 router.post('/doctor/appointments/:appointmentId/accept', authenticateToken, requireRole(['Doctor']), AppointmentController.adminConfirmAppointment);
 router.post('/doctor/appointments/:appointmentId/reject', authenticateToken, requireRole(['Doctor']), AppointmentController.doctorRejectAppointment);
-router.put('/doctor/appointments/:appointmentId/consultation', authenticateToken, requireRole(['Doctor']), AppointmentController.updateConsultation);
+router.put('/doctor/appointments/:appointmentId/consultation', authenticateToken, requireRole(['Doctor', 'SuperAdmin', 'Admin']), AppointmentController.updateConsultation);
+router.post('/doctor/appointments/:appointmentId/prescription', authenticateToken, requireRole(['Doctor', 'SuperAdmin', 'Admin']), DoctorController.generatePrescription);
+router.post('/doctor/appointments/:appointmentId/prescription-file', authenticateToken, requireRole(['Doctor', 'SuperAdmin', 'Admin']), prescriptionUpload.single('file'), DoctorController.uploadPrescriptionFile);
+router.post('/doctor/appointments/:appointmentId/message', authenticateToken, requireRole(['Doctor', 'SuperAdmin', 'Admin']), DoctorController.sendMessageToPatient);
+router.post('/doctor/patients/:patientId/message', authenticateToken, requireRole(['Doctor', 'SuperAdmin', 'Admin']), DoctorController.sendMessageToPatient);
 router.get('/doctor/profile', authenticateToken, requireRole(['Doctor']), DoctorController.getDoctorProfile);
 router.put('/doctor/profile', authenticateToken, requireRole(['Doctor']), DoctorController.updateDoctorProfile);
 router.put('/doctor/settings', authenticateToken, requireRole(['Doctor']), DoctorController.updateDoctorSettings);
 router.get('/doctor/feedback', authenticateToken, requireRole(['Doctor']), DoctorController.getDoctorFeedback);
-router.put('/doctor/appointments/:appointmentId/notes', authenticateToken, requireRole(['Doctor']), DoctorController.updateAppointmentNotes);
+router.put('/doctor/appointments/:appointmentId/notes', authenticateToken, requireRole(['Doctor', 'SuperAdmin', 'Admin']), DoctorController.updateAppointmentNotes);
 router.get('/doctor/stats', authenticateToken, requireRole(['Doctor']), DoctorController.getDoctorDashboardStats);
 router.get('/doctor/assigned-stain-reviews', authenticateToken, requireRole(['Doctor']), DoctorController.getAssignedStainReviews);
 router.post('/doctor/assigned-stain-reviews/:logId/notes', authenticateToken, requireRole(['Doctor']), DoctorController.submitStainReviewNotes);
