@@ -5,7 +5,14 @@ export interface IVideo extends Document {
   description?: string;
   url: string; // YouTube or other hosted video streaming links
   thumbnailUrl?: string;
-  category: string; // e.g. "CGM Guide", "Dietary Tips", "Exercise Tips"
+  category: string; // e.g. "DAMAGE – REDUCE THE LOAD", "REPAIR – BUILD THE DEFENCE", "CGM Guide", etc.
+  topic?: string; // e.g. "Stress", "Sleep Debt", "Intermittent Fasting"
+  focus?: string; // Scientific focus areas (e.g. Cortisol, sympathetic activation...)
+  speaker?: string; // Clinician, researcher, podcast name
+  duration?: string; // e.g. "25 min"
+  takeaways?: string[]; // 3 Key takeaways
+  practicalAction?: string; // 1 actionable takeaway
+  order?: number;
   targetPlatform: 'App' | 'Website' | 'Both';
   isPaidOnly?: boolean; // When true, accessible only to active paid subscribers (not free or trial)
   isDeleted: boolean;
@@ -20,6 +27,13 @@ const videoSchema = new Schema<IVideo>(
     url: { type: String, required: true },
     thumbnailUrl: { type: String },
     category: { type: String, required: true, trim: true },
+    topic: { type: String, trim: true },
+    focus: { type: String, trim: true },
+    speaker: { type: String, trim: true },
+    duration: { type: String, trim: true },
+    takeaways: [{ type: String, trim: true }],
+    practicalAction: { type: String, trim: true },
+    order: { type: Number, default: 0 },
     targetPlatform: { type: String, enum: ['App', 'Website', 'Both'], default: 'Both' },
     isPaidOnly: { type: Boolean, default: false },
     isDeleted: { type: Boolean, default: false }

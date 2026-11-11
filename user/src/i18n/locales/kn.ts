@@ -2046,7 +2046,7 @@ export const kn = {
   "protocols.parkinsonDoctorNote": "ಚಲನೆಯ ಏರಿಳಿತಗಳನ್ನು ಮೇಲ್ವಿಚಾರಣೆ ಮಾಡಲು ಮತ್ತು ಔಷಧಿ ಪ್ರಮಾಣವನ್ನು ಸರಿಹೊಂದಿಸಲು ನಿಮ್ಮ ನರಶಾಸ್ತ್ರಜ್ಞರನ್ನು ಸಂಪರ್ಕಿಸಿ.",
   "learn.guides": "ಮಾರ್ಗದರ್ಶಿಗಳು",
   "learn.videos": "ವೀಡಿಯೊಗಳು",
-  "learn.videoTutorials": "ವೀಡಿಯೊ ಟ್ಯುಟೋರಿಯಲ್ಗಳು",
+  "learn.videoTutorials": "ಶೈಕ್ಷಣಿಕ ವೀಡಿಯೊ ಲಿಂಕ್‌ಗಳು",
   "learn.minRead": "ನಿಮಿಷಗಳ ಓದು",
   "learn.optimalFastingTitle": "ಉಪವಾಸ ಸಮಯದ ಅತ್ಯುತ್ತಮ ಸಲಹೆಗಳು",
   "learn.understandingGiTitle": "ಗ್ಲೈಸೆಮಿಕ್ ಇಂಡೆಕ್ಸ್ (GI) ಅರ್ಥಮಾಡಿಕೊಳ್ಳುವುದು",

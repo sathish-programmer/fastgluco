@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, X, ChevronRight, ShieldCheck, Check, Languages, RefreshCw, Flame, ArrowDownCircle, Pill, Star, Bell } from 'lucide-react';
+import { Sparkles, X, ChevronRight, Check, Languages, Flame, Pill, Star, Bell } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import type { SupportedLanguage } from '../i18n/types';

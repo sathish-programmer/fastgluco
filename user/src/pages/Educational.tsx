@@ -1,8 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useLanguage } from '../context/LanguageContext';
-import { BookOpen, Video, Eye, HelpCircle, MessageSquare, Send, Lock, Sparkles, Crown } from 'lucide-react';
+import { 
+  BookOpen, Video, Eye, HelpCircle, MessageSquare, Send, 
+  Lock, Sparkles, Crown, ExternalLink, Search, ShieldAlert, 
+  ChevronDown, ChevronUp, Clock, CheckCircle2, 
+  Flame, Award
+} from 'lucide-react';
+import { FALLBACK_EDUCATIONAL_VIDEOS } from '../data/educationalLibrarySeeds';
 
 const getEmbedUrl = (url: string) => {
   if (url.includes('youtube.com/watch?v=')) {
@@ -12,6 +18,10 @@ const getEmbedUrl = (url: string) => {
     return url.replace('youtu.be/', 'youtube.com/embed/').split('?')[0];
   }
   return url;
+};
+
+const isDirectYouTube = (url: string) => {
+  return /youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\//.test(url) && !url.includes('/results?search_query=');
 };
 
 const getYouTubeThumbnail = (url: string) => {
@@ -32,7 +42,7 @@ export const Educational: React.FC = () => {
   const { t } = useLanguage();
   
   const [guides, setGuides] = useState<any[]>([]);
-  const [videos, setVideos] = useState<any[]>([]);
+  const [videos, setVideos] = useState<any[]>(FALLBACK_EDUCATIONAL_VIDEOS);
   const [faqs, setFaqs] = useState<any[]>([]);
   const [isPaidUser, setIsPaidUser] = useState<boolean>(false);
   const [activeGuideId, setActiveGuideId] = useState<string | null>(null);
@@ -41,6 +51,12 @@ export const Educational: React.FC = () => {
   const [openFaqId, setOpenFaqId] = useState<string | null>(null);
   const [supportForm, setSupportForm] = useState({ name: '', email: '', question: '' });
   const [supportStatus, setSupportStatus] = useState<string | null>(null);
+
+  // Video Link Filtering Controls
+  const [videoFilterCategory, setVideoFilterCategory] = useState<'all' | 'damage' | 'repair'>('all');
+  const [videoSearchTerm, setVideoSearchTerm] = useState<string>('');
+  const [selectedTopic, setSelectedTopic] = useState<string>('all');
+  const [expandedTakeaways, setExpandedTakeaways] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     fetchMaterials();
@@ -81,7 +97,13 @@ export const Educational: React.FC = () => {
       const videosRes = await fetch(`${apiUrl}/videos`);
       if (videosRes.ok) {
         const videosData = await videosRes.json();
-        setVideos(videosData);
+        if (Array.isArray(videosData) && videosData.length > 0) {
+          setVideos(videosData);
+        } else {
+          setVideos(FALLBACK_EDUCATIONAL_VIDEOS);
+        }
+      } else {
+        setVideos(FALLBACK_EDUCATIONAL_VIDEOS);
       }
 
       // Fetch FAQs
@@ -92,6 +114,7 @@ export const Educational: React.FC = () => {
       }
     } catch (err) {
       console.error('Failed to load educational materials:', err);
+      setVideos(FALLBACK_EDUCATIONAL_VIDEOS);
     }
   };
 
@@ -136,12 +159,60 @@ export const Educational: React.FC = () => {
     const mapping: Record<string, string> = {
       'Optimal Fasting Window Tips': t('learn.optimalFastingTitle', 'Optimal Fasting Window Tips'),
       'Understanding Glycaemic Index (GI)': t('learn.understandingGiTitle', 'Understanding Glycaemic Index (GI)'),
-      'How to Attach and Pair Abbott CGM Sensor': t('learn.cgmSensorTitle', 'How to Attach and Pair Abbott CGM Sensor'),
-      'A step-by-step video guide explaining sensor application, cleaning the skin site, and scanning to activate.': t('learn.cgmSensorDesc', 'A step-by-step video guide explaining sensor application, cleaning the skin site, and scanning to activate.'),
-      'CGM GUIDE': t('learn.cgmGuideBadge', 'CGM Guide'),
+      'How to Attach and Pair Abbott CGM Sensor': t('learn.cgmSensorTitle', 'Optimal Nutrition & Glucose Balance'),
+      'A step-by-step video guide explaining sensor application, cleaning the skin site, and scanning to activate.': t('learn.cgmSensorDesc', 'Educational guide on balancing meals and understanding glycemic response.'),
+      'CGM GUIDE': t('learn.cgmGuideBadge', 'Nutrition Guide'),
       'DIET': t('foodLog.diet', 'Diet')
     };
     return mapping[text] || text;
+  };
+
+  // Distinct topics list for dropdown
+  const availableTopics = useMemo(() => {
+    const topicSet = new Set<string>();
+    videos.forEach((v) => {
+      if (v.topic) topicSet.add(v.topic);
+    });
+    return Array.from(topicSet);
+  }, [videos]);
+
+  // Filtered video links
+  const filteredVideos = useMemo(() => {
+    return videos.filter((vid) => {
+      // Category filter
+      if (videoFilterCategory === 'damage') {
+        const cat = (vid.category || '').toUpperCase();
+        if (!cat.includes('DAMAGE')) return false;
+      } else if (videoFilterCategory === 'repair') {
+        const cat = (vid.category || '').toUpperCase();
+        if (!cat.includes('REPAIR')) return false;
+      }
+
+      // Topic filter
+      if (selectedTopic !== 'all') {
+        if (vid.topic !== selectedTopic) return false;
+      }
+
+      // Search query filter
+      if (videoSearchTerm.trim()) {
+        const query = videoSearchTerm.toLowerCase();
+        const inTitle = (vid.title || '').toLowerCase().includes(query);
+        const inDesc = (vid.description || '').toLowerCase().includes(query);
+        const inTopic = (vid.topic || '').toLowerCase().includes(query);
+        const inSpeaker = (vid.speaker || '').toLowerCase().includes(query);
+        const inFocus = (vid.focus || '').toLowerCase().includes(query);
+        if (!inTitle && !inDesc && !inTopic && !inSpeaker && !inFocus) return false;
+      }
+
+      return true;
+    });
+  }, [videos, videoFilterCategory, selectedTopic, videoSearchTerm]);
+
+  const toggleTakeaways = (id: string) => {
+    setExpandedTakeaways(prev => ({
+      ...prev,
+      [id]: !prev[id]
+    }));
   };
 
   return (
@@ -170,7 +241,7 @@ export const Educational: React.FC = () => {
             activeCategory === 'videos' && !activeGuideId ? 'bg-primary text-white border-primary shadow-soft' : 'bg-cardBg dark:bg-slate-900 text-slate-500 dark:text-slate-400 border-slate-100 dark:border-slate-800'
           }`}
         >
-          {t('learn.videos', 'Videos')}
+          {t('learn.videos', 'Video Links')}
         </button>
         <button
           onClick={() => { setActiveCategory('faqs'); setActiveGuideId(null); }}
@@ -243,25 +314,123 @@ export const Educational: React.FC = () => {
             </div>
           )}
 
-          {/* Video list */}
+          {/* Educational Video Links Section */}
           {(activeCategory === 'all' || activeCategory === 'videos') && (
             <div>
-              <h3 className="text-sm font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider mb-4 flex items-center space-x-1.5">
-                <Video className="h-4.5 w-4.5 text-secondary" />
-                <span>{t('learn.videoTutorials', 'Video Tutorials')}</span>
-              </h3>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                <div className="flex items-center space-x-2">
+                  <div className="w-8 h-8 rounded-xl bg-secondary/15 flex items-center justify-center text-secondary">
+                    <Video className="h-4.5 w-4.5" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider flex items-center gap-1.5">
+                      <span>{t('learn.videoTutorials', 'Educational Video Links')}</span>
+                      <span className="text-[10px] font-black bg-primary/10 text-primary dark:bg-primary/20 px-2 py-0.5 rounded-full lowercase">
+                        {filteredVideos.length} links
+                      </span>
+                    </h3>
+                    <p className="text-[10px] text-slate-400 font-medium">MitoReboot Podcast & Video Learning Library</p>
+                  </div>
+                </div>
 
+                {/* Subcategory Pills */}
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
+                  <button
+                    onClick={() => setVideoFilterCategory('all')}
+                    className={`px-3 py-1 rounded-lg text-[10px] font-extrabold transition-all border ${
+                      videoFilterCategory === 'all'
+                        ? 'bg-slate-800 text-white border-slate-800 dark:bg-slate-100 dark:text-slate-900'
+                        : 'bg-cardBg dark:bg-slate-900 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-800'
+                    }`}
+                  >
+                    All ({videos.length})
+                  </button>
+                  <button
+                    onClick={() => setVideoFilterCategory('damage')}
+                    className={`px-3 py-1 rounded-lg text-[10px] font-extrabold transition-all border flex items-center gap-1 ${
+                      videoFilterCategory === 'damage'
+                        ? 'bg-rose-600 text-white border-rose-600 shadow-xs'
+                        : 'bg-rose-50/70 text-rose-700 dark:bg-rose-950/30 dark:text-rose-300 border-rose-200 dark:border-rose-900/40'
+                    }`}
+                  >
+                    <Flame className="w-3 h-3" />
+                    <span>Damage (Reduce Load)</span>
+                  </button>
+                  <button
+                    onClick={() => setVideoFilterCategory('repair')}
+                    className={`px-3 py-1 rounded-lg text-[10px] font-extrabold transition-all border flex items-center gap-1 ${
+                      videoFilterCategory === 'repair'
+                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                        : 'bg-emerald-50/70 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300 border-emerald-200 dark:border-emerald-900/40'
+                    }`}
+                  >
+                    <Award className="w-3 h-3" />
+                    <span>Repair (Build Defence)</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Search & Topic Selector Bar */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-4">
+                <div className="sm:col-span-2 relative">
+                  <Search className="absolute left-3 top-2.5 w-3.5 h-3.5 text-slate-400" />
+                  <input
+                    type="text"
+                    value={videoSearchTerm}
+                    onChange={(e) => setVideoSearchTerm(e.target.value)}
+                    placeholder="Search topics, clinicians, podcasts, mechanisms..."
+                    className="w-full pl-8 pr-3 py-2 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-1 focus:ring-primary text-slate-700 dark:text-slate-200"
+                  />
+                  {videoSearchTerm && (
+                    <button
+                      onClick={() => setVideoSearchTerm('')}
+                      className="absolute right-2.5 top-2 text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 font-bold"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+
+                <div>
+                  <select
+                    value={selectedTopic}
+                    onChange={(e) => setSelectedTopic(e.target.value)}
+                    className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-1 focus:ring-primary text-slate-700 dark:text-slate-200 font-bold"
+                  >
+                    <option value="all">All Topics (19)</option>
+                    {availableTopics.map((top) => (
+                      <option key={top} value={top}>
+                        {top}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Video List */}
               <div className="space-y-4">
-                {videos.length === 0 ? (
-                  <p className="text-xs text-slate-400 font-semibold pl-2">{t('common.noDataFound', 'No video tutorials available.')}</p>
+                {filteredVideos.length === 0 ? (
+                  <div className="text-center py-8 bg-cardBg dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl">
+                    <p className="text-xs text-slate-400 font-semibold">{t('common.noDataFound', 'No educational video links match your filter.')}</p>
+                    <button
+                      onClick={() => { setVideoFilterCategory('all'); setVideoSearchTerm(''); setSelectedTopic('all'); }}
+                      className="mt-2 text-xs font-bold text-primary hover:underline"
+                    >
+                      Reset filters
+                    </button>
+                  </div>
                 ) : (
-                  videos.map((video) => {
+                  filteredVideos.map((video, idx) => {
+                    const videoId = video._id || `vid-${video.order || idx}`;
                     const isLocked = !!video.isPaidOnly && !isPaidUser;
+                    const isEmbed = isDirectYouTube(video.url);
                     const thumbnail = getYouTubeThumbnail(video.url);
+                    const isDamage = (video.category || '').toUpperCase().includes('DAMAGE');
+                    const isExpanded = !!expandedTakeaways[videoId];
 
                     return (
                       <div 
-                        key={video._id}
+                        key={videoId}
                         className="bg-cardBg dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 overflow-hidden shadow-soft transition-all duration-300 hover:shadow-md"
                       >
                         {isLocked ? (
@@ -302,9 +471,9 @@ export const Educational: React.FC = () => {
                               </button>
                             </div>
                           </div>
-                        ) : (
-                          /* Video Player Embed */
-                          <div className="aspect-video w-full">
+                        ) : isEmbed ? (
+                          /* Direct Video Player Embed */
+                          <div className="aspect-video w-full bg-slate-950">
                             <iframe
                               title={video.title}
                               src={getEmbedUrl(video.url)}
@@ -312,15 +481,39 @@ export const Educational: React.FC = () => {
                               className="w-full h-full border-none"
                             />
                           </div>
-                        )}
+                        ) : null}
 
-                        <div className="p-4">
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="text-[10px] font-bold text-primary uppercase tracking-wider bg-primary-light/50 px-2 py-0.5 rounded-full">
-                              {localizeEducationText(video.category)}
-                            </span>
+                        <div className="p-4 sm:p-5">
+                          {/* Badges Bar */}
+                          <div className="flex items-center justify-between gap-2 flex-wrap mb-2">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              {/* Category Badge */}
+                              <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${
+                                isDamage
+                                  ? 'bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 border-rose-200 dark:border-rose-900/40'
+                                  : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border-emerald-200 dark:border-emerald-900/40'
+                              }`}>
+                                {isDamage ? 'Damage · Reduce Load' : 'Repair · Build Defence'}
+                              </span>
+
+                              {/* Topic Badge */}
+                              {video.topic && (
+                                <span className="text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2 py-0.5 rounded-full">
+                                  {video.topic}
+                                </span>
+                              )}
+
+                              {/* Duration */}
+                              {video.duration && (
+                                <span className="inline-flex items-center gap-1 text-[10px] text-slate-400 font-semibold bg-slate-50 dark:bg-slate-800/60 px-2 py-0.5 rounded-full">
+                                  <Clock className="w-3 h-3 text-slate-400" />
+                                  <span>{video.duration}</span>
+                                </span>
+                              )}
+                            </div>
+
                             {video.isPaidOnly ? (
-                              <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-0.5 rounded-full ${
+                              <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${
                                 isPaidUser 
                                   ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'
                                   : 'bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400 border border-amber-200 dark:border-amber-800'
@@ -334,15 +527,96 @@ export const Educational: React.FC = () => {
                               </span>
                             )}
                           </div>
-                          <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100 mt-2">{localizeEducationText(video.title)}</h4>
-                          <p className="text-[10px] text-slate-400 font-semibold mt-1">
-                            {localizeEducationText(video.description)}
+
+                          {/* Title */}
+                          <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100 leading-snug">
+                            {localizeEducationText(video.title)}
+                          </h4>
+
+                          {/* Speaker / Expert */}
+                          {video.speaker && (
+                            <p className="text-[11px] font-bold text-primary dark:text-primary-light mt-1 flex items-center gap-1">
+                              <span>🎙️ {video.speaker}</span>
+                            </p>
+                          )}
+
+                          {/* Scientific Focus / Description */}
+                          <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1.5 leading-relaxed">
+                            {localizeEducationText(video.description || video.focus || '')}
                           </p>
+
+                          {/* Key Takeaways & Practical Action Drawer */}
+                          {((video.takeaways && video.takeaways.length > 0) || video.practicalAction) && (
+                            <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800/80">
+                              <button
+                                onClick={() => toggleTakeaways(videoId)}
+                                className="flex items-center justify-between w-full text-left text-[11px] font-extrabold text-slate-600 dark:text-slate-300 hover:text-primary transition-colors py-0.5"
+                              >
+                                <span className="flex items-center gap-1.5">
+                                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                                  <span>Key Clinical Takeaways & Action</span>
+                                </span>
+                                {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                              </button>
+
+                              {isExpanded && (
+                                <div className="mt-2.5 space-y-2.5 animate-in fade-in duration-200">
+                                  {/* Takeaway bullets */}
+                                  {video.takeaways && video.takeaways.length > 0 && (
+                                    <div className="space-y-1.5 pl-1">
+                                      {video.takeaways.map((takeaway: string, tIdx: number) => (
+                                        <div key={tIdx} className="flex items-start gap-2 text-[11px] text-slate-600 dark:text-slate-350 leading-relaxed">
+                                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
+                                          <span>{takeaway}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+
+                                  {/* Practical Action Box */}
+                                  {video.practicalAction && (
+                                    <div className="bg-sky-50/70 dark:bg-sky-950/30 border border-sky-100 dark:border-sky-900/40 rounded-xl p-2.5 text-[11px]">
+                                      <span className="font-black text-sky-800 dark:text-sky-300 uppercase tracking-wider text-[10px] block mb-0.5">
+                                        ⚡ Practical Lifestyle Action:
+                                      </span>
+                                      <span className="text-slate-700 dark:text-slate-200 font-medium">
+                                        {video.practicalAction}
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Action Button: Open Video / Podcast Link */}
+                          {!isLocked && video.url && (
+                            <div className="mt-3.5 pt-2 flex items-center justify-end">
+                              <a
+                                href={video.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-primary hover:bg-primary-dark transition-all shadow-xs active:scale-95"
+                              >
+                                <span>Watch Video / Listen</span>
+                                <ExternalLink className="w-3.5 h-3.5" />
+                              </a>
+                            </div>
+                          )}
                         </div>
                       </div>
                     );
                   })
                 )}
+              </div>
+
+              {/* Medical Disclaimer Banner */}
+              <div className="mt-6 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 flex items-start gap-3">
+                <ShieldAlert className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                  <span className="font-bold text-slate-700 dark:text-slate-300">Clinical & Editorial Safeguards: </span>
+                  This educational library contains vetted podcasts, video resources, and scientific discussions across the Damage and Repair frameworks. Lifestyle and fasting practices during active cancer therapy require individualized supervision by your treating oncology medical team.
+                </p>
               </div>
             </div>
           )}

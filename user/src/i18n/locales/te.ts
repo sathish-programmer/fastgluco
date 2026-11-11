@@ -2046,7 +2046,7 @@ export const te = {
   "protocols.parkinsonDoctorNote": "మీ న్యూరాలజిస్ట్‌తో మోటార్ హెచ్చుతగ్గులు మరియు షెడ్యూల్ ఆప్టిమైజేషన్‌ను పర్యవేక్షించండి.",
   "learn.guides": "మార్గదర్శకులు",
   "learn.videos": "వీడియోలు",
-  "learn.videoTutorials": "వీడియో ట్యుటోరియల్స్",
+  "learn.videoTutorials": "విద్యా వీడియో లింకులు",
   "learn.minRead": "నిమి చదవండి",
   "learn.optimalFastingTitle": "ఆప్టిమల్ ఫాస్టింగ్ విండో చిట్కాలు",
   "learn.understandingGiTitle": "గ్లైసెమిక్ ఇండెక్స్ (GI) అర్థం చేసుకోవడం",

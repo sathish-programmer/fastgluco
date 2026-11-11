@@ -2046,7 +2046,7 @@ export const hi = {
   "protocols.parkinsonDoctorNote": "गति के उतार-चढ़ाव की निगरानी और खुराक समायोजन के लिए अपने न्यूरोलॉजिस्ट से परामर्श करें।",
   "learn.guides": "गाइड",
   "learn.videos": "वीडियो",
-  "learn.videoTutorials": "वीडियो ट्यूटोरियल",
+  "learn.videoTutorials": "शैक्षणिक वीडियो लिंक",
   "learn.minRead": "मिनट का पठन",
   "learn.optimalFastingTitle": "सर्वोत्तम उपवास समय के सुझाव",
   "learn.understandingGiTitle": "ग्लाइसेमिक इंडेक्स (GI) को समझना",

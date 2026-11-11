@@ -2046,7 +2046,7 @@ export const ta = {
   "protocols.parkinsonDoctorNote": "இயக்க ஏற்ற இறக்கங்களைக் கண்காணித்து மருந்து அளவுகளை சரிசெய்ய உங்கள் நரம்பியல் மருத்துவரிடம் கலந்தாலோசிக்கவும்.",
   "learn.guides": "வழிகாட்டிகள்",
   "learn.videos": "வீடியோக்கள்",
-  "learn.videoTutorials": "வீடியோ பயிற்சிகள்",
+  "learn.videoTutorials": "கல்வி வீடியோ இணைப்புகள்",
   "learn.minRead": "நிமிட வாசிப்பு",
   "learn.optimalFastingTitle": "சிறந்த விரத நேரக் குறிப்புகள்",
   "learn.understandingGiTitle": "கிளைசெமிக் குறியீட்டைப் (GI) புரிந்துகொள்ளுதல்",

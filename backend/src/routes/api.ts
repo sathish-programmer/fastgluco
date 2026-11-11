@@ -573,6 +573,7 @@ router.delete('/admin/food-library/:id', AdminController.deleteFoodMaster);
 
 // Educational materials management
 router.post('/admin/videos', AdminController.addVideo);
+router.post('/admin/videos/seed-library', AdminController.seedLibraryVideos);
 router.put('/admin/videos/:id', AdminController.updateVideo);
 router.delete('/admin/videos/:id', AdminController.deleteVideo);
 

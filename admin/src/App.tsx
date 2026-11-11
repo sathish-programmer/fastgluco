@@ -58,6 +58,7 @@ import {
   Receipt,
   TrendingUp,
   Layers,
+  ExternalLink,
   ArrowUpRight,
   RotateCcw,
   Compass
@@ -891,10 +892,21 @@ const AdminPanelContent: React.FC = () => {
     description: '',
     url: '',
     thumbnailUrl: '',
-    category: 'CGM Guide',
+    category: 'DAMAGE – REDUCE THE LOAD',
+    topic: 'Stress',
+    focus: '',
+    speaker: '',
+    duration: '',
+    takeaways: '' as string | string[],
+    practicalAction: '',
+    order: 0,
     targetPlatform: 'Both' as any,
     isPaidOnly: false
   });
+  const [adminVideoFilterCat, setAdminVideoFilterCat] = useState<'all' | 'damage' | 'repair'>('all');
+  const [adminVideoSearch, setAdminVideoSearch] = useState<string>('');
+  const [adminVideoTopic, setAdminVideoTopic] = useState<string>('all');
+  const [isSeedingVideos, setIsSeedingVideos] = useState<boolean>(false);
 
   const [faqs, setFaqs] = useState<any[]>([]);
   const [showFaqModal, setShowFaqModal] = useState(false);
@@ -1860,11 +1872,45 @@ const AdminPanelContent: React.FC = () => {
     }
   };
 
+  const handleSeedLibraryVideos = async () => {
+    if (!confirm('Sync/update all 57 curated learning resources from the MitoReboot Damage & Repair Podcast and Video Library?')) return;
+    setIsSeedingVideos(true);
+    try {
+      const response = await fetch(`${apiUrl}/admin/videos/seed-library`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ overwrite: false })
+      });
+      const data = await response.json();
+      if (response.ok) {
+        alert(data.message || 'Educational library seeded successfully!');
+        fetchVideos();
+      } else {
+        alert(data.message || 'Failed to seed library.');
+      }
+    } catch (e: any) {
+      console.error(e);
+      alert('Error seeding library: ' + e.message);
+    } finally {
+      setIsSeedingVideos(false);
+    }
+  };
+
   const handleVideoSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       const method = editingVideoId ? 'PUT' : 'POST';
       const endpoint = editingVideoId ? `${apiUrl}/admin/videos/${editingVideoId}` : `${apiUrl}/admin/videos`;
+
+      const payload = {
+        ...videoForm,
+        takeaways: typeof videoForm.takeaways === 'string'
+          ? videoForm.takeaways.split('\n').map((s: string) => s.trim()).filter(Boolean)
+          : videoForm.takeaways
+      };
 
       const response = await fetch(endpoint, {
         method,
@@ -1872,13 +1918,28 @@ const AdminPanelContent: React.FC = () => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(videoForm)
+        body: JSON.stringify(payload)
       });
 
       if (response.ok) {
         setShowVideoModal(false);
         setEditingVideoId(null);
-        setVideoForm({ title: '', description: '', url: '', thumbnailUrl: '', category: 'CGM Guide', targetPlatform: 'Both' as any, isPaidOnly: false });
+        setVideoForm({
+          title: '',
+          description: '',
+          url: '',
+          thumbnailUrl: '',
+          category: 'DAMAGE – REDUCE THE LOAD',
+          topic: 'Stress',
+          focus: '',
+          speaker: '',
+          duration: '',
+          takeaways: '',
+          practicalAction: '',
+          order: 0,
+          targetPlatform: 'Both' as any,
+          isPaidOnly: false
+        });
         fetchVideos();
       }
     } catch (e) {
@@ -5833,133 +5894,396 @@ const AdminPanelContent: React.FC = () => {
           {/* VIEW 4: EDUCATIONAL VIDEO EDITOR */}
           {activeView === 'videos' && (
             <div className="space-y-4">
-              <div className="flex justify-between items-center">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                 <div>
-                  <h2 className="text-xl font-bold text-slate-800">Educational Video Tutorials</h2>
-                  <p className="text-xs text-slate-400 font-semibold mt-0.5">Upload streaming URLs or YouTube embed references.</p>
+                  <h2 className="text-xl font-bold text-slate-800">Educational Video Links</h2>
+                  <p className="text-xs text-slate-400 font-semibold mt-0.5">
+                    Curate and manage 57 learning resources across Damage (Reduce the Load) and Repair (Build the Defence).
+                  </p>
                 </div>
-                <button
-                  onClick={() => { setEditingVideoId(null); setVideoForm({ title: '', description: '', url: '', thumbnailUrl: '', category: 'CGM Guide', targetPlatform: 'Both' as any, isPaidOnly: false }); setShowVideoModal(true); }}
-                  className="bg-primary hover:bg-primary-dark text-white font-bold px-4 py-2 rounded-xl text-sm flex items-center space-x-1.5 shadow-soft"
-                >
-                  <Plus className="h-4.5 w-4.5" />
-                  <span>Upload Video</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleSeedLibraryVideos}
+                    disabled={isSeedingVideos}
+                    className="bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 font-bold px-3.5 py-2 rounded-xl text-xs flex items-center space-x-1.5 shadow-xs transition-all disabled:opacity-50"
+                    title="Seed or update the 57 learning resources from MitoReboot Podcast & Video Library"
+                  >
+                    <Sparkles className="h-4 w-4 text-amber-500" />
+                    <span>{isSeedingVideos ? 'Syncing Library...' : 'Sync MitoReboot Library (57)'}</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setEditingVideoId(null);
+                      setVideoForm({
+                        title: '',
+                        description: '',
+                        url: '',
+                        thumbnailUrl: '',
+                        category: 'DAMAGE – REDUCE THE LOAD',
+                        topic: 'Stress',
+                        focus: '',
+                        speaker: '',
+                        duration: '20 min',
+                        takeaways: '',
+                        practicalAction: '',
+                        order: videos.length + 1,
+                        targetPlatform: 'Both' as any,
+                        isPaidOnly: false
+                      });
+                      setShowVideoModal(true);
+                    }}
+                    className="bg-primary hover:bg-primary-dark text-white font-bold px-4 py-2 rounded-xl text-sm flex items-center space-x-1.5 shadow-soft"
+                  >
+                    <Plus className="h-4.5 w-4.5" />
+                    <span>Add Video Link</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Filter and Search Bar */}
+              <div className="bg-white p-3.5 rounded-2xl border border-slate-200 flex flex-col md:flex-row items-center justify-between gap-3 shadow-xs">
+                {/* Category Selector Tabs */}
+                <div className="flex items-center gap-1.5 w-full md:w-auto overflow-x-auto">
+                  <button
+                    onClick={() => setAdminVideoFilterCat('all')}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                      adminVideoFilterCat === 'all'
+                        ? 'bg-slate-800 text-white border-slate-800 shadow-xs'
+                        : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    All ({videos.length})
+                  </button>
+                  <button
+                    onClick={() => setAdminVideoFilterCat('damage')}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border flex items-center gap-1.5 ${
+                      adminVideoFilterCat === 'damage'
+                        ? 'bg-rose-600 text-white border-rose-600 shadow-xs'
+                        : 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100'
+                    }`}
+                  >
+                    <span>Damage (Reduce Load)</span>
+                  </button>
+                  <button
+                    onClick={() => setAdminVideoFilterCat('repair')}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border flex items-center gap-1.5 ${
+                      adminVideoFilterCat === 'repair'
+                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                        : 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                    }`}
+                  >
+                    <span>Repair (Build Defence)</span>
+                  </button>
+                </div>
+
+                {/* Search & Topic filter */}
+                <div className="flex items-center gap-2 w-full md:w-auto">
+                  <div className="relative flex-1 md:w-64">
+                    <Search className="absolute left-3 top-2.5 w-3.5 h-3.5 text-slate-400" />
+                    <input
+                      type="text"
+                      value={adminVideoSearch}
+                      onChange={(e) => setAdminVideoSearch(e.target.value)}
+                      placeholder="Search title, speaker, mechanism..."
+                      className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-primary font-medium"
+                    />
+                  </div>
+
+                  <select
+                    value={adminVideoTopic}
+                    onChange={(e) => setAdminVideoTopic(e.target.value)}
+                    className="px-2.5 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-primary font-bold text-slate-700"
+                  >
+                    <option value="all">All Topics</option>
+                    {[
+                      'Stress', 'Sleep Debt', 'Smoking & Chewing', 'Alcohol', 'Substances',
+                      'Environment', 'Check Your Kitchen', 'Obesity', 'Dental Health',
+                      'Gastritis', 'Genetic Risk', 'Intermittent Fasting', 'Diet',
+                      'Antioxidants', 'Exercise', 'Stillness', 'Power of Breath',
+                      'Things You Love', 'Safer Products'
+                    ].map((t) => (
+                      <option key={t} value={t}>{t}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               {/* Videos Listing Grid */}
-              <div className="grid grid-cols-3 gap-6">
-                {videos.length === 0 ? (
-                  <div className="col-span-3 text-center p-8 bg-white border border-slate-200 rounded-2xl text-sm text-slate-400">No videos configured.</div>
-                ) : (
-                  videos.map((vid) => (
-                    <div key={vid._id} className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-soft flex flex-col justify-between">
-                      <div className="aspect-video w-full bg-slate-100 relative">
-                        <iframe src={getEmbedUrl(vid.url)} className="w-full h-full border-none" />
-                        {vid.isPaidOnly && (
-                          <div className="absolute top-2 right-2 bg-slate-900/80 backdrop-blur-md text-amber-300 text-[10px] font-black px-2.5 py-1 rounded-lg border border-amber-400/30 flex items-center gap-1 shadow-md">
-                            <span>👑 Paid Only</span>
-                          </div>
-                        )}
-                      </div>
-                      <div className="p-4 flex-1">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="text-[10px] font-bold text-primary bg-primary-light/50 px-2 py-0.5 rounded-full">{vid.category}</span>
-                          {vid.isPaidOnly ? (
-                            <span className="text-[10px] font-extrabold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full flex items-center gap-1">
-                              👑 Paid Subscribers Only
-                            </span>
-                          ) : (
-                            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full flex items-center gap-1">
-                              ✓ All Users (Free)
-                            </span>
-                          )}
-                        </div>
-                        <h4 className="text-sm font-bold text-slate-800 mt-2">{vid.title}</h4>
-                        <p className="text-xs text-slate-400 font-medium mt-1 leading-relaxed">{vid.description}</p>
-                      </div>
-                      <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end space-x-2">
-                        <button
-                          onClick={() => { setEditingVideoId(vid._id); setVideoForm({ title: vid.title, description: vid.description || '', url: vid.url, thumbnailUrl: vid.thumbnailUrl || '', category: vid.category, targetPlatform: vid.targetPlatform || 'Both', isPaidOnly: !!vid.isPaidOnly }); setShowVideoModal(true); }}
-                          className="p-1.5 hover:bg-slate-200 text-slate-500 rounded-lg"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteVideo(vid._id)}
-                          className="p-1.5 hover:bg-red-50 text-slate-400 hover:text-danger rounded-lg"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
+              {(() => {
+                const filtered = videos.filter((vid) => {
+                  if (adminVideoFilterCat === 'damage' && !(vid.category || '').toUpperCase().includes('DAMAGE')) return false;
+                  if (adminVideoFilterCat === 'repair' && !(vid.category || '').toUpperCase().includes('REPAIR')) return false;
+                  if (adminVideoTopic !== 'all' && vid.topic !== adminVideoTopic) return false;
+                  if (adminVideoSearch.trim()) {
+                    const q = adminVideoSearch.toLowerCase();
+                    const match = (vid.title || '').toLowerCase().includes(q)
+                      || (vid.speaker || '').toLowerCase().includes(q)
+                      || (vid.topic || '').toLowerCase().includes(q)
+                      || (vid.description || '').toLowerCase().includes(q);
+                    if (!match) return false;
+                  }
+                  return true;
+                });
+
+                if (filtered.length === 0) {
+                  return (
+                    <div className="text-center p-12 bg-white border border-slate-200 rounded-2xl text-sm text-slate-400">
+                      No educational video links found. Click "Sync MitoReboot Library (57)" above to seed the library.
                     </div>
-                  ))
-                )}
-              </div>
+                  );
+                }
+
+                return (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {filtered.map((vid) => {
+                      const isDamage = (vid.category || '').toUpperCase().includes('DAMAGE');
+                      const isDirectYt = vid.url && /youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\//.test(vid.url) && !vid.url.includes('/results?search_query=');
+
+                      return (
+                        <div key={vid._id} className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-soft flex flex-col justify-between hover:shadow-md transition-all">
+                          {isDirectYt ? (
+                            <div className="aspect-video w-full bg-slate-100 relative">
+                              <iframe src={getEmbedUrl(vid.url)} className="w-full h-full border-none" title={vid.title} />
+                              {vid.isPaidOnly && (
+                                <div className="absolute top-2 right-2 bg-slate-900/80 backdrop-blur-md text-amber-300 text-[10px] font-black px-2.5 py-1 rounded-lg border border-amber-400/30 flex items-center gap-1 shadow-md">
+                                  <span>👑 Paid Only</span>
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <div className={`p-4 border-b flex items-center justify-between ${isDamage ? 'bg-rose-50/50 border-rose-100' : 'bg-emerald-50/50 border-emerald-100'}`}>
+                              <div className="flex items-center gap-2">
+                                <span className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs ${isDamage ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                                  {vid.order || '▶'}
+                                </span>
+                                <div>
+                                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block">External Discovery / Podcast</span>
+                                  <span className="text-xs font-bold text-slate-700">{vid.topic || 'General'}</span>
+                                </div>
+                              </div>
+                              <a
+                                href={vid.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 text-[11px] font-bold text-primary hover:underline bg-white px-2.5 py-1 rounded-lg border border-slate-200 shadow-2xs"
+                              >
+                                <span>Preview Link</span>
+                                <ExternalLink className="w-3 h-3" />
+                              </a>
+                            </div>
+                          )}
+
+                          <div className="p-4 flex-1 flex flex-col">
+                            <div className="flex items-center gap-1.5 flex-wrap mb-2">
+                              <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${
+                                isDamage
+                                  ? 'bg-rose-50 text-rose-700 border-rose-200'
+                                  : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                              }`}>
+                                {isDamage ? 'Damage' : 'Repair'}
+                              </span>
+
+                              {vid.topic && (
+                                <span className="text-[10px] font-bold bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full">
+                                  {vid.topic}
+                                </span>
+                              )}
+
+                              {vid.duration && (
+                                <span className="text-[10px] font-semibold text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full">
+                                  ⏱️ {vid.duration}
+                                </span>
+                              )}
+
+                              {vid.isPaidOnly ? (
+                                <span className="text-[10px] font-extrabold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                  👑 Pro Only
+                                </span>
+                              ) : (
+                                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                                  Free
+                                </span>
+                              )}
+                            </div>
+
+                            <h4 className="text-sm font-bold text-slate-800 leading-snug">{vid.title}</h4>
+                            
+                            {vid.speaker && (
+                              <p className="text-[11px] font-bold text-primary mt-1">🎙️ {vid.speaker}</p>
+                            )}
+
+                            <p className="text-xs text-slate-500 font-medium mt-1.5 leading-relaxed line-clamp-3">
+                              {vid.description || vid.focus}
+                            </p>
+
+                            {vid.practicalAction && (
+                              <div className="mt-2.5 p-2 bg-sky-50 rounded-xl border border-sky-100 text-[11px] text-sky-800 font-medium">
+                                <span className="font-bold">⚡ Action: </span>{vid.practicalAction}
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="p-3 bg-slate-50 border-t border-slate-100 flex justify-between items-center">
+                            <span className="text-[10px] font-semibold text-slate-400">Platform: {vid.targetPlatform || 'Both'}</span>
+                            <div className="flex space-x-1">
+                              <button
+                                onClick={() => {
+                                  setEditingVideoId(vid._id);
+                                  setVideoForm({
+                                    title: vid.title,
+                                    description: vid.description || '',
+                                    url: vid.url,
+                                    thumbnailUrl: vid.thumbnailUrl || '',
+                                    category: vid.category || 'DAMAGE – REDUCE THE LOAD',
+                                    topic: vid.topic || 'Stress',
+                                    focus: vid.focus || '',
+                                    speaker: vid.speaker || '',
+                                    duration: vid.duration || '',
+                                    takeaways: Array.isArray(vid.takeaways) ? vid.takeaways.join('\n') : (vid.takeaways || ''),
+                                    practicalAction: vid.practicalAction || '',
+                                    order: vid.order || 0,
+                                    targetPlatform: vid.targetPlatform || 'Both',
+                                    isPaidOnly: !!vid.isPaidOnly
+                                  });
+                                  setShowVideoModal(true);
+                                }}
+                                className="p-1.5 hover:bg-slate-200 text-slate-600 rounded-lg transition-colors"
+                                title="Edit"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteVideo(vid._id)}
+                                className="p-1.5 hover:bg-red-50 text-slate-400 hover:text-danger rounded-lg transition-colors"
+                                title="Delete"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
 
               {/* Video Modal Form */}
               {showVideoModal && (
-                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                  <div className="bg-white p-6 rounded-3xl border border-slate-200 max-w-md w-full shadow-lg">
-                    <h3 className="text-base font-bold text-slate-800 mb-4">{editingVideoId ? 'Edit Video Link' : 'Add Video Link'}</h3>
-                    <form onSubmit={handleVideoSubmit} className="space-y-4">
+                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
+                  <div className="bg-white p-6 rounded-3xl border border-slate-200 max-w-lg w-full shadow-xl my-8">
+                    <h3 className="text-base font-bold text-slate-800 mb-4">
+                      {editingVideoId ? 'Edit Educational Video Link' : 'Add Educational Video Link'}
+                    </h3>
+                    <form onSubmit={handleVideoSubmit} className="space-y-3.5 max-h-[80vh] overflow-y-auto pr-1">
                       <div>
-                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Title</label>
+                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Title *</label>
                         <input
                           type="text"
                           required
                           value={videoForm.title}
                           onChange={(e) => setVideoForm({ ...videoForm, title: e.target.value })}
-                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-semibold"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Description</label>
-                        <textarea
-                          value={videoForm.description}
-                          onChange={(e) => setVideoForm({ ...videoForm, description: e.target.value })}
-                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-medium h-20"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Video Stream URL</label>
-                        <input
-                          type="text"
-                          required
-                          value={videoForm.url}
-                          onChange={(e) => setVideoForm({ ...videoForm, url: e.target.value })}
-                          placeholder="https://www.youtube.com/embed/XXXXX"
-                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs"
+                          placeholder="Resource title, episode or clinical lecture"
+                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold focus:ring-1 focus:ring-primary"
                         />
                       </div>
 
                       <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Thumbnail link</label>
-                          <input
-                            type="text"
-                            value={videoForm.thumbnailUrl}
-                            onChange={(e) => setVideoForm({ ...videoForm, thumbnailUrl: e.target.value })}
-                            className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs"
-                          />
+                          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Category *</label>
+                          <select
+                            value={videoForm.category}
+                            onChange={(e) => setVideoForm({ ...videoForm, category: e.target.value })}
+                            className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-bold focus:ring-1 focus:ring-primary"
+                          >
+                            <option value="DAMAGE – REDUCE THE LOAD">DAMAGE – REDUCE THE LOAD</option>
+                            <option value="REPAIR – BUILD THE DEFENCE">REPAIR – BUILD THE DEFENCE</option>
+                            <option value="General Health">General Health</option>
+                          </select>
                         </div>
                         <div>
-                          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Category</label>
+                          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Topic *</label>
                           <input
                             type="text"
                             required
-                            value={videoForm.category}
-                            onChange={(e) => setVideoForm({ ...videoForm, category: e.target.value })}
-                            placeholder="CGM Guide, Dietary Tips"
-                            className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-bold"
+                            value={videoForm.topic}
+                            onChange={(e) => setVideoForm({ ...videoForm, topic: e.target.value })}
+                            placeholder="e.g. Stress, Sleep Debt, Fasting"
+                            className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-bold focus:ring-1 focus:ring-primary"
                           />
                         </div>
                       </div>
 
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Speaker / Podcast / Source</label>
+                          <input
+                            type="text"
+                            value={videoForm.speaker}
+                            onChange={(e) => setVideoForm({ ...videoForm, speaker: e.target.value })}
+                            placeholder="e.g. Dr. Vishal Rao, Dana-Farber"
+                            className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-medium focus:ring-1 focus:ring-primary"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Duration</label>
+                          <input
+                            type="text"
+                            value={videoForm.duration}
+                            onChange={(e) => setVideoForm({ ...videoForm, duration: e.target.value })}
+                            placeholder="e.g. 25 min"
+                            className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-medium focus:ring-1 focus:ring-primary"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Video / Podcast URL *</label>
+                        <input
+                          type="text"
+                          required
+                          value={videoForm.url}
+                          onChange={(e) => setVideoForm({ ...videoForm, url: e.target.value })}
+                          placeholder="https://www.youtube.com/... or discovery link"
+                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-1 focus:ring-primary font-mono"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Description / Focus</label>
+                        <textarea
+                          value={videoForm.description}
+                          onChange={(e) => setVideoForm({ ...videoForm, description: e.target.value })}
+                          placeholder="Scientific focus areas, mechanisms, or biological context..."
+                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-medium h-20 focus:ring-1 focus:ring-primary"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+                          Key Clinical Takeaways (1 bullet per line)
+                        </label>
+                        <textarea
+                          value={videoForm.takeaways as string}
+                          onChange={(e) => setVideoForm({ ...videoForm, takeaways: e.target.value })}
+                          placeholder="Enter 3 key takeaways, one on each line..."
+                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-medium h-20 focus:ring-1 focus:ring-primary"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Practical Lifestyle Action</label>
+                        <input
+                          type="text"
+                          value={videoForm.practicalAction}
+                          onChange={(e) => setVideoForm({ ...videoForm, practicalAction: e.target.value })}
+                          placeholder="e.g. Incorporate daily 15-minute box breathing before bed."
+                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-medium focus:ring-1 focus:ring-primary"
+                        />
+                      </div>
+
                       {/* Access Control: Paid Users Only vs All Users Checkbox */}
-                      <div className={`p-3.5 rounded-2xl border transition-all ${videoForm.isPaidOnly
+                      <div className={`p-3 rounded-2xl border transition-all ${videoForm.isPaidOnly
                         ? 'bg-amber-50/80 border-amber-300 ring-1 ring-amber-300/40'
                         : 'bg-slate-50 border-slate-200'
                         }`}>
@@ -5974,7 +6298,7 @@ const AdminPanelContent: React.FC = () => {
                             <div className="flex items-center gap-2">
                               <span className="text-xs font-black text-slate-800">Paid Users Only Access</span>
                               {videoForm.isPaidOnly ? (
-                                <span className="text-[9px] font-black uppercase tracking-wider bg-amber-500 text-white px-2 py-0.5 rounded-full shadow-2xs">
+                                <span className="text-[9px] font-black uppercase tracking-wider bg-amber-500 text-white px-2 py-0.5 rounded-full">
                                   👑 Pro Exclusive
                                 </span>
                               ) : (
@@ -5985,7 +6309,7 @@ const AdminPanelContent: React.FC = () => {
                             </div>
                             <p className="text-[11px] text-slate-500 font-medium mt-1 leading-relaxed">
                               {videoForm.isPaidOnly
-                                ? 'Only active paid subscribers can watch this video in the app. Free and trial accounts will see it locked with an upgrade button.'
+                                ? 'Only active paid subscribers can access this link in the app.'
                                 : 'Accessible to all app members, including free and trial users.'}
                             </p>
                           </div>
@@ -5996,15 +6320,15 @@ const AdminPanelContent: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => setShowVideoModal(false)}
-                          className="flex-1 py-2 bg-slate-100 hover:bg-slate-200 rounded-xl font-semibold"
+                          className="flex-1 py-2 bg-slate-100 hover:bg-slate-200 rounded-xl font-semibold text-xs text-slate-700"
                         >
                           Cancel
                         </button>
                         <button
                           type="submit"
-                          className="flex-1 py-2 bg-primary hover:bg-primary-dark text-white font-bold rounded-xl"
+                          className="flex-1 py-2 bg-primary hover:bg-primary-dark text-white font-bold rounded-xl text-xs shadow-soft"
                         >
-                          Save Video
+                          Save Video Link
                         </button>
                       </div>
                     </form>

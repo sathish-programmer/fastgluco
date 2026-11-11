@@ -524,7 +524,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                   {renderSubItem('foods', 'Food Master Library')}
                   {renderSubItem('recFoods', 'Curated Food Protocols')}
                   {renderSubItem('indian-cancers', 'Indian Cancer Registry')}
-                  {renderSubItem('videos', 'Video Tutorials & Guides', undefined, 'blue', <Video className="w-3.5 h-3.5 text-blue-400" />)}
+                  {renderSubItem('videos', 'Educational Video Links', undefined, 'blue', <Video className="w-3.5 h-3.5 text-blue-400" />)}
                   {renderSubItem('guides', 'Educational Guides')}
                   {renderSubItem('notifications', 'Push Notifications Broadcast', undefined, 'blue', <Bell className="w-3.5 h-3.5 text-amber-400" />)}
                   {renderSubItem('faqs', 'FAQs Knowledgebase', undefined, 'blue', <HelpCircle className="w-3.5 h-3.5 text-slate-400" />)}

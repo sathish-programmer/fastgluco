@@ -40,13 +40,9 @@ The Glycaemic Index (GI) rates carbohydrates from 0 to 100 based on how rapidly 
   }
 ];
 
-const SEED_VIDEOS: Array<{
-  title: string;
-  description: string;
-  url: string;
-  thumbnailUrl: string;
-  category: string;
-}> = [];
+import { MITOREBOOT_LIBRARY_RESOURCES } from './data/educationalLibrarySeeds';
+
+const SEED_VIDEOS = MITOREBOOT_LIBRARY_RESOURCES;
 
 const SEED_FAQS = [
   {

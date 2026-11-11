@@ -36,6 +36,7 @@ import { Coupon } from '../models/Coupon';
 import { PaymentTransaction } from '../models/PaymentTransaction';
 import { Invoice } from '../models/Invoice';
 import { RevenueAnalyticsService } from '../services/revenueAnalyticsService';
+import { MITOREBOOT_LIBRARY_RESOURCES } from '../data/educationalLibrarySeeds';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_key_12345!';
 
@@ -1090,7 +1091,7 @@ export class AdminController {
    */
   public static async addVideo(req: AuthRequest, res: Response) {
     try {
-      const { title, description, url, thumbnailUrl, category, targetPlatform, isPaidOnly } = req.body;
+      const { title, description, url, thumbnailUrl, category, topic, focus, speaker, duration, takeaways, practicalAction, order, targetPlatform, isPaidOnly } = req.body;
       if (!title || !url || !category) {
         return res.status(400).json({ message: 'Title, URL, and category are required.' });
       }
@@ -1110,7 +1111,14 @@ export class AdminController {
         description, 
         url: processedUrl, 
         thumbnailUrl: processedThumbnail, 
-        category, 
+        category,
+        topic,
+        focus,
+        speaker,
+        duration,
+        takeaways: Array.isArray(takeaways) ? takeaways : (takeaways ? [takeaways] : []),
+        practicalAction,
+        order: order !== undefined ? Number(order) : 0,
         targetPlatform: targetPlatform || 'Both',
         isPaidOnly: isPaidOnly !== undefined ? Boolean(isPaidOnly) : false
       });
@@ -1119,7 +1127,7 @@ export class AdminController {
       await AuditLog.create({
         adminId: req.user?.id,
         action: 'ADD_VIDEO',
-        details: `Uploaded educational video: ${title} (Paid Only: ${Boolean(isPaidOnly)})`,
+        details: `Uploaded educational video link: ${title} (Topic: ${topic || 'General'})`,
         ipAddress: req.ip
       });
 
@@ -1135,13 +1143,20 @@ export class AdminController {
   public static async updateVideo(req: AuthRequest, res: Response) {
     try {
       const { id } = req.params;
-      const { title, description, url, thumbnailUrl, category, targetPlatform, isPaidOnly } = req.body;
+      const { title, description, url, thumbnailUrl, category, topic, focus, speaker, duration, takeaways, practicalAction, order, targetPlatform, isPaidOnly } = req.body;
       const video = await Video.findById(id);
       if (!video) return res.status(404).json({ message: 'Video not found.' });
 
       if (title !== undefined) video.title = title;
       if (description !== undefined) video.description = description;
       if (category !== undefined) video.category = category;
+      if (topic !== undefined) video.topic = topic;
+      if (focus !== undefined) video.focus = focus;
+      if (speaker !== undefined) video.speaker = speaker;
+      if (duration !== undefined) video.duration = duration;
+      if (takeaways !== undefined) video.takeaways = Array.isArray(takeaways) ? takeaways : [takeaways];
+      if (practicalAction !== undefined) video.practicalAction = practicalAction;
+      if (order !== undefined) video.order = Number(order);
       if (targetPlatform !== undefined) video.targetPlatform = targetPlatform;
       if (isPaidOnly !== undefined) video.isPaidOnly = Boolean(isPaidOnly);
       
@@ -1165,7 +1180,7 @@ export class AdminController {
       await AuditLog.create({
         adminId: req.user?.id,
         action: 'UPDATE_VIDEO',
-        details: `Updated video: ${video.title}`,
+        details: `Updated educational video link: ${video.title}`,
         ipAddress: req.ip
       });
 
@@ -1197,6 +1212,35 @@ export class AdminController {
       return res.status(200).json({ message: 'Video soft deleted.' });
     } catch (error: any) {
       return res.status(500).json({ message: error.message || 'Error deleting video.' });
+    }
+  }
+
+  /**
+   * Manage Videos - Seed 57 Library Resources
+   */
+  public static async seedLibraryVideos(req: AuthRequest, res: Response) {
+    try {
+      const { overwrite } = req.body;
+      if (overwrite) {
+        await Video.deleteMany({});
+      }
+      for (const item of MITOREBOOT_LIBRARY_RESOURCES) {
+        await Video.findOneAndUpdate(
+          { title: item.title },
+          { $set: item },
+          { upsert: true, new: true }
+        );
+      }
+      const allVideos = await Video.find().sort({ order: 1, createdAt: -1 });
+      await AuditLog.create({
+        adminId: req.user?.id,
+        action: 'SEED_LIBRARY_VIDEOS',
+        details: `Seeded ${allVideos.length} educational video links from MitoReboot Library`,
+        ipAddress: req.ip
+      });
+      return res.status(200).json({ message: 'Library seeded successfully.', count: allVideos.length, videos: allVideos });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message || 'Error seeding library videos.' });
     }
   }
 
