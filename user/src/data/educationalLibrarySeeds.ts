@@ -8,6 +8,7 @@ export interface IEducationalResource {
   url: string;
   speaker: string;
   duration?: string;
+  isCollection?: boolean;
   takeaways?: string[];
   practicalAction?: string;
   targetPlatform?: 'App' | 'Website' | 'Both';
@@ -29,7 +30,7 @@ export const FALLBACK_EDUCATIONAL_VIDEOS: IEducationalResource[] = [
     description: 'Explores how chronic emotional and physiological stress, persistent cortisol elevation, and sympathetic nervous system activation impact tumor microenvironments and immune surveillance.',
     url: 'https://www.youtube.com/results?search_query=Ground+%26+Root+Podcast+Chronic+Stress+Cancer+Risk',
     speaker: 'Ground & Root Podcast',
-    duration: '28 min',
+    isCollection: true,
     takeaways: [
       'Persistent cortisol dysregulation dampens natural killer (NK) cell activity and lymphocyte function.',
       'Sympathetic signaling accelerates inflammatory cytokine cascades (IL-6, TNF-alpha).',
@@ -48,7 +49,7 @@ export const FALLBACK_EDUCATIONAL_VIDEOS: IEducationalResource[] = [
     description: 'Comprehensive clinical discussions on the hypothalamic-pituitary-adrenal (HPA) axis, elevated circulating glucocorticoids, and cellular repair pathways.',
     url: 'https://www.youtube.com/results?search_query=Chronic+stress+cortisol+and+cancer+mechanisms',
     speaker: 'Clinical Oncology & Neurobiology Experts',
-    duration: '22 min',
+    isCollection: true,
     takeaways: [
       'Elevated cortisol alters DNA damage repair efficiency and cell cycle control.',
       'Chronic stress promotes systemic low-grade vascular inflammation.',
@@ -67,7 +68,7 @@ export const FALLBACK_EDUCATIONAL_VIDEOS: IEducationalResource[] = [
     description: 'Neuroscientific evaluation of mind-body stress signaling, vagal tone regulation, and lymphocyte health in metabolic disease prevention.',
     url: 'https://www.youtube.com/results?search_query=Stress+inflammation+and+the+immune+system+neuroscience',
     speaker: 'Neuroscience & Immunology Discussions',
-    duration: '25 min',
+    isCollection: true,
     takeaways: [
       'The vagus nerve serves as the body’s primary anti-inflammatory brake.',
       'Mental distress increases pro-inflammatory cytokines that impair immune surveillance.',
@@ -88,7 +89,7 @@ export const FALLBACK_EDUCATIONAL_VIDEOS: IEducationalResource[] = [
     description: 'Scientific deep dive into sleep architecture, lymphatic waste clearance in the brain, and nocturnal cellular repair mechanisms.',
     url: 'https://www.youtube.com/results?search_query=Sleep+deprivation+and+cancer+risk+scientific+discussions',
     speaker: 'Sleep Medicine & Chronobiology Specialists',
-    duration: '32 min',
+    isCollection: true,
     takeaways: [
       'Consistent sleep deprivation suppresses natural killer cell count by up to 70%.',
       'Circadian misalignment disrupts clock genes governing cell cycle checkpoint regulation.',
@@ -107,7 +108,7 @@ export const FALLBACK_EDUCATIONAL_VIDEOS: IEducationalResource[] = [
     description: 'Examines the dual role of nocturnal melatonin as both a master circadian hormone and a powerful oncostatic mitochondrial antioxidant.',
     url: 'https://www.youtube.com/results?search_query=Melatonin+sleep+and+cancer+expert+interviews',
     speaker: 'Endocrine & Oncology Researchers',
-    duration: '24 min',
+    isCollection: true,
     takeaways: [
       'Melatonin protects mitochondrial membranes from reactive oxygen species.',
       'Nighttime blue light exposure severely suppresses endogenous pineal melatonin secretion.',
@@ -126,7 +127,7 @@ export const FALLBACK_EDUCATIONAL_VIDEOS: IEducationalResource[] = [
     description: 'Medical assessment of IARC classification of shift work that involves circadian disruption and actionable protocols for shift workers.',
     url: 'https://www.youtube.com/results?search_query=Night+shift+work+and+cancer+risk+medical+discussions',
     speaker: 'Occupational Health & Circadian Biology Panel',
-    duration: '20 min',
+    isCollection: true,
     takeaways: [
       'Chronic circadian desynchrony alters clock genes governing tumor suppression.',
       'Shift-work metabolic stress can trigger nocturnal glucose intolerance.',
@@ -147,7 +148,7 @@ export const FALLBACK_EDUCATIONAL_VIDEOS: IEducationalResource[] = [
     description: 'Renowned head and neck surgical oncologist Dr. Vishal Rao highlights the immediate cellular recovery and life-saving benefits of tobacco cessation.',
     url: 'https://www.youtube.com/results?search_query=HCG+Dr+Vishal+Rao+Quit+Smoking+Give+Yourself+a+Gift+of+Life',
     speaker: 'Dr. Vishal Rao (Surgical Oncologist, HCG)',
-    duration: '18 min',
+    isCollection: true,
     takeaways: [
       'Tobacco smoke contains over 70 recognized chemical carcinogens that directly bind and mutate DNA.',
       'Oral cavity, pharynx, and lung tissues begin cellular repair within days of quitting.',
@@ -166,7 +167,7 @@ export const FALLBACK_EDUCATIONAL_VIDEOS: IEducationalResource[] = [
     description: 'Global health overview of smokeless tobacco, gutka, khaini, and cigarettes in relation to oral submucous fibrosis and systemic oncogenesis.',
     url: 'https://www.youtube.com/results?search_query=WHO+Smoking+tobacco+and+cancer+expert+videos',
     speaker: 'World Health Organization Experts',
-    duration: '16 min',
+    isCollection: true,
     takeaways: [
       'Smokeless tobacco and areca nut are classified as Group 1 human carcinogens.',
       'Carcinogen exposure creates persistent oxidative mucosal damage and chronic fibrosis.',
@@ -185,7 +186,7 @@ export const FALLBACK_EDUCATIONAL_VIDEOS: IEducationalResource[] = [
     description: 'Visual explainer of polycyclic aromatic hydrocarbons (PAHs) and nitrosamines forming covalent DNA adducts in epithelial cells.',
     url: 'https://www.youtube.com/results?search_query=How+tobacco+causes+cancer+cancer+biology+explained',
     speaker: 'Cancer Biology & Molecular Genetics',
-    duration: '15 min',
+    isCollection: true,
     takeaways: [
       'DNA adducts induce irreversible p53 tumor suppressor gene mutations.',
       'Free radical generation damages mitochondrial respiration chains.',
@@ -206,7 +207,7 @@ export const FALLBACK_EDUCATIONAL_VIDEOS: IEducationalResource[] = [
     description: 'Clinicians from Johns Hopkins break down how ethanol metabolism creates toxic acetaldehyde, depletes glutathione, and stresses hepatic cells.',
     url: 'https://www.youtube.com/results?search_query=Johns+Hopkins+The+Health+Risks+of+Alcohol',
     speaker: 'Johns Hopkins Medicine',
-    duration: '21 min',
+    isCollection: true,
     takeaways: [
       'Acetaldehyde binds proteins and DNA, causing chromosomal aberrations and oxidative damage.',
       'Alcohol increases circulating estrogen levels, elevating breast cancer vulnerability.',
@@ -225,7 +226,7 @@ export const FALLBACK_EDUCATIONAL_VIDEOS: IEducationalResource[] = [
     description: 'Expert oncologists clarify the direct biological links between ethanol consumption, lipid peroxidation, and oncogene activation.',
     url: 'https://www.youtube.com/results?search_query=Johns+Hopkins+Alcohol+and+Cancer+Risk',
     speaker: 'Johns Hopkins Kimmel Cancer Center',
-    duration: '19 min',
+    isCollection: true,
     takeaways: [
       'Alcohol acts as an organic solvent, accelerating mucosal absorption of other carcinogens.',
       'Metabolism of ethanol depletes essential methyl donors and folic acid.',
@@ -244,7 +245,7 @@ export const FALLBACK_EDUCATIONAL_VIDEOS: IEducationalResource[] = [
     description: 'Evidence-based debate on whether moderate alcohol consumption has any cardioprotective benefits versus its unequivocal oncological burden.',
     url: 'https://www.youtube.com/results?search_query=Should+You+Give+Up+Alcohol+to+Reduce+Cancer+Risk',
     speaker: 'Preventive Oncology & Nutrition Experts',
-    duration: '26 min',
+    isCollection: true,
     takeaways: [
       'Global oncological guidelines confirm no safe lower threshold exists for cancer prevention.',
       'Eliminating alcohol significantly improves metabolic liver panel markers.',
@@ -265,7 +266,7 @@ export const FALLBACK_EDUCATIONAL_VIDEOS: IEducationalResource[] = [
     description: 'Distinguishing palliative symptom management from unproven curative claims, with analysis of combustion carcinogens in inhaled products.',
     url: 'https://www.youtube.com/results?search_query=Cannabis+and+cancer+research+discussions+oncology',
     speaker: 'Oncology Pharmacologists & Researchers',
-    duration: '23 min',
+    isCollection: true,
     takeaways: [
       'Smoking cannabis produces many of the same pyrolytic tar carcinogens as tobacco.',
       'Endocannabinoid receptors play roles in immune signaling but do not cure malignant tumors.',
@@ -284,7 +285,7 @@ export const FALLBACK_EDUCATIONAL_VIDEOS: IEducationalResource[] = [
     description: 'Systemic effects of illicit substance abuse on vascular endothelial integrity, immune exhaustion, and metabolic organ damage.',
     url: 'https://www.youtube.com/results?search_query=Substance+abuse+and+long-term+health+medical+experts',
     speaker: 'Addiction Medicine & Internal Medicine Experts',
-    duration: '27 min',
+    isCollection: true,
     takeaways: [
       'Chronic stimulant use induces mitochondrial hyper-exhaustion and oxidative crisis.',
       'Immune surveillance mechanisms are markedly blunted by chronic substance stress.',
@@ -303,7 +304,7 @@ export const FALLBACK_EDUCATIONAL_VIDEOS: IEducationalResource[] = [
     description: 'In-depth review of opioid receptor pharmacodynamics, bowel dysmotility, and immune suppression under extended opioid exposure.',
     url: 'https://www.youtube.com/results?search_query=Opioids+addiction+and+the+human+body+medical+discussions',
     speaker: 'Medical Specialists & Neurobiology Panel',
-    duration: '22 min',
+    isCollection: true,
     takeaways: [
       'Prolonged opioid use alters gut barrier permeability and systemic immune signaling.',
       'Tolerance drives neuroadaptation and metabolic dysregulation.',
@@ -324,7 +325,7 @@ export const FALLBACK_EDUCATIONAL_VIDEOS: IEducationalResource[] = [
     description: 'Chest surgeon Dr. Arvind Kumar explains the surging epidemic of adenocarcinoma lung cancer in young nonsmokers exposed to PM2.5 air pollution.',
     url: 'https://www.youtube.com/results?search_query=NDTV+Lung+Cancer+Risk+in+Nonsmokers+Dr+Arvind+Kumar',
     speaker: 'Dr. Arvind Kumar (Chest Surgeon & Lung Care Foundation)',
-    duration: '29 min',
+    isCollection: true,
     takeaways: [
       'Particulate matter (PM2.5) penetrates deep alveoli and crosses directly into the bloodstream.',
       'Ambient air pollution triggers pulmonary macrophage inflammation and EGFR mutations.',
@@ -343,7 +344,7 @@ export const FALLBACK_EDUCATIONAL_VIDEOS: IEducationalResource[] = [
     description: 'Detailed evaluation of agricultural organophosphates, glyphosates, and persistent bioaccumulative residues in public water and food supplies.',
     url: 'https://www.youtube.com/results?search_query=Pesticides+and+cancer+scientific+expert+discussions',
     speaker: 'Environmental Toxicology & Epidemiologists',
-    duration: '31 min',
+    isCollection: true,
     takeaways: [
       'Certain pesticides mimic hormones and generate intracellular oxidative stress.',
       'Agricultural runoff and unwashed produce are prominent exposure vectors.',
@@ -362,7 +363,7 @@ export const FALLBACK_EDUCATIONAL_VIDEOS: IEducationalResource[] = [
     description: 'Explores how nanoplastics and plasticizers leech into drinking water, cross biological membranes, and alter endocrine signalling.',
     url: 'https://www.youtube.com/results?search_query=Microplastics+endocrine+disruption+and+human+health',
     speaker: 'Environmental Scientists & Biochemists',
-    duration: '25 min',
+    isCollection: true,
     takeaways: [
       'Microplastics carry plasticizers like phthalates and BPA that bind hormone receptors.',
       'Foreign plastic particles provoke localized tissue inflammatory responses.',
@@ -383,7 +384,7 @@ export const FALLBACK_EDUCATIONAL_VIDEOS: IEducationalResource[] = [
     description: 'How fungal aflatoxins from Aspergillus species in improperly stored grains, peanuts, and spices act as potent hepatic mutagens.',
     url: 'https://www.youtube.com/results?search_query=Aflatoxin+and+liver+cancer+scientific+discussions',
     speaker: 'Food Safety & Hepatology Specialists',
-    duration: '20 min',
+    isCollection: true,
     takeaways: [
       'Aflatoxin B1 is one of the most potent known hepatocarcinogens.',
       'Synergizes with Hepatitis B/C infections to multiply liver cancer risk tenfold.',
@@ -402,7 +403,7 @@ export const FALLBACK_EDUCATIONAL_VIDEOS: IEducationalResource[] = [
     description: 'Scientific review of thermal oxidation, polymer formation, trans fats, and polar compounds generated by repeatedly reusing frying oil.',
     url: 'https://www.youtube.com/results?search_query=Repeatedly+heated+cooking+oil+and+health+risks+lipid+peroxidation',
     speaker: 'Nutritional Biochemistry & Toxicology Panel',
-    duration: '24 min',
+    isCollection: true,
     takeaways: [
       'Deep reheating breaks oil bonds, generating carcinogenic polycyclic hydrocarbons.',
       'Reheated oil accelerates endothelial inflammation and liver steatosis.',
@@ -421,7 +422,7 @@ export const FALLBACK_EDUCATIONAL_VIDEOS: IEducationalResource[] = [
     description: 'Understanding chemical transformation of nitrates into nitrosamines in cured meats and acrylamide formation in heavily browned starchy foods.',
     url: 'https://www.youtube.com/results?search_query=Food+carcinogens+nitrosamines+acrylamide+and+processed+meat',
     speaker: 'Food Chemistry & Oncological Nutrition',
-    duration: '22 min',
+    isCollection: true,
     takeaways: [
       'WHO categorizes processed meats (sausages, bacon) as Group 1 carcinogens for colorectal cancer.',
       'Over-browning starchy foods at temperatures above 120°C creates acrylamide.',
@@ -442,7 +443,7 @@ export const FALLBACK_EDUCATIONAL_VIDEOS: IEducationalResource[] = [
     description: 'Clinical breakdown of how visceral adiposity functions as an endocrine disruptor, driving hyperinsulinemia and mitogenic growth factors.',
     url: 'https://www.youtube.com/results?search_query=The+Obesity+Cancer+Connection+Dr+Neil+Naik',
     speaker: 'Dr. Neil Naik (Metabolic Health Specialist)',
-    duration: '34 min',
+    isCollection: true,
     takeaways: [
       'Excess visceral fat constantly secretes inflammatory adipokines (IL-6, TNF).',
       'Elevated insulin and free IGF-1 directly stimulate cellular proliferation.',
@@ -461,7 +462,7 @@ export const FALLBACK_EDUCATIONAL_VIDEOS: IEducationalResource[] = [
     description: 'Detailed mechanistic look at how chronic hyperinsulinemia creates a nutrient-rich, pro-growth signaling environment for mutated cells.',
     url: 'https://www.youtube.com/results?search_query=Obesity+insulin+resistance+and+cancer+expert+discussions',
     speaker: 'Endocrinologists & Cancer Epidemiologists',
-    duration: '28 min',
+    isCollection: true,
     takeaways: [
       'Cancer cells frequently overexpress insulin receptors on their membranes.',
       'Insulin resistance impairs natural immune surveillance mechanisms.',
@@ -480,7 +481,7 @@ export const FALLBACK_EDUCATIONAL_VIDEOS: IEducationalResource[] = [
     description: 'Examines macrophage infiltration in hypertrophic adipose tissue, hypoxia, and angiogenic cytokine secretion.',
     url: 'https://www.youtube.com/results?search_query=Fat+tissue+inflammation+and+cancer+biology+mechanisms',
     speaker: 'Cellular Biology & Metabolic Oncology',
-    duration: '21 min',
+    isCollection: true,
     takeaways: [
       'Crowded, oxygen-starved fat cells rupture and trigger persistent immune inflammation.',
       'Visceral adiposity is linked to at least 13 distinct types of malignancy.',
@@ -501,7 +502,7 @@ export const FALLBACK_EDUCATIONAL_VIDEOS: IEducationalResource[] = [
     description: 'How chronic periodontal pockets provide direct vascular entry for pathogenic oral bacteria, triggering systemic C-reactive protein (CRP) elevations.',
     url: 'https://www.youtube.com/results?search_query=Periodontal+disease+and+systemic+inflammation+oral+health',
     speaker: 'Periodontists & Systemic Health Experts',
-    duration: '18 min',
+    isCollection: true,
     takeaways: [
       'Bleeding gums indicate ulcerated pocket lining exposing the vascular tree.',
       'Periodontal pathogens like Fusobacterium nucleatum have been discovered in colon tumors.',
@@ -520,7 +521,7 @@ export const FALLBACK_EDUCATIONAL_VIDEOS: IEducationalResource[] = [
     description: 'Analysis of oral dysbiosis, tobacco interactions, alcohol mouthwashes, and neoplastic transformation of oral epithelial cells.',
     url: 'https://www.youtube.com/results?search_query=Oral+microbiome+and+cancer+scientific+discussions',
     speaker: 'Microbiome Researchers & Oral Oncologists',
-    duration: '24 min',
+    isCollection: true,
     takeaways: [
       'A balanced oral microbiome acts as an innate protective immune shield.',
       'Alcohol-containing harsh mouthwashes can strip protective salivary enzymes.',
@@ -539,7 +540,7 @@ export const FALLBACK_EDUCATIONAL_VIDEOS: IEducationalResource[] = [
     description: 'Review of bidirectional relationships between diabetes, periodontal bone loss, cardiovascular risk, and immune regulation.',
     url: 'https://www.youtube.com/results?search_query=Gum+disease+and+overall+health+dental+experts',
     speaker: 'Dental Surgery & Preventive Health Panel',
-    duration: '19 min',
+    isCollection: true,
     takeaways: [
       'Controlling periodontal infections improves glycemic control in diabetic individuals.',
       'Early gum disease (gingivitis) is completely reversible with prompt hygiene.',
@@ -560,7 +561,7 @@ export const FALLBACK_EDUCATIONAL_VIDEOS: IEducationalResource[] = [
     description: 'Nobel Laureate Barry Marshall recounts how he proved Helicobacter pylori causes chronic gastritis, peptic ulcers, and distal stomach adenocarcinoma.',
     url: 'https://www.youtube.com/results?search_query=Barry+Marshall+Helicobacter+pylori+discovery+Nobel+Prize',
     speaker: 'Prof. Barry Marshall (Nobel Laureate in Medicine)',
-    duration: '35 min',
+    isCollection: true,
     takeaways: [
       'H. pylori infection is categorized by WHO as a definitive Class 1 human carcinogen.',
       'Bacterial urease allows colonization in harsh gastric acid, causing decades-long inflammation.',
@@ -579,7 +580,7 @@ export const FALLBACK_EDUCATIONAL_VIDEOS: IEducationalResource[] = [
     description: 'Clinical walk-through of the Correa cascade: from superficial gastritis to chronic atrophic gastritis, intestinal metaplasia, and neoplasia.',
     url: 'https://www.youtube.com/results?search_query=H+pylori+and+stomach+cancer+gastroenterologist+discussions',
     speaker: 'Gastroenterology & Digestive Oncology Experts',
-    duration: '27 min',
+    isCollection: true,
     takeaways: [
       'Chronic stomach inflammation gradually destroys acid-secreting parietal cells.',
       'Early intervention halts the progression along the metaplasia cascade.',
@@ -598,7 +599,7 @@ export const FALLBACK_EDUCATIONAL_VIDEOS: IEducationalResource[] = [
     description: 'Endoscopic surveillance guidelines for high-risk patients with persistent atrophic gastritis, family history, and precancerous lesions.',
     url: 'https://www.youtube.com/results?search_query=Chronic+gastritis+and+the+progression+to+gastric+cancer',
     speaker: 'Pathology & Endoscopy Specialists',
-    duration: '22 min',
+    isCollection: true,
     takeaways: [
       'High-definition endoscopy with biopsy detects early curable dysplasia.',
       'Symptoms of early gastric lesions often mimic routine acid reflux.',
@@ -619,7 +620,7 @@ export const FALLBACK_EDUCATIONAL_VIDEOS: IEducationalResource[] = [
     description: 'Leading clinical geneticists discuss multi-gene panel testing, BRCA1/2, Lynch syndrome, and personalized proactive surveillance plans.',
     url: 'https://www.youtube.com/results?search_query=The+Genetics+Podcast+Managing+Hereditary+Cancer+Risk',
     speaker: 'The Genetics Podcast & Clinical Geneticists',
-    duration: '42 min',
+    isCollection: true,
     takeaways: [
       'Hereditary cancer syndromes account for approximately 5–10% of all cancer diagnoses.',
       'Identifying mutations allows tailored screening (breast MRI, early colonoscopies).',
@@ -638,7 +639,7 @@ export const FALLBACK_EDUCATIONAL_VIDEOS: IEducationalResource[] = [
     description: 'In-depth guide to BRCA1 and BRCA2 DNA double-strand repair pathways, breast and ovarian vulnerability, and PARP inhibitors.',
     url: 'https://www.youtube.com/results?search_query=BRCA+genes+and+hereditary+cancer+geneticist+interviews',
     speaker: 'Medical Genetics & Surgical Oncology Panel',
-    duration: '30 min',
+    isCollection: true,
     takeaways: [
       'BRCA genes encode crucial tumor suppressor proteins responsible for homologous recombination.',
       'Mutations impair cell repair, leading to chromosomal instability.',
@@ -657,7 +658,7 @@ export const FALLBACK_EDUCATIONAL_VIDEOS: IEducationalResource[] = [
     description: 'Explaining epigenetics: how environmental signals, nutrition, exercise, and metabolic health regulate gene expression without changing DNA sequence.',
     url: 'https://www.youtube.com/results?search_query=Genes+versus+lifestyle+epigenetics+gene+environment+interactions',
     speaker: 'Epigenetics & Genomic Medicine Researchers',
-    duration: '26 min',
+    isCollection: true,
     takeaways: [
       'Genes load the gun, but lifestyle and environmental exposures pull the trigger.',
       'Epigenetic methylation and histone modifications respond directly to lifestyle choices.',
@@ -682,7 +683,7 @@ export const FALLBACK_EDUCATIONAL_VIDEOS: IEducationalResource[] = [
     description: 'Investigates how fasting-mimicking diets and time-restricted feeding modulate chemotherapy response, differential stress sensitization, and normal cell protection.',
     url: 'https://www.youtube.com/results?search_query=The+James+Cancer+Free+World+Podcast+Fasting+Dr+Faiza+Kalam',
     speaker: 'Dr. Faiza Kalam (The James Comprehensive Cancer Center)',
-    duration: '33 min',
+    isCollection: true,
     takeaways: [
       'Fasting lowers blood glucose and growth factors, stressing glucose-dependent cancer cells.',
       'Normal healthy cells shift into protected maintenance mode during nutrient depletion.',
@@ -701,7 +702,7 @@ export const FALLBACK_EDUCATIONAL_VIDEOS: IEducationalResource[] = [
     description: 'Exploration of the Warburg effect, mitochondrial fermentation versus respiration, and the metabolic targeting of malignant cells.',
     url: 'https://www.youtube.com/results?search_query=Cancer+as+a+Metabolic+Disease+Dr+Kristy+Kessling',
     speaker: 'Dr. Kristy Kessling (Metabolic Oncology Researcher)',
-    duration: '38 min',
+    isCollection: true,
     takeaways: [
       'Most malignant cells rely heavily on aerobic glycolysis and high glucose turnover.',
       'Lowering baseline hyperinsulinemia restricts proliferative hormonal signals.',
@@ -720,7 +721,7 @@ export const FALLBACK_EDUCATIONAL_VIDEOS: IEducationalResource[] = [
     description: 'Scientific review of Yoshinori Ohsumi’s Nobel-winning discovery of autophagy: cellular recycling of damaged organelles and proteins during fasting.',
     url: 'https://www.youtube.com/results?search_query=Intermittent+fasting+autophagy+and+cellular+repair+expert+discussions',
     speaker: 'Cell Biologists & Longevity Clinicians',
-    duration: '28 min',
+    isCollection: true,
     takeaways: [
       'Autophagy clears damaged mitochondria (mitophagy) that leak toxic reactive oxygen species.',
       'Time-restricted feeding (14:10 or 16:8) aligns meal timing with natural metabolic rhythms.',
@@ -741,7 +742,7 @@ export const FALLBACK_EDUCATIONAL_VIDEOS: IEducationalResource[] = [
     description: 'Dana-Farber oncological dietitians provide evidence-based guidance on colorful plant diversity, dietary fiber, and healthy fats.',
     url: 'https://www.youtube.com/results?search_query=Dana+Farber+Cancer+Questions+Nutrition+and+Cancer+Prevention',
     speaker: 'Dana-Farber Cancer Institute Oncology Dietitians',
-    duration: '25 min',
+    isCollection: true,
     takeaways: [
       'Consuming 30+ varied plant foods weekly nurtures a resilient, anti-inflammatory microbiome.',
       'Dietary fiber produces short-chain fatty acids (butyrate) that protect colon epithelium.',
@@ -760,7 +761,7 @@ export const FALLBACK_EDUCATIONAL_VIDEOS: IEducationalResource[] = [
     description: 'How gut microbial fermentation of complex carbohydrates regulates circulating immune cells, Treg functions, and systemic inflammation.',
     url: 'https://www.youtube.com/results?search_query=Plant+based+diet+gut+microbiome+and+cancer+prevention',
     speaker: 'Gastroenterologists & Nutritional Scientists',
-    duration: '31 min',
+    isCollection: true,
     takeaways: [
       'A diverse gut microbiome trains immune cells to distinguish healthy tissue from neoplastic changes.',
       'Ultra-processed foods degrade the protective intestinal mucin barrier layer.',
@@ -779,7 +780,7 @@ export const FALLBACK_EDUCATIONAL_VIDEOS: IEducationalResource[] = [
     description: 'Analysis of glycemic index, postprandial glucose excursions, and hepatic de novo lipogenesis in metabolic disease prevention.',
     url: 'https://www.youtube.com/results?search_query=Nutrition+insulin+and+cancer+metabolism+discussions',
     speaker: 'Metabolic Nutrition & Endocrinology Panel',
-    duration: '27 min',
+    isCollection: true,
     takeaways: [
       'Frequent postprandial glucose surges drive continuous compensatory hyperinsulinemia.',
       'Protein pacing and healthy fats blunt glycemic volatility.',
@@ -800,7 +801,7 @@ export const FALLBACK_EDUCATIONAL_VIDEOS: IEducationalResource[] = [
     description: 'Why whole-food antioxidants outperform high-dose synthetic pill supplements, and the dangerous paradox of antioxidant-chemotherapy interactions.',
     url: 'https://www.youtube.com/results?search_query=Dana+Farber+Should+I+Take+Supplements+to+Reduce+Cancer+Risk',
     speaker: 'Dana-Farber Cancer Institute Clinical Team',
-    duration: '22 min',
+    isCollection: true,
     takeaways: [
       'High-dose isolated antioxidant pills can inadvertently shield malignant cells from apoptosis.',
       'Food matrices deliver hundreds of synergistic phytonutrients without toxicity.',
@@ -819,7 +820,7 @@ export const FALLBACK_EDUCATIONAL_VIDEOS: IEducationalResource[] = [
     description: 'Diving into electron transport chain leaks, superoxides, and how endogenous antioxidants (glutathione, SOD, catalase) protect cellular machinery.',
     url: 'https://www.youtube.com/results?search_query=Oxidative+stress+and+mitochondrial+health+researcher+interviews',
     speaker: 'Biochemists & Mitochondrial Biologists',
-    duration: '29 min',
+    isCollection: true,
     takeaways: [
       'Endogenous antioxidant defenses require precursors: selenium, sulfur, zinc, and cysteine.',
       'Exercise and fasting induce hormesis, upregulating master antioxidant regulator Nrf2.',
@@ -838,7 +839,7 @@ export const FALLBACK_EDUCATIONAL_VIDEOS: IEducationalResource[] = [
     description: 'Comprehensive review of epidemiological vs interventional trials on antioxidant nutrients in tumor biology.',
     url: 'https://www.youtube.com/results?search_query=Antioxidants+and+cancer+prevention+what+does+the+evidence+say',
     speaker: 'Evidence-Based Oncology Research Group',
-    duration: '24 min',
+    isCollection: true,
     takeaways: [
       'Observational studies reward dietary patterns rich in whole plant foods, not single extracts.',
       'Cancer cells utilize oxidative signaling adaptively; timing is everything in clinical therapy.',
@@ -859,7 +860,7 @@ export const FALLBACK_EDUCATIONAL_VIDEOS: IEducationalResource[] = [
     description: 'Memorial Sloan Kettering oncologists demonstrate how structured aerobic and resistance training reduces cancer recurrence and improves survivorship.',
     url: 'https://www.youtube.com/results?search_query=Memorial+Sloan+Kettering+How+Exercise+Can+Help+Treat+and+Prevent+Cancer',
     speaker: 'MSKCC Exercise Oncology Experts',
-    duration: '27 min',
+    isCollection: true,
     takeaways: [
       'Contracting skeletal muscle releases anti-inflammatory myokines (IL-15, SPARC).',
       'Physical exertion boosts circulation, mobilizing natural killer and cytotoxic T cells.',
@@ -878,7 +879,7 @@ export const FALLBACK_EDUCATIONAL_VIDEOS: IEducationalResource[] = [
     description: 'Dr. Kathryn Schmitz presents the ASCO clinical exercise oncology guidelines: exercise is an essential adjuvant prescription in oncology care.',
     url: 'https://www.youtube.com/results?search_query=ASCO+Exercise+as+Medicine+Dr+Kathryn+Schmitz',
     speaker: 'Dr. Kathryn Schmitz (Past President, American College of Sports Medicine)',
-    duration: '36 min',
+    isCollection: true,
     takeaways: [
       'Resistance training preserves lean muscle mass, combatting sarcopenia and cachexia.',
       'Exercise improves chemotherapy tolerance, reduces fatigue, and boosts psychological health.',
@@ -897,7 +898,7 @@ export const FALLBACK_EDUCATIONAL_VIDEOS: IEducationalResource[] = [
     description: 'Molecular exploration of PGC-1alpha activation, mitochondrial biogenesis, and glucose transporter (GLUT4) translocation in muscles.',
     url: 'https://www.youtube.com/results?search_query=Exercise+mitochondria+and+metabolic+health+biogenesis',
     speaker: 'Exercise Physiologists & Molecular Biologists',
-    duration: '23 min',
+    isCollection: true,
     takeaways: [
       'Zone 2 aerobic exercise stimulates the creation of healthy new mitochondria (biogenesis).',
       'Muscle contraction transports glucose into cells independently of insulin.',
@@ -918,7 +919,7 @@ export const FALLBACK_EDUCATIONAL_VIDEOS: IEducationalResource[] = [
     description: 'How structured mindfulness-based stress reduction (MBSR) dampens nuclear factor-kappa B (NF-kB) and boosts immune cell telomerase activity.',
     url: 'https://www.youtube.com/results?search_query=Mindfulness+and+immune+function+scientific+discussions',
     speaker: 'Psychoneuroimmunologists & Clinical Psychologists',
-    duration: '21 min',
+    isCollection: true,
     takeaways: [
       'Mindfulness training reduces pro-inflammatory gene expression in white blood cells.',
       'Lowers resting amygdala hyperactivity and blunts sympathetic adrenal reactivity.',
@@ -937,7 +938,7 @@ export const FALLBACK_EDUCATIONAL_VIDEOS: IEducationalResource[] = [
     description: 'Neuroimaging insights into meditation: strengthening prefrontal cortex regulation over fear and stress centers, lowering systemic IL-6.',
     url: 'https://www.youtube.com/results?search_query=Meditation+and+inflammation+neuroscience+experts',
     speaker: 'Neuroscientists & Mind-Body Clinicians',
-    duration: '26 min',
+    isCollection: true,
     takeaways: [
       'Regular meditation practice thickens gray matter in emotional regulation networks.',
       'Decreases circulating pro-inflammatory markers and stress hormones.',
@@ -956,7 +957,7 @@ export const FALLBACK_EDUCATIONAL_VIDEOS: IEducationalResource[] = [
     description: 'Evidence-based implementation of meditation, yoga, and guided imagery in supportive oncology to reduce neuropathy, pain, and anxiety.',
     url: 'https://www.youtube.com/results?search_query=Mind+body+medicine+and+cancer+survivorship+discussions',
     speaker: 'Integrative Oncology Specialists',
-    duration: '30 min',
+    isCollection: true,
     takeaways: [
       'Mind-body therapies provide meaningful improvements in patient-reported quality of life.',
       'Integrative supportive practices enhance compliance with conventional therapies.',
@@ -977,7 +978,7 @@ export const FALLBACK_EDUCATIONAL_VIDEOS: IEducationalResource[] = [
     description: 'How altering breathing rate and depth stimulates pulmonary stretch receptors, sending inhibitory signals via the vagus nerve to calm the heart.',
     url: 'https://www.youtube.com/results?search_query=Breathing+exercises+and+the+nervous+system+neuroscience',
     speaker: 'Neurobiologists & Pulmonologists',
-    duration: '25 min',
+    isCollection: true,
     takeaways: [
       'Respiration is the only autonomic function under voluntary conscious control.',
       'Lengthening the exhale stimulates the parasympathetic "rest and repair" branch.',
@@ -996,7 +997,7 @@ export const FALLBACK_EDUCATIONAL_VIDEOS: IEducationalResource[] = [
     description: 'The clinical science of respiratory sinus arrhythmia, resonance frequency breathing, and strengthening vagal nerve tone for cardiovascular resilience.',
     url: 'https://www.youtube.com/results?search_query=Slow+breathing+heart+rate+variability+and+vagal+tone',
     speaker: 'Cardiovascular Physiologists & Autonomic Specialists',
-    duration: '22 min',
+    isCollection: true,
     takeaways: [
       'Higher heart rate variability correlates with autonomic flexibility and metabolic health.',
       'Coherent breathing at 5.5 to 6 breaths per minute optimizes baroreceptor sensitivity.',
@@ -1015,7 +1016,7 @@ export const FALLBACK_EDUCATIONAL_VIDEOS: IEducationalResource[] = [
     description: 'Peer-reviewed investigations into Anulom Vilom (alternate nostril breathing), Bhramari, and diaphragmatic breathing on blood pressure and oxidative stress.',
     url: 'https://www.youtube.com/results?search_query=Pranayama+and+physiological+health+medical+research',
     speaker: 'Integrative Medicine & Yoga Researchers',
-    duration: '27 min',
+    isCollection: true,
     takeaways: [
       'Alternate nostril breathing promotes balanced autonomic hemisphere activation.',
       'Humming in Bhramari pranayama increases nasal nitric oxide production 15-fold.',
@@ -1036,7 +1037,7 @@ export const FALLBACK_EDUCATIONAL_VIDEOS: IEducationalResource[] = [
     description: 'Lessons from the longest running 85-year scientific study on human health: positive relationships and social connection are the single strongest predictors of longevity.',
     url: 'https://www.youtube.com/results?search_query=Harvard+Study+of+Adult+Development+Robert+Waldinger+relationships',
     speaker: 'Dr. Robert Waldinger (Director, Harvard Study of Adult Development)',
-    duration: '32 min',
+    isCollection: true,
     takeaways: [
       'Loneliness is as biologically toxic as smoking 15 cigarettes a day.',
       'Warm, supportive relationships buffer against physical pain and chronic illness.',
@@ -1055,7 +1056,7 @@ export const FALLBACK_EDUCATIONAL_VIDEOS: IEducationalResource[] = [
     description: 'How having a strong sense of purpose (Ikigai) down-regulates conserved transcriptional responses to adversity (CTRA) and inflammatory gene profiles.',
     url: 'https://www.youtube.com/results?search_query=Purpose+in+life+longevity+and+health+expert+interviews',
     speaker: 'Psychologists & Epidemiologists',
-    duration: '28 min',
+    isCollection: true,
     takeaways: [
       'Individuals with high purpose in life exhibit significantly reduced all-cause mortality.',
       'Purpose stimulates neuroendocrine resilience and healthy daily adherence.',
@@ -1074,7 +1075,7 @@ export const FALLBACK_EDUCATIONAL_VIDEOS: IEducationalResource[] = [
     description: 'Public health analysis of social cohesion, community support circles in chronic illness recovery, and their immune-supportive physiology.',
     url: 'https://www.youtube.com/results?search_query=Social+connection+loneliness+and+physical+health+discussions',
     speaker: 'Public Health Researchers & Clinicians',
-    duration: '24 min',
+    isCollection: true,
     takeaways: [
       'Social isolation triggers evolutionary alarm signals that spike inflammatory cytokines.',
       'Belonging to a supportive group fosters emotional resilience during treatment.',
@@ -1095,7 +1096,7 @@ export const FALLBACK_EDUCATIONAL_VIDEOS: IEducationalResource[] = [
     description: 'How synthetic xenoestrogens (BPA, BPS, phthalates, parabens) bind and block nuclear hormone receptors at minuscule parts-per-billion concentrations.',
     url: 'https://www.youtube.com/results?search_query=Endocrine+disrupting+chemicals+and+human+health+toxicology',
     speaker: 'Environmental Endocrine Toxicologists',
-    duration: '29 min',
+    isCollection: true,
     takeaways: [
       'Endocrine disruptors alter development and hormone-sensitive tissues (breast, prostate).',
       'Thermal cash register receipts, canned food liners, and fragrances are everyday sources.',
@@ -1114,7 +1115,7 @@ export const FALLBACK_EDUCATIONAL_VIDEOS: IEducationalResource[] = [
     description: 'Review of volatile organic compounds (VOCs) in chemical cleaning sprays, synthetic air fresheners, and non-stick cookware chemistry (PFAS).',
     url: 'https://www.youtube.com/results?search_query=Pesticides+household+chemicals+and+cancer+risk+environmental',
     speaker: 'Preventive Medicine & Environmental Health Specialists',
-    duration: '26 min',
+    isCollection: true,
     takeaways: [
       'PFAS "forever chemicals" persist in human blood and accumulate over decades.',
       'Harsh chemical aerosol sprays irritate pulmonary epithelium and mucosal barriers.',
@@ -1133,7 +1134,7 @@ export const FALLBACK_EDUCATIONAL_VIDEOS: IEducationalResource[] = [
     description: 'Examining exposure vectors from synthetic clothing fibers, nylon tea bags, single-use plastic cups, and plastic cutting boards.',
     url: 'https://www.youtube.com/results?search_query=Microplastics+and+everyday+consumer+products+exposure',
     speaker: 'Materials Science & Public Health Panel',
-    duration: '23 min',
+    isCollection: true,
     takeaways: [
       'Plastic tea bags steeped in boiling water release billions of micro- and nano-plastics.',
       'Wooden or bamboo cutting boards prevent plastic fragment ingestion.',
@@ -1145,3 +1146,4 @@ export const FALLBACK_EDUCATIONAL_VIDEOS: IEducationalResource[] = [
     order: 57
   }
 ];
+

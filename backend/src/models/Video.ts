@@ -13,6 +13,7 @@ export interface IVideo extends Document {
   takeaways?: string[]; // 3 Key takeaways
   practicalAction?: string; // 1 actionable takeaway
   order?: number;
+  isCollection?: boolean; // When true, links to a curated topic collection / search rather than a single video
   targetPlatform: 'App' | 'Website' | 'Both';
   isPaidOnly?: boolean; // When true, accessible only to active paid subscribers (not free or trial)
   isDeleted: boolean;
@@ -34,6 +35,7 @@ const videoSchema = new Schema<IVideo>(
     takeaways: [{ type: String, trim: true }],
     practicalAction: { type: String, trim: true },
     order: { type: Number, default: 0 },
+    isCollection: { type: Boolean, default: false },
     targetPlatform: { type: String, enum: ['App', 'Website', 'Both'], default: 'Both' },
     isPaidOnly: { type: Boolean, default: false },
     isDeleted: { type: Boolean, default: false }

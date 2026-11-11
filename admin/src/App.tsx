@@ -6038,6 +6038,7 @@ const AdminPanelContent: React.FC = () => {
                     {filtered.map((vid) => {
                       const isDamage = (vid.category || '').toUpperCase().includes('DAMAGE');
                       const isDirectYt = vid.url && /youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\//.test(vid.url) && !vid.url.includes('/results?search_query=');
+                      const isCollection = !!vid.isCollection || (vid.url && vid.url.includes('/results?search_query='));
 
                       return (
                         <div key={vid._id} className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-soft flex flex-col justify-between hover:shadow-md transition-all">
@@ -6089,11 +6090,15 @@ const AdminPanelContent: React.FC = () => {
                                 </span>
                               )}
 
-                              {vid.duration && (
+                              {isCollection ? (
+                                <span className="text-[10px] font-bold text-sky-700 bg-sky-50 border border-sky-200 px-2 py-0.5 rounded-full">
+                                  📚 Curated Collection
+                                </span>
+                              ) : vid.duration ? (
                                 <span className="text-[10px] font-semibold text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full">
                                   ⏱️ {vid.duration}
                                 </span>
-                              )}
+                              ) : null}
 
                               {vid.isPaidOnly ? (
                                 <span className="text-[10px] font-extrabold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full flex items-center gap-1">

@@ -1091,7 +1091,7 @@ export class AdminController {
    */
   public static async addVideo(req: AuthRequest, res: Response) {
     try {
-      const { title, description, url, thumbnailUrl, category, topic, focus, speaker, duration, takeaways, practicalAction, order, targetPlatform, isPaidOnly } = req.body;
+      const { title, description, url, thumbnailUrl, category, topic, focus, speaker, duration, takeaways, practicalAction, order, targetPlatform, isPaidOnly, isCollection } = req.body;
       if (!title || !url || !category) {
         return res.status(400).json({ message: 'Title, URL, and category are required.' });
       }
@@ -1119,6 +1119,7 @@ export class AdminController {
         takeaways: Array.isArray(takeaways) ? takeaways : (takeaways ? [takeaways] : []),
         practicalAction,
         order: order !== undefined ? Number(order) : 0,
+        isCollection: isCollection !== undefined ? Boolean(isCollection) : (url && url.includes('/results?search_query=') ? true : false),
         targetPlatform: targetPlatform || 'Both',
         isPaidOnly: isPaidOnly !== undefined ? Boolean(isPaidOnly) : false
       });
@@ -1143,7 +1144,7 @@ export class AdminController {
   public static async updateVideo(req: AuthRequest, res: Response) {
     try {
       const { id } = req.params;
-      const { title, description, url, thumbnailUrl, category, topic, focus, speaker, duration, takeaways, practicalAction, order, targetPlatform, isPaidOnly } = req.body;
+      const { title, description, url, thumbnailUrl, category, topic, focus, speaker, duration, takeaways, practicalAction, order, targetPlatform, isPaidOnly, isCollection } = req.body;
       const video = await Video.findById(id);
       if (!video) return res.status(404).json({ message: 'Video not found.' });
 
@@ -1157,6 +1158,7 @@ export class AdminController {
       if (takeaways !== undefined) video.takeaways = Array.isArray(takeaways) ? takeaways : [takeaways];
       if (practicalAction !== undefined) video.practicalAction = practicalAction;
       if (order !== undefined) video.order = Number(order);
+      if (isCollection !== undefined) video.isCollection = Boolean(isCollection);
       if (targetPlatform !== undefined) video.targetPlatform = targetPlatform;
       if (isPaidOnly !== undefined) video.isPaidOnly = Boolean(isPaidOnly);
       
@@ -1227,7 +1229,10 @@ export class AdminController {
       for (const item of MITOREBOOT_LIBRARY_RESOURCES) {
         await Video.findOneAndUpdate(
           { title: item.title },
-          { $set: item },
+          { 
+            $set: item,
+            $unset: { duration: 1 }
+          },
           { upsert: true, new: true }
         );
       }

@@ -39,6 +39,12 @@ export class EducationalController {
    */
   public static async getVideos(req: Request, res: Response) {
     try {
+      // One-time sanitization: remove static durations from search-query collections
+      await Video.updateMany(
+        { url: { $regex: 'results\\?search_query=' }, duration: { $exists: true } },
+        { $unset: { duration: 1 }, $set: { isCollection: true } }
+      );
+
       let videos = await Video.find().sort({ order: 1, createdAt: -1 });
       
       // Auto-seed library if empty so mobile and web immediately have the 57 curated resources
