@@ -1656,13 +1656,11 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
             repairPct: 0,
             damagePct: 0,
             isLogged: false,
-            notScoredHeight: 3
+            notScoredHeight: 0.25
           });
         }
       }
     } else {
-      let maxScore = 3;
-
       for (let i = numPoints - 1; i >= 0; i--) {
         const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
         const dayStart = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0);
@@ -1689,8 +1687,6 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
           const dayForces = computeForcesForLogs(logsUpToDay);
           const cleanDmg = Math.round(dayForces.damage);
           const cleanRep = Math.round(dayForces.repair);
-          if (cleanDmg > maxScore) maxScore = cleanDmg;
-          if (cleanRep > maxScore) maxScore = cleanRep;
           const tot = cleanDmg + cleanRep;
           const repPct = tot === 0 ? 50 : Math.round((cleanRep / tot) * 100);
 
@@ -1707,7 +1703,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
             notScoredHeight: null
           });
         } else {
-          // Unscored day - do not draw graph lines
+          // Unscored day - do not draw graph lines, subtle baseline slot only
           chartData.push({
             dateStr: d.toISOString(),
             label,
@@ -1718,15 +1714,15 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
             repairPct: 0,
             damagePct: 0,
             isLogged: false,
-            notScoredHeight: 3
+            notScoredHeight: 0.25
           });
         }
       }
 
-      // Sync pillar height for unscored days
+      // Ensure subtle placeholder height for all unscored days
       chartData.forEach(pt => {
         if (!pt.isLogged) {
-          pt.notScoredHeight = Math.max(maxScore, 3);
+          pt.notScoredHeight = 0.25;
         }
       });
     }
@@ -1794,6 +1790,11 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
   const displayNet = timePeriod === 'today' ? (repairCount - damageCount) : Math.round(Number(cellularTrendData.avgNet) || (displayRepair - displayDamage));
   const damageArcRatio = Math.min(1, Math.max(0, displayDamage / 11));
   const repairArcRatio = Math.min(1, Math.max(0, displayRepair / 9));
+
+  const latestLoggedPoint = useMemo(() => {
+    const logged = cellularTrendData.chartData.filter(c => c.isLogged && (c.damage !== null || c.repair !== null));
+    return logged.length > 0 ? logged[logged.length - 1] : null;
+  }, [cellularTrendData.chartData]);
 
   const { setPendingRecommendationId } = useConsultation();
 
@@ -2592,14 +2593,20 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
                         <ComposedChart data={cellularTrendData.chartData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
                           <defs>
                             <linearGradient id="repairTrendGrad" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor="#10b981" stopOpacity={0.38} />
-                              <stop offset="70%" stopColor="#10b981" stopOpacity={0.08} />
+                              <stop offset="0%" stopColor="#10b981" stopOpacity={0.25} />
                               <stop offset="100%" stopColor="#10b981" stopOpacity={0.0} />
                             </linearGradient>
                             <linearGradient id="damageTrendGrad" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor="#f43f5e" stopOpacity={0.35} />
-                              <stop offset="70%" stopColor="#f43f5e" stopOpacity={0.06} />
+                              <stop offset="0%" stopColor="#f43f5e" stopOpacity={0.25} />
                               <stop offset="100%" stopColor="#f43f5e" stopOpacity={0.0} />
+                            </linearGradient>
+                            <linearGradient id="repairBarGrad" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="#10b981" stopOpacity={1} />
+                              <stop offset="100%" stopColor="#059669" stopOpacity={0.9} />
+                            </linearGradient>
+                            <linearGradient id="damageBarGrad" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="#f43f5e" stopOpacity={1} />
+                              <stop offset="100%" stopColor="#e11d48" stopOpacity={0.9} />
                             </linearGradient>
                             <pattern id="unscoredPattern" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
                               <line x1="0" y1="0" x2="0" y2="6" stroke="#94a3b8" strokeWidth="1" strokeOpacity="0.35" />
@@ -2610,7 +2617,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
                             dataKey="label"
                             tickLine={false}
                             axisLine={false}
-                            tick={{ fontSize: 9.5, fill: '#94a3b8', fontWeight: 600 }}
+                            tick={{ fontSize: 9.5, fill: '#64748b', fontWeight: 600 }}
                             interval={timePeriod === 'monthly' ? 4 : 0}
                           />
                           <YAxis
@@ -2674,41 +2681,106 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
                               return null;
                             }}
                           />
+                          {/* 1. Subtle Unscored Slot Placeholder at Baseline */}
                           <Bar
                             dataKey="notScoredHeight"
                             name="Not Scored"
-                            fill="url(#unscoredPattern)"
+                            fill="#f1f5f9"
                             stroke="#cbd5e1"
                             strokeDasharray="2 2"
-                            radius={[4, 4, 0, 0]}
-                            barSize={timePeriod === 'monthly' ? 5 : 16}
+                            radius={[3, 3, 3, 3]}
+                            barSize={timePeriod === 'monthly' ? 4 : 12}
                           />
+                          {/* 2. Scored Forces: Prominent Solid Gradient Pillars */}
+                          <Bar
+                            dataKey="repair"
+                            name={t('dashboard.repairHabits', 'Repair habits')}
+                            fill="url(#repairBarGrad)"
+                            radius={[5, 5, 2, 2]}
+                            barSize={timePeriod === 'monthly' ? 6 : 14}
+                            minPointSize={5}
+                          />
+                          <Bar
+                            dataKey="damage"
+                            name={t('dashboard.stressIndicators', 'Stress indicators')}
+                            fill="url(#damageBarGrad)"
+                            radius={[5, 5, 2, 2]}
+                            barSize={timePeriod === 'monthly' ? 6 : 14}
+                            minPointSize={5}
+                          />
+                          {/* 3. Ambient Trend Flow Connecting Logged Days */}
                           <Area
                             type="monotone"
                             dataKey="repair"
                             name="Repair habits"
                             stroke="#10b981"
-                            strokeWidth={2.8}
+                            strokeWidth={2.5}
                             fillOpacity={1}
                             fill="url(#repairTrendGrad)"
                             connectNulls={false}
-                            dot={{ r: 3.5, strokeWidth: 1.5, fill: '#10b981', stroke: '#fff' }}
-                            activeDot={{ r: 5, strokeWidth: 2, fill: '#10b981', stroke: '#fff' }}
+                            dot={{ r: 4.5, strokeWidth: 2, fill: '#10b981', stroke: '#fff' }}
+                            activeDot={{ r: 6, strokeWidth: 2.5, fill: '#10b981', stroke: '#fff' }}
                           />
                           <Area
                             type="monotone"
                             dataKey="damage"
                             name="Stress indicators"
                             stroke="#f43f5e"
-                            strokeWidth={2.8}
+                            strokeWidth={2.5}
                             fillOpacity={1}
                             fill="url(#damageTrendGrad)"
                             connectNulls={false}
-                            dot={{ r: 3.5, strokeWidth: 1.5, fill: '#f43f5e', stroke: '#fff' }}
-                            activeDot={{ r: 5, strokeWidth: 2, fill: '#f43f5e', stroke: '#fff' }}
+                            dot={{ r: 4.5, strokeWidth: 2, fill: '#f43f5e', stroke: '#fff' }}
+                            activeDot={{ r: 6, strokeWidth: 2.5, fill: '#f43f5e', stroke: '#fff' }}
                           />
                         </ComposedChart>
                       </ResponsiveContainer>
+                    </div>
+                  )}
+
+                  {/* Latest Recorded Scored Day Card */}
+                  {latestLoggedPoint && timePeriod !== 'today' && (
+                    <div className="rounded-2xl bg-gradient-to-r from-slate-50/90 via-white to-slate-50/90 dark:from-slate-800/80 dark:via-slate-800/50 dark:to-slate-800/80 border border-slate-200/90 dark:border-slate-700/80 p-3 sm:p-3.5 shadow-xs">
+                      <div className="flex items-center justify-between gap-2 border-b border-slate-200/60 dark:border-slate-700/60 pb-2 mb-2.5 flex-wrap">
+                        <div className="flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_6px_rgba(16,185,129,0.8)]" />
+                          <span className="text-xs font-bold text-slate-800 dark:text-slate-100">
+                            Recorded Check-in: <strong className="text-indigo-600 dark:text-indigo-400 font-extrabold">{latestLoggedPoint.fullDate || latestLoggedPoint.label}</strong>
+                          </span>
+                        </div>
+                        <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${(latestLoggedPoint.net || 0) >= 0
+                          ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/25'
+                          : 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/25'
+                          }`}>
+                          {(latestLoggedPoint.net || 0) >= 0 ? `+${latestLoggedPoint.net} Net Repair` : `${latestLoggedPoint.net} Net Stress`}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div className="flex items-center justify-between p-2.5 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-100/90 dark:border-emerald-900/40">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0" />
+                            <div className="flex flex-col">
+                              <span className="font-extrabold text-[11px] text-emerald-900 dark:text-emerald-200">Repair Habits</span>
+                              <span className="text-[9px] text-emerald-700/80 dark:text-emerald-400/80">Restorative defense</span>
+                            </div>
+                          </div>
+                          <span className="font-black text-base text-emerald-600 dark:text-emerald-300 pl-2">
+                            {latestLoggedPoint.repair || 0}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between p-2.5 rounded-xl bg-rose-50/70 dark:bg-rose-950/30 border border-rose-100/90 dark:border-rose-900/40">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shrink-0" />
+                            <div className="flex flex-col">
+                              <span className="font-extrabold text-[11px] text-rose-900 dark:text-rose-200">Stress Triggers</span>
+                              <span className="text-[9px] text-rose-700/80 dark:text-rose-400/80">Cellular damage</span>
+                            </div>
+                          </div>
+                          <span className="font-black text-base text-rose-600 dark:text-rose-300 pl-2">
+                            {latestLoggedPoint.damage || 0}
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   )}
 
