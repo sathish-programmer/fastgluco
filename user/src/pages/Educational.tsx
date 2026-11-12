@@ -5,9 +5,42 @@ import { useLanguage } from '../context/LanguageContext';
 import { 
   BookOpen, Video, Eye, HelpCircle, MessageSquare, Send, 
   Lock, ExternalLink, Search, ShieldAlert, 
-  Flame, Award
+  Flame, Award, Crown, Sparkles
 } from 'lucide-react';
 import { FALLBACK_EDUCATIONAL_VIDEOS } from '../data/educationalLibrarySeeds';
+
+export const getPlatformInfo = (url: string) => {
+  if (!url) return { name: 'Web Resource', badge: '🌐 Web Resource', actionLabel: 'Open Link' };
+  
+  if (url.includes('buzzsprout.com')) {
+    return { name: 'Buzzsprout', badge: '🎙️ Buzzsprout Podcast', actionLabel: 'Listen on Buzzsprout' };
+  }
+  if (url.includes('hcgoncology.com')) {
+    return { name: 'HCG Oncology', badge: '🏥 HCG Hospital Podcast', actionLabel: 'Listen on HCG' };
+  }
+  if (url.includes('hopkinsmedicine.org') || url.includes('jhu.edu')) {
+    return { name: 'Johns Hopkins', badge: '🎓 Johns Hopkins Medicine', actionLabel: 'Listen on Johns Hopkins' };
+  }
+  if (url.includes('ndtv.com')) {
+    return { name: 'NDTV', badge: '📻 NDTV Lifeline Podcast', actionLabel: 'Listen on NDTV' };
+  }
+  if (url.includes('apple.com')) {
+    return { name: 'Apple Podcasts', badge: '🍎 Apple Podcast', actionLabel: 'Listen on Apple Podcasts' };
+  }
+  if (url.includes('dana-farber.org')) {
+    return { name: 'Dana-Farber', badge: '🎗️ Dana-Farber Institute', actionLabel: 'Listen on Dana-Farber' };
+  }
+  if (url.includes('mskcc.org')) {
+    return { name: 'Memorial Sloan Kettering', badge: '🏛️ MSKCC Podcast', actionLabel: 'Listen on MSKCC' };
+  }
+  if (url.includes('ascopubs.org')) {
+    return { name: 'ASCO', badge: '🔬 ASCO Journal', actionLabel: 'View on ASCO' };
+  }
+  if (url.includes('youtube.com') || url.includes('youtu.be')) {
+    return { name: 'YouTube', badge: '▶️ YouTube Video', actionLabel: 'Watch on YouTube' };
+  }
+  return { name: 'Resource', badge: '🌐 Evidence Resource', actionLabel: 'Watch / Listen' };
+};
 
 export const Educational: React.FC = () => {
   const { token, apiUrl } = useAuth();
@@ -65,8 +98,13 @@ export const Educational: React.FC = () => {
         setGuides(guidesData);
       }
 
-      // Fetch videos
-      const videosRes = await fetch(`${apiUrl}/videos`);
+      // Fetch videos (uncached so admin updates to paid/free or URLs reflect immediately)
+      const videosRes = await fetch(`${apiUrl}/videos?_t=${Date.now()}`, {
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache'
+        }
+      });
       if (videosRes.ok) {
         const videosData = await videosRes.json();
         if (Array.isArray(videosData) && videosData.length > 0) {
@@ -466,6 +504,56 @@ export const Educational: React.FC = () => {
                         <div className="mt-3.5 space-y-2">
                           {group.resources.map((res, rIdx) => {
                             const isLocked = !!res.isPaidOnly && !isPaidUser;
+                            const platform = getPlatformInfo(res.url);
+
+                            if (isLocked) {
+                              return (
+                                <div
+                                  key={res._id || `res-${group.topicNumber || 0}-${rIdx}`}
+                                  className="relative overflow-hidden rounded-xl bg-gradient-to-r from-amber-50/70 via-amber-50/30 to-slate-50 dark:from-amber-950/20 dark:via-slate-900 dark:to-slate-900 border border-amber-200/70 dark:border-amber-800/50 p-3 transition-all"
+                                >
+                                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                    <div className="flex items-start gap-2.5 flex-1 min-w-0">
+                                      <div className="w-6 h-6 rounded-lg bg-amber-500/20 border border-amber-500/30 flex items-center justify-center shrink-0 mt-0.5 text-amber-600 dark:text-amber-400">
+                                        <Lock className="w-3.5 h-3.5" />
+                                      </div>
+                                      
+                                      <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-1.5 flex-wrap mb-1">
+                                          <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-full">
+                                            <Crown className="w-3 h-3 text-amber-500" />
+                                            <span>Subscriber Exclusive</span>
+                                          </span>
+                                          <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">
+                                            {platform.badge}
+                                          </span>
+                                        </div>
+                                        
+                                        {/* Blurred preview of the title */}
+                                        <p className="text-xs font-bold text-slate-800 dark:text-slate-200 select-none filter blur-[1.5px] opacity-80 leading-snug">
+                                          {res.title}
+                                        </p>
+                                        <p className="text-[10px] text-amber-800 dark:text-amber-400 font-semibold mt-1">
+                                          🔒 Premium Clinical Resource · Subscribe to access full podcast / video
+                                        </p>
+                                      </div>
+                                    </div>
+
+                                    {/* Subscribe / Unlock CTA Button */}
+                                    <div className="flex items-center justify-end shrink-0 pl-8 sm:pl-0">
+                                      <button
+                                        onClick={() => window.dispatchEvent(new CustomEvent('navigateToTab', { detail: 'Subscription' }))}
+                                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-600 hover:from-amber-600 hover:to-amber-700 text-white text-[11px] font-black shadow-md shadow-amber-500/25 active:scale-95 transition-all"
+                                      >
+                                        <Sparkles className="w-3.5 h-3.5" />
+                                        <span>Subscribe to Unlock</span>
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            }
+
                             return (
                               <div
                                 key={res._id || `res-${group.topicNumber || 0}-${rIdx}`}
@@ -475,31 +563,34 @@ export const Educational: React.FC = () => {
                                   <span className="w-5 h-5 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-[10px] font-black flex items-center justify-center shrink-0 mt-0.5">
                                     {rIdx + 1}
                                   </span>
-                                  <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 leading-snug">
-                                    {res.title}
-                                  </span>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
+                                      <span className="text-[10px] font-bold text-primary dark:text-primary-light">
+                                        {platform.badge}
+                                      </span>
+                                      {res.isPaidOnly && isPaidUser && (
+                                        <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 px-1.5 py-0.2 rounded-full">
+                                          <Crown className="w-2.5 h-2.5 text-emerald-500" />
+                                          <span>Pro Unlocked</span>
+                                        </span>
+                                      )}
+                                    </div>
+                                    <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 leading-snug">
+                                      {res.title}
+                                    </span>
+                                  </div>
                                 </div>
 
                                 <div className="flex items-center justify-end shrink-0 pl-7 sm:pl-0">
-                                  {isLocked ? (
-                                    <button
-                                      onClick={() => window.dispatchEvent(new CustomEvent('navigateToTab', { detail: 'Subscription' }))}
-                                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-[11px] font-bold"
-                                    >
-                                      <Lock className="w-3 h-3" />
-                                      <span>Paid Only</span>
-                                    </button>
-                                  ) : (
-                                    <a
-                                      href={res.url}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary hover:bg-primary-dark text-white text-[11px] font-bold transition-all shadow-xs active:scale-95"
-                                    >
-                                      <span>Watch / Listen</span>
-                                      <ExternalLink className="w-3 h-3" />
-                                    </a>
-                                  )}
+                                  <a
+                                    href={res.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-primary hover:bg-primary-dark text-white text-[11px] font-bold transition-all shadow-xs active:scale-95"
+                                  >
+                                    <span>{platform.actionLabel}</span>
+                                    <ExternalLink className="w-3 h-3" />
+                                  </a>
                                 </div>
                               </div>
                             );

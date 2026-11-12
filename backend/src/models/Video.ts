@@ -7,6 +7,7 @@ export interface IVideo extends Document {
   thumbnailUrl?: string;
   category: string; // e.g. "DAMAGE – REDUCE THE LOAD", "REPAIR – BUILD THE DEFENCE", "CGM Guide", etc.
   topic?: string; // e.g. "Stress", "Sleep Debt", "Intermittent Fasting"
+  topicNumber?: number; // 1 to 19
   focus?: string; // Scientific focus areas (e.g. Cortisol, sympathetic activation...)
   speaker?: string; // Clinician, researcher, podcast name
   duration?: string; // e.g. "25 min"
@@ -29,6 +30,7 @@ const videoSchema = new Schema<IVideo>(
     thumbnailUrl: { type: String },
     category: { type: String, required: true, trim: true },
     topic: { type: String, trim: true },
+    topicNumber: { type: Number },
     focus: { type: String, trim: true },
     speaker: { type: String, trim: true },
     duration: { type: String, trim: true },

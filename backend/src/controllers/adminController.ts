@@ -1087,11 +1087,38 @@ export class AdminController {
   }
 
   /**
-   * Manage Videos - Get all videos (uncached, auto-seeds if empty)
+   * Manage Videos - Get all videos (uncached, auto-seeds/syncs with exact document URLs)
    */
   public static async getVideosAdmin(req: AuthRequest, res: Response) {
     try {
       res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+
+      // Auto-sync URLs if any record still points to youtube search instead of the exact doc URL
+      const outdated = await Video.findOne({
+        title: 'How Chronic Stress Shapes Cancer Risk and Recovery – Ground & Root Podcast',
+        url: { $regex: 'youtube\\.com' }
+      });
+
+      if (outdated) {
+        for (const item of MITOREBOOT_LIBRARY_RESOURCES) {
+          const match = await Video.findOne({
+            $or: [{ order: item.order }, { title: item.title }]
+          });
+          if (match) {
+            match.title = item.title;
+            match.category = item.category;
+            match.topic = item.topic;
+            match.topicNumber = item.topicNumber;
+            match.focus = item.focus;
+            match.url = item.url;
+            match.order = item.order;
+            await match.save();
+          } else {
+            await Video.create({ ...item, isPaidOnly: false });
+          }
+        }
+      }
+
       let videos = await Video.find().sort({ order: 1, createdAt: -1 });
       if (videos.length === 0) {
         try {
@@ -1248,14 +1275,21 @@ export class AdminController {
         await Video.deleteMany({});
       }
       for (const item of MITOREBOOT_LIBRARY_RESOURCES) {
-        await Video.findOneAndUpdate(
-          { title: item.title },
-          { 
-            $set: item,
-            $unset: { duration: 1 }
-          },
-          { upsert: true, new: true }
-        );
+        const match = await Video.findOne({
+          $or: [{ order: item.order }, { title: item.title }]
+        });
+        if (match) {
+          match.title = item.title;
+          match.category = item.category;
+          match.topic = item.topic;
+          match.topicNumber = item.topicNumber;
+          match.focus = item.focus;
+          match.url = item.url;
+          match.order = item.order;
+          await match.save();
+        } else {
+          await Video.create({ ...item, isPaidOnly: false });
+        }
       }
       const allVideos = await Video.find().sort({ order: 1, createdAt: -1 });
       await AuditLog.create({

@@ -1863,6 +1863,20 @@ const AdminPanelContent: React.FC = () => {
     }
   };
 
+const getPlatformLabel = (url: string) => {
+  if (!url) return 'Web Resource';
+  if (url.includes('buzzsprout.com')) return '🎙️ Buzzsprout Podcast';
+  if (url.includes('hcgoncology.com')) return '🏥 HCG Hospital Podcast';
+  if (url.includes('hopkinsmedicine.org') || url.includes('jhu.edu')) return '🎓 Johns Hopkins Medicine';
+  if (url.includes('ndtv.com')) return '📻 NDTV Lifeline Podcast';
+  if (url.includes('apple.com')) return '🍎 Apple Podcast';
+  if (url.includes('dana-farber.org')) return '🎗️ Dana-Farber Institute';
+  if (url.includes('mskcc.org')) return '🏛️ MSKCC Podcast';
+  if (url.includes('ascopubs.org')) return '🔬 ASCO Journal';
+  if (url.includes('youtube.com') || url.includes('youtu.be')) return '▶️ YouTube Video';
+  return '🌐 Audio / Video Link';
+};
+
   const fetchVideos = async () => {
     try {
       const res = await fetch(`${apiUrl}/admin/videos?_t=${Date.now()}`, {
@@ -6067,7 +6081,7 @@ const AdminPanelContent: React.FC = () => {
                                   {vid.order || '▶'}
                                 </span>
                                 <div>
-                                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block">External Discovery / Podcast</span>
+                                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block">{getPlatformLabel(vid.url)}</span>
                                   <span className="text-xs font-bold text-slate-700">{vid.topic || 'General'}</span>
                                 </div>
                               </div>
