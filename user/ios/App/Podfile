@@ -23,6 +23,7 @@ end
 target 'App' do
   capacitor_pods
   pod 'Firebase/Auth'
+  pod 'RecaptchaEnterprise'
 end
 
 post_install do |installer|

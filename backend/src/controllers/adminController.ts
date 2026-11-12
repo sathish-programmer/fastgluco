@@ -1087,6 +1087,27 @@ export class AdminController {
   }
 
   /**
+   * Manage Videos - Get all videos (uncached, auto-seeds if empty)
+   */
+  public static async getVideosAdmin(req: AuthRequest, res: Response) {
+    try {
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      let videos = await Video.find().sort({ order: 1, createdAt: -1 });
+      if (videos.length === 0) {
+        try {
+          await Video.insertMany(MITOREBOOT_LIBRARY_RESOURCES);
+          videos = await Video.find().sort({ order: 1, createdAt: -1 });
+        } catch (seedErr) {
+          console.error('[AdminController] Auto-seed error:', seedErr);
+        }
+      }
+      return res.status(200).json(videos);
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message || 'Error fetching videos.' });
+    }
+  }
+
+  /**
    * Manage Videos - Add
    */
   public static async addVideo(req: AuthRequest, res: Response) {

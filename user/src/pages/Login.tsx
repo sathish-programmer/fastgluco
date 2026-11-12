@@ -533,11 +533,33 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
         console.warn(`[Firebase Auth] Native Firebase Phone Auth (${Capacitor.getPlatform()}) error:`, nativeErr);
 
         if (!codeSentRef.current && !fallbackTriggeredRef.current) {
-          fallbackTriggeredRef.current = true;
           if (isIOS) {
+            // First attempt WebView Firebase RecaptchaVerifier before falling back to SMS gateway
+            try {
+              console.log('[Firebase Auth] iOS Native failed, attempting in-app Web Firebase Recaptcha...');
+              const verifier = getRecaptchaVerifier();
+              const confirmation = await signInWithPhoneNumber(auth, e164, verifier);
+              codeSentRef.current = true;
+              userInitiatedSendRef.current = false;
+              otpProviderRef.current = 'FIREBASE';
+              setOtpProvider('FIREBASE');
+              setConfirmationResult(confirmation);
+              window.confirmationResult = confirmation;
+              setDeliveryMethod('sms_and_email');
+              setScreen('otp');
+              setTimer(60);
+              showToast(t('auth.codeSentToBoth', 'Verification code sent to your Mobile & Email'), 'success');
+              setTimeout(() => otpInputRef.current?.focus(), 100);
+              return;
+            } catch (webFbErr) {
+              console.warn('[Firebase Auth] iOS Web Firebase reCAPTCHA also failed:', webFbErr);
+            }
+
+            fallbackTriggeredRef.current = true;
             console.log('[Firebase Auth] iOS Native Firebase error, triggering Fast2SMS backup OTP...');
             await triggerIosFallback('FIREBASE_NATIVE_EXCEPTION', nativeErr?.code || nativeErr?.message);
           } else {
+            fallbackTriggeredRef.current = true;
             console.warn('[Firebase Auth] Android Firebase Phone Auth failed, using parallel email OTP...');
             await triggerAndroidEmailFallback(nativeErr);
           }

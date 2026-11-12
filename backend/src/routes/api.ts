@@ -405,10 +405,10 @@ router.post('/motivation/viewed', authenticateToken, MotivationController.markVi
 router.put('/motivation/preferences', authenticateToken, MotivationController.updatePreferences);
 router.get('/motivation/day/:dayNumber', authenticateToken, MotivationController.getByDay);
 
-// Public Educational & Support content fetches (with public HTTP cache headers)
+// Public Educational & Support content fetches
 router.get('/guides', publicCache(600), EducationalController.getGuides);
 router.get('/guides/:id', publicCache(600), EducationalController.getGuideById);
-router.get('/videos', publicCache(600), EducationalController.getVideos);
+router.get('/videos', EducationalController.getVideos);
 
 router.use('/coaching', authenticateToken, requireRole(['User']));
 router.get('/coaching/sessions', CoachingController.getSessions);
@@ -572,6 +572,7 @@ router.put('/admin/food-library/:id', AdminController.updateFoodMaster);
 router.delete('/admin/food-library/:id', AdminController.deleteFoodMaster);
 
 // Educational materials management
+router.get('/admin/videos', AdminController.getVideosAdmin);
 router.post('/admin/videos', AdminController.addVideo);
 router.post('/admin/videos/seed-library', AdminController.seedLibraryVideos);
 router.put('/admin/videos/:id', AdminController.updateVideo);

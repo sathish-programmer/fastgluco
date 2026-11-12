@@ -4,37 +4,10 @@ import { useToast } from '../context/ToastContext';
 import { useLanguage } from '../context/LanguageContext';
 import { 
   BookOpen, Video, Eye, HelpCircle, MessageSquare, Send, 
-  Lock, Sparkles, Crown, ExternalLink, Search, ShieldAlert, 
-  ChevronDown, ChevronUp, Clock, CheckCircle2, 
+  Lock, ExternalLink, Search, ShieldAlert, 
   Flame, Award
 } from 'lucide-react';
 import { FALLBACK_EDUCATIONAL_VIDEOS } from '../data/educationalLibrarySeeds';
-
-const getEmbedUrl = (url: string) => {
-  if (url.includes('youtube.com/watch?v=')) {
-    return url.replace('watch?v=', 'embed/').split('&')[0];
-  }
-  if (url.includes('youtu.be/')) {
-    return url.replace('youtu.be/', 'youtube.com/embed/').split('?')[0];
-  }
-  return url;
-};
-
-const isDirectYouTube = (url: string) => {
-  return /youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\//.test(url) && !url.includes('/results?search_query=');
-};
-
-const getYouTubeThumbnail = (url: string) => {
-  let videoId = '';
-  if (url.includes('youtube.com/watch?v=')) {
-    videoId = url.split('watch?v=')[1]?.split('&')[0];
-  } else if (url.includes('youtu.be/')) {
-    videoId = url.split('youtu.be/')[1]?.split('?')[0];
-  } else if (url.includes('youtube.com/embed/')) {
-    videoId = url.split('embed/')[1]?.split('?')[0];
-  }
-  return videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : null;
-};
 
 export const Educational: React.FC = () => {
   const { token, apiUrl } = useAuth();
@@ -56,7 +29,6 @@ export const Educational: React.FC = () => {
   const [videoFilterCategory, setVideoFilterCategory] = useState<'all' | 'damage' | 'repair'>('all');
   const [videoSearchTerm, setVideoSearchTerm] = useState<string>('');
   const [selectedTopic, setSelectedTopic] = useState<string>('all');
-  const [expandedTakeaways, setExpandedTakeaways] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     fetchMaterials();
@@ -208,12 +180,44 @@ export const Educational: React.FC = () => {
     });
   }, [videos, videoFilterCategory, selectedTopic, videoSearchTerm]);
 
-  const toggleTakeaways = (id: string) => {
-    setExpandedTakeaways(prev => ({
-      ...prev,
-      [id]: !prev[id]
-    }));
-  };
+  // Group filtered videos by topic
+  const topicGroups = useMemo(() => {
+    const map = new Map<string, {
+      topicNumber: number;
+      topic: string;
+      category: string;
+      focus: string;
+      resources: any[];
+    }>();
+
+    filteredVideos.forEach((vid) => {
+      const topicKey = vid.topic || 'General';
+      if (!map.has(topicKey)) {
+        map.set(topicKey, {
+          topicNumber: vid.topicNumber || 0,
+          topic: topicKey,
+          category: vid.category || 'DAMAGE – REDUCE THE LOAD',
+          focus: vid.focus || vid.description || '',
+          resources: []
+        });
+      }
+      const group = map.get(topicKey)!;
+      if (!group.focus && (vid.focus || vid.description)) {
+        group.focus = vid.focus || vid.description;
+      }
+      if (!group.topicNumber && vid.topicNumber) {
+        group.topicNumber = vid.topicNumber;
+      }
+      group.resources.push(vid);
+    });
+
+    return Array.from(map.values()).sort((a, b) => {
+      if (a.topicNumber && b.topicNumber) return a.topicNumber - b.topicNumber;
+      const aOrder = a.resources[0]?.order || 0;
+      const bOrder = b.resources[0]?.order || 0;
+      return aOrder - bOrder;
+    });
+  }, [filteredVideos]);
 
   return (
     <div className="pb-24 pt-4 px-4 max-w-5xl mx-auto bg-white dark:bg-slate-950 min-h-screen transition-colors duration-300">
@@ -407,9 +411,9 @@ export const Educational: React.FC = () => {
                 </div>
               </div>
 
-              {/* Video List */}
+              {/* Educational Video Topics & Resources (Mirrors MitoReboot Damage & Repair Library Doc) */}
               <div className="space-y-4">
-                {filteredVideos.length === 0 ? (
+                {topicGroups.length === 0 ? (
                   <div className="text-center py-8 bg-cardBg dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl">
                     <p className="text-xs text-slate-400 font-semibold">{t('common.noDataFound', 'No educational video links match your filter.')}</p>
                     <button
@@ -420,194 +424,86 @@ export const Educational: React.FC = () => {
                     </button>
                   </div>
                 ) : (
-                  filteredVideos.map((video, idx) => {
-                    const videoId = video._id || `vid-${video.order || idx}`;
-                    const isLocked = !!video.isPaidOnly && !isPaidUser;
-                    const isEmbed = isDirectYouTube(video.url);
-                    const isCollection = !!video.isCollection || (video.url && video.url.includes('/results?search_query='));
-                    const thumbnail = getYouTubeThumbnail(video.url);
-                    const isDamage = (video.category || '').toUpperCase().includes('DAMAGE');
-                    const isExpanded = !!expandedTakeaways[videoId];
-
+                  topicGroups.map((group) => {
+                    const isDamage = (group.category || '').toUpperCase().includes('DAMAGE');
                     return (
-                      <div 
-                        key={videoId}
-                        className="bg-cardBg dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 overflow-hidden shadow-soft transition-all duration-300 hover:shadow-md"
+                      <div
+                        key={group.topic}
+                        className="bg-cardBg dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-4 sm:p-5 shadow-xs transition-all hover:shadow-md"
                       >
-                        {isLocked ? (
-                          /* Modern Locked Preview Card */
-                          <div className="relative aspect-video w-full bg-slate-950 flex flex-col items-center justify-center p-6 text-center overflow-hidden">
-                            {thumbnail && (
-                              <img 
-                                src={thumbnail} 
-                                alt="" 
-                                className="absolute inset-0 w-full h-full object-cover opacity-20 blur-md scale-105 pointer-events-none"
-                              />
-                            )}
-                            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/75 to-slate-950/85 pointer-events-none" />
-
-                            <div className="relative z-10 flex flex-col items-center max-w-xs space-y-2.5">
-                              <div className="w-12 h-12 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 shadow-[0_0_24px_rgba(245,158,11,0.25)]">
-                                <Lock className="w-6 h-6" />
-                              </div>
-                              <div>
-                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30 uppercase tracking-wider mb-1">
-                                  <Crown className="w-3 h-3" />
-                                  {t('subscription.paidSubscribersOnly', 'Paid Members Only')}
-                                </span>
-                                <h5 className="text-xs font-bold text-white tracking-wide">
-                                  {t('learn.lockedVideoHeading', 'Exclusive Subscriber Content')}
-                                </h5>
-                                <p className="text-[10px] text-slate-400 mt-1 line-clamp-2">
-                                  {t('learn.lockedVideoSubtext', 'This video is reserved for active paid subscribers. Not available on free or trial plans.')}
-                                </p>
-                              </div>
-
-                              <button
-                                onClick={() => window.dispatchEvent(new CustomEvent('navigateToTab', { detail: 'Subscription' }))}
-                                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold text-[11px] shadow-lg shadow-amber-500/25 active:scale-95 transition-all"
-                              >
-                                <Sparkles className="w-3.5 h-3.5" />
-                                <span>{t('subscription.upgradeToUnlock', 'Upgrade to Unlock')}</span>
-                              </button>
-                            </div>
-                          </div>
-                        ) : isEmbed ? (
-                          /* Direct Video Player Embed */
-                          <div className="aspect-video w-full bg-slate-950">
-                            <iframe
-                              title={video.title}
-                              src={getEmbedUrl(video.url)}
-                              allowFullScreen
-                              className="w-full h-full border-none"
-                            />
-                          </div>
-                        ) : null}
-
-                        <div className="p-4 sm:p-5">
-                          {/* Badges Bar */}
-                          <div className="flex items-center justify-between gap-2 flex-wrap mb-2">
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              {/* Category Badge */}
-                              <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${
-                                isDamage
-                                  ? 'bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 border-rose-200 dark:border-rose-900/40'
-                                  : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border-emerald-200 dark:border-emerald-900/40'
-                              }`}>
-                                {isDamage ? 'Damage · Reduce Load' : 'Repair · Build Defence'}
+                        {/* Topic Header */}
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100 dark:border-slate-800/80">
+                          <div className="flex items-center gap-2">
+                            <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${
+                              isDamage
+                                ? 'bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 border-rose-200 dark:border-rose-900/40'
+                                : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border-emerald-200 dark:border-emerald-900/40'
+                            }`}>
+                              {isDamage ? 'DAMAGE · REDUCE LOAD' : 'REPAIR · BUILD DEFENCE'}
+                            </span>
+                            {group.topicNumber ? (
+                              <span className="text-[11px] font-extrabold text-slate-400 dark:text-slate-500">
+                                Topic #{group.topicNumber}
                               </span>
-
-                              {/* Topic Badge */}
-                              {video.topic && (
-                                <span className="text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2 py-0.5 rounded-full">
-                                  {video.topic}
-                                </span>
-                              )}
-
-                              {/* Duration / Collection Badge */}
-                              {isCollection ? (
-                                <span className="inline-flex items-center gap-1 text-[10px] text-sky-700 dark:text-sky-300 font-bold bg-sky-50 dark:bg-sky-950/50 border border-sky-200 dark:border-sky-900/40 px-2.5 py-0.5 rounded-full">
-                                  <span>Curated Collection</span>
-                                </span>
-                              ) : video.duration ? (
-                                <span className="inline-flex items-center gap-1 text-[10px] text-slate-400 font-semibold bg-slate-50 dark:bg-slate-800/60 px-2 py-0.5 rounded-full">
-                                  <Clock className="w-3 h-3 text-slate-400" />
-                                  <span>{video.duration}</span>
-                                </span>
-                              ) : null}
-                            </div>
-
-                            {video.isPaidOnly ? (
-                              <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                                isPaidUser 
-                                  ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'
-                                  : 'bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400 border border-amber-200 dark:border-amber-800'
-                              }`}>
-                                <Crown className="w-3 h-3" />
-                                {isPaidUser ? t('subscription.proUnlocked', 'Pro Unlocked') : t('subscription.paidOnly', 'Paid Only')}
-                              </span>
-                            ) : (
-                              <span className="text-[10px] font-semibold text-slate-400">
-                                {t('common.free', 'Free Access')}
-                              </span>
-                            )}
+                            ) : null}
                           </div>
+                        </div>
 
-                          {/* Title */}
-                          <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100 leading-snug">
-                            {localizeEducationText(video.title)}
+                        {/* Topic Title & Scientific Focus */}
+                        <div className="mt-3">
+                          <h4 className="text-base font-extrabold text-slate-800 dark:text-slate-100 tracking-tight">
+                            {group.topicNumber ? `${group.topicNumber}. ` : ''}{group.topic}
                           </h4>
-
-                          {/* Speaker / Expert */}
-                          {video.speaker && (
-                            <p className="text-[11px] font-bold text-primary dark:text-primary-light mt-1 flex items-center gap-1">
-                              <span>🎙️ {video.speaker}</span>
+                          {group.focus && (
+                            <p className="text-xs text-slate-600 dark:text-slate-400 font-medium mt-1 leading-relaxed">
+                              <span className="font-bold text-slate-700 dark:text-slate-300">Focus: </span>
+                              {group.focus}
                             </p>
                           )}
+                        </div>
 
-                          {/* Scientific Focus / Description */}
-                          <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1.5 leading-relaxed">
-                            {localizeEducationText(video.description || video.focus || '')}
-                          </p>
-
-                          {/* Key Takeaways & Practical Action Drawer */}
-                          {((video.takeaways && video.takeaways.length > 0) || video.practicalAction) && (
-                            <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800/80">
-                              <button
-                                onClick={() => toggleTakeaways(videoId)}
-                                className="flex items-center justify-between w-full text-left text-[11px] font-extrabold text-slate-600 dark:text-slate-300 hover:text-primary transition-colors py-0.5"
+                        {/* Curated Resources List */}
+                        <div className="mt-3.5 space-y-2">
+                          {group.resources.map((res, rIdx) => {
+                            const isLocked = !!res.isPaidOnly && !isPaidUser;
+                            return (
+                              <div
+                                key={res._id || `res-${group.topicNumber || 0}-${rIdx}`}
+                                className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-150 dark:border-slate-800/70 hover:bg-slate-100/70 dark:hover:bg-slate-800/70 transition-colors"
                               >
-                                <span className="flex items-center gap-1.5">
-                                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                                  <span>Key Clinical Takeaways & Action</span>
-                                </span>
-                                {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                              </button>
+                                <div className="flex items-start gap-2.5 flex-1 min-w-0">
+                                  <span className="w-5 h-5 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-[10px] font-black flex items-center justify-center shrink-0 mt-0.5">
+                                    {rIdx + 1}
+                                  </span>
+                                  <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 leading-snug">
+                                    {res.title}
+                                  </span>
+                                </div>
 
-                              {isExpanded && (
-                                <div className="mt-2.5 space-y-2.5 animate-in fade-in duration-200">
-                                  {/* Takeaway bullets */}
-                                  {video.takeaways && video.takeaways.length > 0 && (
-                                    <div className="space-y-1.5 pl-1">
-                                      {video.takeaways.map((takeaway: string, tIdx: number) => (
-                                        <div key={tIdx} className="flex items-start gap-2 text-[11px] text-slate-600 dark:text-slate-350 leading-relaxed">
-                                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
-                                          <span>{takeaway}</span>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  )}
-
-                                  {/* Practical Action Box */}
-                                  {video.practicalAction && (
-                                    <div className="bg-sky-50/70 dark:bg-sky-950/30 border border-sky-100 dark:border-sky-900/40 rounded-xl p-2.5 text-[11px]">
-                                      <span className="font-black text-sky-800 dark:text-sky-300 uppercase tracking-wider text-[10px] block mb-0.5">
-                                        ⚡ Practical Lifestyle Action:
-                                      </span>
-                                      <span className="text-slate-700 dark:text-slate-200 font-medium">
-                                        {video.practicalAction}
-                                      </span>
-                                    </div>
+                                <div className="flex items-center justify-end shrink-0 pl-7 sm:pl-0">
+                                  {isLocked ? (
+                                    <button
+                                      onClick={() => window.dispatchEvent(new CustomEvent('navigateToTab', { detail: 'Subscription' }))}
+                                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-[11px] font-bold"
+                                    >
+                                      <Lock className="w-3 h-3" />
+                                      <span>Paid Only</span>
+                                    </button>
+                                  ) : (
+                                    <a
+                                      href={res.url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary hover:bg-primary-dark text-white text-[11px] font-bold transition-all shadow-xs active:scale-95"
+                                    >
+                                      <span>Watch / Listen</span>
+                                      <ExternalLink className="w-3 h-3" />
+                                    </a>
                                   )}
                                 </div>
-                              )}
-                            </div>
-                          )}
-
-                          {/* Action Button: Open Video / Podcast Link */}
-                          {!isLocked && video.url && (
-                            <div className="mt-3.5 pt-2 flex items-center justify-end">
-                              <a
-                                href={video.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-primary hover:bg-primary-dark transition-all shadow-xs active:scale-95"
-                              >
-                                <span>{isCollection ? 'Explore Topic Collection' : 'Watch Video / Listen'}</span>
-                                <ExternalLink className="w-3.5 h-3.5" />
-                              </a>
-                            </div>
-                          )}
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
                     );

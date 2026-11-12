@@ -1865,8 +1865,17 @@ const AdminPanelContent: React.FC = () => {
 
   const fetchVideos = async () => {
     try {
-      const res = await fetch(`${apiUrl}/videos`);
-      if (res.ok) setVideos(await res.json());
+      const res = await fetch(`${apiUrl}/admin/videos?_t=${Date.now()}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (res.ok) {
+        setVideos(await res.json());
+      } else {
+        const pubRes = await fetch(`${apiUrl}/videos?_t=${Date.now()}`);
+        if (pubRes.ok) setVideos(await pubRes.json());
+      }
     } catch (e) {
       console.error(e);
     }
@@ -6117,9 +6126,16 @@ const AdminPanelContent: React.FC = () => {
                               <p className="text-[11px] font-bold text-primary mt-1">🎙️ {vid.speaker}</p>
                             )}
 
-                            <p className="text-xs text-slate-500 font-medium mt-1.5 leading-relaxed line-clamp-3">
-                              {vid.description || vid.focus}
-                            </p>
+                            {vid.focus ? (
+                              <p className="text-xs text-slate-600 font-medium mt-1.5 leading-relaxed">
+                                <span className="font-bold text-slate-700">Focus: </span>
+                                {vid.focus}
+                              </p>
+                            ) : vid.description ? (
+                              <p className="text-xs text-slate-500 font-medium mt-1.5 leading-relaxed line-clamp-3">
+                                {vid.description}
+                              </p>
+                            ) : null}
 
                             {vid.practicalAction && (
                               <div className="mt-2.5 p-2 bg-sky-50 rounded-xl border border-sky-100 text-[11px] text-sky-800 font-medium">
