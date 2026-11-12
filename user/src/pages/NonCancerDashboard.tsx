@@ -48,8 +48,9 @@ import {
 } from 'lucide-react';
 import {
   ResponsiveContainer,
-  AreaChart,
+  ComposedChart,
   Area,
+  Bar,
   XAxis,
   YAxis,
   Tooltip as RechartsTooltip,
@@ -1469,18 +1470,19 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
       dateStr: string;
       label: string;
       fullDate: string;
-      damage: number;
-      repair: number;
-      net: number;
+      damage: number | null;
+      repair: number | null;
+      net: number | null;
       repairPct: number;
       damagePct: number;
+      isLogged: boolean;
+      notScoredHeight?: number | null;
     }> = [];
 
     // Distinct dates where user has logged habits
     const userLogDates = new Set(
       habits.map(h => new Date(h.timestamp || (h as any).createdAt).toDateString())
     );
-    const hasMultipleLogDates = userLogDates.size >= 2;
 
     if (timePeriod === 'today') {
       const todayStr = now.toDateString();
@@ -1504,7 +1506,9 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
           repair: 0,
           net: 0,
           repairPct: 50,
-          damagePct: 50
+          damagePct: 50,
+          isLogged: true,
+          notScoredHeight: null
         });
 
         // Add cumulative checkpoints as habits were logged throughout today
@@ -1523,7 +1527,9 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
             repair: forces.repair,
             net: forces.repair - forces.damage,
             repairPct: repPct,
-            damagePct: tot === 0 ? 50 : 100 - repPct
+            damagePct: tot === 0 ? 50 : 100 - repPct,
+            isLogged: true,
+            notScoredHeight: null
           });
         });
 
@@ -1540,7 +1546,9 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
             repair: repairCount,
             net: repairCount - damageCount,
             repairPct: repPct,
-            damagePct: tot === 0 ? 50 : 100 - repPct
+            damagePct: tot === 0 ? 50 : 100 - repPct,
+            isLogged: true,
+            notScoredHeight: null
           });
         }
       } else if (repairCount > 0 || damageCount > 0) {
@@ -1554,7 +1562,9 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
           repair: 0,
           net: 0,
           repairPct: 50,
-          damagePct: 50
+          damagePct: 50,
+          isLogged: true,
+          notScoredHeight: null
         });
 
         const tot = damageCount + repairCount;
@@ -1567,7 +1577,9 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
           repair: repairCount,
           net: repairCount - damageCount,
           repairPct: repPct,
-          damagePct: tot === 0 ? 50 : 100 - repPct
+          damagePct: tot === 0 ? 50 : 100 - repPct,
+          isLogged: true,
+          notScoredHeight: null
         });
       }
 
@@ -1593,62 +1605,75 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
         avgNet,
         damageDiffPct: 0,
         repairDiffPct: 0,
-        trendVerdict
+        trendVerdict,
+        unloggedCount: 0,
+        totalPoints: chartData.length
       };
     } else if (timePeriod === 'yearly') {
       for (let i = 11; i >= 0; i--) {
         const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-        const nextMonth = new Date(now.getFullYear(), now.getMonth() - i + 1, 0, 23, 59, 59);
+        const nextMonth = new Date(now.getFullYear(), now.getMonth() - i + 1, 0, 23, 59, 59, 999);
         const monthEnd = nextMonth > now ? now : nextMonth;
-        const monthLogs = habits.filter(h => {
+        const monthStart = new Date(now.getFullYear(), now.getMonth() - i, 1, 0, 0, 0, 0);
+        const logsInMonth = habits.filter(h => {
           const t = new Date(h.timestamp || (h as any).createdAt).getTime();
-          return t <= monthEnd.getTime();
+          return t >= monthStart.getTime() && t <= monthEnd.getTime();
         });
-        const monthForces = computeForcesForLogs(monthLogs);
-        let dmg = monthForces.damage;
-        let rep = monthForces.repair;
-        if (!hasMultipleLogDates && monthLogs.length === 0) {
-          const progress = (12 - i) / 12;
-          dmg = Math.round(damageCount * progress);
-          rep = Math.round(repairCount * progress);
+        const hasLogsInMonth = logsInMonth.length > 0;
+        const monthLabel = d.toLocaleDateString(undefined, { month: 'short' });
+        const fullDate = d.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+
+        if (hasLogsInMonth) {
+          const logsUpToMonth = habits.filter(h => {
+            const t = new Date(h.timestamp || (h as any).createdAt).getTime();
+            return t <= monthEnd.getTime();
+          });
+          const monthForces = computeForcesForLogs(logsUpToMonth);
+          const dmg = Math.round(monthForces.damage);
+          const rep = Math.round(monthForces.repair);
+          const tot = dmg + rep;
+          const repPct = tot === 0 ? 50 : Math.round((rep / tot) * 100);
+          chartData.push({
+            dateStr: d.toISOString(),
+            label: monthLabel,
+            fullDate,
+            damage: dmg,
+            repair: rep,
+            net: rep - dmg,
+            repairPct: repPct,
+            damagePct: tot === 0 ? 50 : 100 - repPct,
+            isLogged: true,
+            notScoredHeight: null
+          });
+        } else {
+          chartData.push({
+            dateStr: d.toISOString(),
+            label: monthLabel,
+            fullDate,
+            damage: null,
+            repair: null,
+            net: null,
+            repairPct: 0,
+            damagePct: 0,
+            isLogged: false,
+            notScoredHeight: 3
+          });
         }
-        const tot = dmg + rep;
-        const repPct = tot === 0 ? 50 : Math.round((rep / tot) * 100);
-        chartData.push({
-          dateStr: d.toISOString(),
-          label: d.toLocaleDateString(undefined, { month: 'short' }),
-          fullDate: d.toLocaleDateString(undefined, { month: 'long', year: 'numeric' }),
-          damage: dmg,
-          repair: rep,
-          net: rep - dmg,
-          repairPct: repPct,
-          damagePct: tot === 0 ? 50 : 100 - repPct
-        });
       }
     } else {
+      let maxScore = 3;
+
       for (let i = numPoints - 1; i >= 0; i--) {
         const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
-        const dayEnd = new Date(d);
-        dayEnd.setHours(23, 59, 59, 999);
-        const logsUpToDay = habits.filter(h => {
+        const dayStart = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0);
+        const dayEnd = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
+
+        const dayLogs = habits.filter(h => {
           const t = new Date(h.timestamp || (h as any).createdAt).getTime();
-          return t <= dayEnd.getTime();
+          return t >= dayStart.getTime() && t <= dayEnd.getTime();
         });
 
-        const dayForces = computeForcesForLogs(logsUpToDay);
-        let dmg = dayForces.damage;
-        let rep = dayForces.repair;
-
-        if (!hasMultipleLogDates && logsUpToDay.length === 0) {
-          const progress = (numPoints - i) / numPoints;
-          dmg = Math.round(damageCount * progress);
-          rep = Math.round(repairCount * progress);
-        }
-
-        const cleanDmg = Math.round(dmg);
-        const cleanRep = Math.round(rep);
-        const tot = cleanDmg + cleanRep;
-        const repPct = tot === 0 ? 50 : Math.round((cleanRep / tot) * 100);
+        const isDayLogged = userLogDates.has(d.toDateString()) || dayLogs.length > 0;
 
         const label = timePeriod === 'weekly'
           ? d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric' })
@@ -1656,45 +1681,87 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
 
         const fullDate = d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
 
-        chartData.push({
-          dateStr: d.toISOString(),
-          label,
-          fullDate,
-          damage: cleanDmg,
-          repair: cleanRep,
-          net: cleanRep - cleanDmg,
-          repairPct: repPct,
-          damagePct: tot === 0 ? 50 : 100 - repPct
-        });
+        if (isDayLogged) {
+          const logsUpToDay = habits.filter(h => {
+            const t = new Date(h.timestamp || (h as any).createdAt).getTime();
+            return t <= dayEnd.getTime();
+          });
+          const dayForces = computeForcesForLogs(logsUpToDay);
+          const cleanDmg = Math.round(dayForces.damage);
+          const cleanRep = Math.round(dayForces.repair);
+          if (cleanDmg > maxScore) maxScore = cleanDmg;
+          if (cleanRep > maxScore) maxScore = cleanRep;
+          const tot = cleanDmg + cleanRep;
+          const repPct = tot === 0 ? 50 : Math.round((cleanRep / tot) * 100);
+
+          chartData.push({
+            dateStr: d.toISOString(),
+            label,
+            fullDate,
+            damage: cleanDmg,
+            repair: cleanRep,
+            net: cleanRep - cleanDmg,
+            repairPct: repPct,
+            damagePct: tot === 0 ? 50 : 100 - repPct,
+            isLogged: true,
+            notScoredHeight: null
+          });
+        } else {
+          // Unscored day - do not draw graph lines
+          chartData.push({
+            dateStr: d.toISOString(),
+            label,
+            fullDate,
+            damage: null,
+            repair: null,
+            net: null,
+            repairPct: 0,
+            damagePct: 0,
+            isLogged: false,
+            notScoredHeight: 3
+          });
+        }
       }
+
+      // Sync pillar height for unscored days
+      chartData.forEach(pt => {
+        if (!pt.isLogged) {
+          pt.notScoredHeight = Math.max(maxScore, 3);
+        }
+      });
     }
 
-    const activePoints = chartData.filter(c => c.damage > 0 || c.repair > 0);
-    const n = activePoints.length > 0 ? activePoints.length : (chartData.length || 1);
-    const totalRepair = (activePoints.length > 0 ? activePoints : chartData).reduce((acc, c) => acc + c.repair, 0);
-    const totalDamage = (activePoints.length > 0 ? activePoints : chartData).reduce((acc, c) => acc + c.damage, 0);
+    const activePoints = chartData.filter(c => c.isLogged && c.damage !== null && c.repair !== null);
+    const unloggedCount = chartData.filter(c => !c.isLogged).length;
+    const n = activePoints.length > 0 ? activePoints.length : 1;
+    const totalRepair = activePoints.reduce((acc, c) => acc + (c.repair || 0), 0);
+    const totalDamage = activePoints.reduce((acc, c) => acc + (c.damage || 0), 0);
     const avgRepair = String(Math.round(totalRepair / n));
     const avgDamage = String(Math.round(totalDamage / n));
     const avgNet = String(Number(avgRepair) - Number(avgDamage));
 
-    const half = Math.floor(n / 2);
-    const firstHalf = chartData.slice(0, half);
-    const secondHalf = chartData.slice(half);
+    const half = Math.floor(activePoints.length / 2);
+    const firstHalf = activePoints.slice(0, half);
+    const secondHalf = activePoints.slice(half);
 
-    const firstHalfDamage = firstHalf.reduce((acc, c) => acc + c.damage, 0) / (half || 1);
-    const secondHalfDamage = secondHalf.reduce((acc, c) => acc + c.damage, 0) / (secondHalf.length || 1);
+    const firstHalfDamage = firstHalf.length > 0 ? firstHalf.reduce((acc, c) => acc + (c.damage || 0), 0) / firstHalf.length : 0;
+    const secondHalfDamage = secondHalf.length > 0 ? secondHalf.reduce((acc, c) => acc + (c.damage || 0), 0) / secondHalf.length : 0;
     const damageDiffPct = firstHalfDamage > 0
       ? Math.round(((secondHalfDamage - firstHalfDamage) / firstHalfDamage) * 100)
       : (secondHalfDamage > 0 ? 100 : 0);
 
-    const firstHalfRepair = firstHalf.reduce((acc, c) => acc + c.repair, 0) / (half || 1);
-    const secondHalfRepair = secondHalf.reduce((acc, c) => acc + c.repair, 0) / (secondHalf.length || 1);
+    const firstHalfRepair = firstHalf.length > 0 ? firstHalf.reduce((acc, c) => acc + (c.repair || 0), 0) / firstHalf.length : 0;
+    const secondHalfRepair = secondHalf.length > 0 ? secondHalf.reduce((acc, c) => acc + (c.repair || 0), 0) / secondHalf.length : 0;
     const repairDiffPct = firstHalfRepair > 0
       ? Math.round(((secondHalfRepair - firstHalfRepair) / firstHalfRepair) * 100)
       : (secondHalfRepair > 0 ? 100 : 0);
 
     let trendVerdict = '';
-    if (damageDiffPct < 0 && repairDiffPct >= 0) {
+    if (activePoints.length === 0) {
+      trendVerdict = 'No check-ins recorded yet in this period. Start daily check-in to track cellular balance.';
+    } else if (unloggedCount > 0 && activePoints.length > 0) {
+      trendVerdict = `${activePoints.length} of ${chartData.length} days scored (${unloggedCount} not scored). Avg: ${avgRepair} repair vs ${avgDamage} stress.`;
+    } else if (damageDiffPct < 0 && repairDiffPct >= 0) {
       trendVerdict = `Reducing damage (-${Math.abs(damageDiffPct)}%) & building restorative repair (+${repairDiffPct}%).`;
     } else if (damageDiffPct < 0) {
       trendVerdict = `Lifestyle stress load is steadily reducing (-${Math.abs(damageDiffPct)}%).`;
@@ -1713,7 +1780,9 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
       avgNet,
       damageDiffPct,
       repairDiffPct,
-      trendVerdict
+      trendVerdict,
+      unloggedCount,
+      totalPoints: chartData.length
     };
   }, [habits, timePeriod, damageCount, repairCount, user]);
 
@@ -2520,7 +2589,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
                   ) : (
                     <div className="w-full h-52 sm:h-56 pt-2 px-1">
                       <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={cellularTrendData.chartData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+                        <ComposedChart data={cellularTrendData.chartData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
                           <defs>
                             <linearGradient id="repairTrendGrad" x1="0" y1="0" x2="0" y2="1">
                               <stop offset="0%" stopColor="#10b981" stopOpacity={0.38} />
@@ -2532,6 +2601,9 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
                               <stop offset="70%" stopColor="#f43f5e" stopOpacity={0.06} />
                               <stop offset="100%" stopColor="#f43f5e" stopOpacity={0.0} />
                             </linearGradient>
+                            <pattern id="unscoredPattern" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+                              <line x1="0" y1="0" x2="0" y2="6" stroke="#94a3b8" strokeWidth="1" strokeOpacity="0.35" />
+                            </pattern>
                           </defs>
                           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" className="text-slate-200/40 dark:text-slate-800/60" />
                           <XAxis
@@ -2552,15 +2624,34 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
                             content={({ active, payload }) => {
                               if (active && payload && payload.length) {
                                 const data = payload[0].payload;
+                                if (!data.isLogged) {
+                                  return (
+                                    <div className="bg-slate-900/95 dark:bg-slate-800/95 backdrop-blur-md border border-slate-700/80 rounded-2xl p-3 shadow-2xl text-xs text-white z-50 min-w-[190px]">
+                                      <div className="font-bold text-slate-200 border-b border-slate-700/60 pb-1.5 mb-2 flex items-center justify-between gap-3">
+                                        <span>{data.fullDate || data.label}</span>
+                                        <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider bg-slate-700/80 text-slate-300 border border-slate-600/60">
+                                          Not Scored
+                                        </span>
+                                      </div>
+                                      <p className="text-[11px] text-slate-300 py-0.5 flex items-center gap-1.5">
+                                        <span className="w-2 h-2 rounded-full bg-slate-400 shrink-0" />
+                                        <span>No habit check-in recorded for this day</span>
+                                      </p>
+                                      <div className="mt-2 pt-1.5 border-t border-slate-700/60 text-[10px] text-indigo-400 font-semibold">
+                                        Tap &quot;Daily Check-in&quot; below to log
+                                      </div>
+                                    </div>
+                                  );
+                                }
                                 return (
                                   <div className="bg-slate-900/95 dark:bg-slate-800/95 backdrop-blur-md border border-slate-700/80 rounded-2xl p-3 shadow-2xl text-xs text-white z-50 min-w-[180px]">
                                     <div className="font-bold text-slate-200 border-b border-slate-700/60 pb-1.5 mb-2 flex items-center justify-between gap-3">
                                       <span>{data.fullDate || data.label}</span>
-                                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider ${data.net >= 0
+                                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider ${(data.net || 0) >= 0
                                         ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
                                         : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
                                         }`}>
-                                        {data.net >= 0 ? `+${Math.round(data.net)} Net Repair` : `${Math.round(data.net)} Net Stress`}
+                                        {(data.net || 0) >= 0 ? `+${Math.round(data.net || 0)} Net Repair` : `${Math.round(data.net || 0)} Net Stress`}
                                       </span>
                                     </div>
                                     <div className="flex items-center justify-between gap-4 text-emerald-400 font-semibold py-0.5">
@@ -2568,20 +2659,29 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
                                         <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.8)] shrink-0" />
                                         <span>{t('dashboard.repairHabits', 'Repair habits')}:</span>
                                       </span>
-                                      <span className="font-black text-white">{Math.round(data.repair)} {timePeriod === 'today' ? 'logged' : 'habits'}</span>
+                                      <span className="font-black text-white">{Math.round(data.repair || 0)} {timePeriod === 'today' ? 'logged' : 'habits'}</span>
                                     </div>
                                     <div className="flex items-center justify-between gap-4 text-rose-400 font-semibold py-0.5 mt-0.5">
                                       <span className="flex items-center gap-1.5">
                                         <span className="w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_6px_rgba(244,63,94,0.8)] shrink-0" />
                                         <span>{t('dashboard.stressIndicators', 'Stress indicators')}:</span>
                                       </span>
-                                      <span className="font-black text-white">{Math.round(data.damage)} {timePeriod === 'today' ? 'logged' : 'indicators'}</span>
+                                      <span className="font-black text-white">{Math.round(data.damage || 0)} {timePeriod === 'today' ? 'logged' : 'indicators'}</span>
                                     </div>
                                   </div>
                                 );
                               }
                               return null;
                             }}
+                          />
+                          <Bar
+                            dataKey="notScoredHeight"
+                            name="Not Scored"
+                            fill="url(#unscoredPattern)"
+                            stroke="#cbd5e1"
+                            strokeDasharray="2 2"
+                            radius={[4, 4, 0, 0]}
+                            barSize={timePeriod === 'monthly' ? 5 : 16}
                           />
                           <Area
                             type="monotone"
@@ -2591,6 +2691,8 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
                             strokeWidth={2.8}
                             fillOpacity={1}
                             fill="url(#repairTrendGrad)"
+                            connectNulls={false}
+                            dot={{ r: 3.5, strokeWidth: 1.5, fill: '#10b981', stroke: '#fff' }}
                             activeDot={{ r: 5, strokeWidth: 2, fill: '#10b981', stroke: '#fff' }}
                           />
                           <Area
@@ -2601,9 +2703,11 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
                             strokeWidth={2.8}
                             fillOpacity={1}
                             fill="url(#damageTrendGrad)"
+                            connectNulls={false}
+                            dot={{ r: 3.5, strokeWidth: 1.5, fill: '#f43f5e', stroke: '#fff' }}
                             activeDot={{ r: 5, strokeWidth: 2, fill: '#f43f5e', stroke: '#fff' }}
                           />
-                        </AreaChart>
+                        </ComposedChart>
                       </ResponsiveContainer>
                     </div>
                   )}
@@ -2616,7 +2720,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
                         {cellularTrendData.trendVerdict}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0 text-[10px] font-bold">
+                    <div className="flex items-center gap-2 shrink-0 text-[10px] font-bold flex-wrap">
                       <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/60">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                         {t('dashboard.repairHabits', 'Repair habits')}
@@ -2625,8 +2729,33 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
                         <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
                         {t('dashboard.stressIndicators', 'Stress indicators')}
                       </span>
+                      {cellularTrendData.unloggedCount > 0 && (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-300/60 dark:border-slate-700">
+                          <span className="w-1.5 h-1.5 rounded-full bg-slate-400 border border-dashed border-slate-500" />
+                          {cellularTrendData.unloggedCount} {cellularTrendData.unloggedCount === 1 ? 'day' : 'days'} not scored
+                        </span>
+                      )}
                     </div>
                   </div>
+
+                  {/* Gentle Callout for Unscored Days */}
+                  {cellularTrendData.unloggedCount > 0 && timePeriod !== 'today' && (
+                    <div className="rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/40 p-2.5 sm:p-3 flex items-center justify-between gap-3 text-xs">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-sm shrink-0">🗓️</span>
+                        <p className="text-[11px] text-slate-600 dark:text-slate-300 truncate">
+                          <strong className="text-slate-800 dark:text-slate-100 font-bold">{cellularTrendData.unloggedCount} {cellularTrendData.unloggedCount === 1 ? 'day was' : 'days were'}</strong> not scored in this period.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowChatbotModal(true)}
+                        className="shrink-0 text-[10px] font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 hover:underline cursor-pointer"
+                      >
+                        Complete Check-in →
+                      </button>
+                    </div>
+                  )}
                 </div>
               ) : (
                 /* === ULTRA-CLEAN MODERN CELLULAR BALANCE SUITE === */
