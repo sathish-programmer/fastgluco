@@ -1139,7 +1139,7 @@ export class AdminController {
    */
   public static async addVideo(req: AuthRequest, res: Response) {
     try {
-      const { title, description, url, thumbnailUrl, category, topic, focus, speaker, duration, takeaways, practicalAction, order, targetPlatform, isPaidOnly, isCollection } = req.body;
+      const { title, description, url, thumbnailUrl, category, topic, topicNumber, focus, speaker, duration, takeaways, practicalAction, order, targetPlatform, isPaidOnly, isCollection } = req.body;
       if (!title || !url || !category) {
         return res.status(400).json({ message: 'Title, URL, and category are required.' });
       }
@@ -1161,6 +1161,7 @@ export class AdminController {
         thumbnailUrl: processedThumbnail, 
         category,
         topic,
+        topicNumber: topicNumber !== undefined ? Number(topicNumber) : undefined,
         focus,
         speaker,
         duration,
@@ -1169,7 +1170,7 @@ export class AdminController {
         order: order !== undefined ? Number(order) : 0,
         isCollection: isCollection !== undefined ? Boolean(isCollection) : (url && url.includes('/results?search_query=') ? true : false),
         targetPlatform: targetPlatform || 'Both',
-        isPaidOnly: isPaidOnly !== undefined ? Boolean(isPaidOnly) : false
+        isPaidOnly: isPaidOnly !== undefined ? (isPaidOnly === true || isPaidOnly === 'true') : false
       });
       await video.save();
 
@@ -1192,7 +1193,7 @@ export class AdminController {
   public static async updateVideo(req: AuthRequest, res: Response) {
     try {
       const { id } = req.params;
-      const { title, description, url, thumbnailUrl, category, topic, focus, speaker, duration, takeaways, practicalAction, order, targetPlatform, isPaidOnly, isCollection } = req.body;
+      const { title, description, url, thumbnailUrl, category, topic, topicNumber, focus, speaker, duration, takeaways, practicalAction, order, targetPlatform, isPaidOnly, isCollection } = req.body;
       const video = await Video.findById(id);
       if (!video) return res.status(404).json({ message: 'Video not found.' });
 
@@ -1200,6 +1201,7 @@ export class AdminController {
       if (description !== undefined) video.description = description;
       if (category !== undefined) video.category = category;
       if (topic !== undefined) video.topic = topic;
+      if (topicNumber !== undefined) video.topicNumber = topicNumber ? Number(topicNumber) : undefined;
       if (focus !== undefined) video.focus = focus;
       if (speaker !== undefined) video.speaker = speaker;
       if (duration !== undefined) video.duration = duration;
@@ -1208,7 +1210,7 @@ export class AdminController {
       if (order !== undefined) video.order = Number(order);
       if (isCollection !== undefined) video.isCollection = Boolean(isCollection);
       if (targetPlatform !== undefined) video.targetPlatform = targetPlatform;
-      if (isPaidOnly !== undefined) video.isPaidOnly = Boolean(isPaidOnly);
+      if (isPaidOnly !== undefined) video.isPaidOnly = (isPaidOnly === true || isPaidOnly === 'true');
       
       if (url !== undefined) {
         video.url = url;

@@ -41,39 +41,13 @@ export class EducationalController {
     try {
       res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
 
-      // Auto-sync URLs if any record still has outdated youtube search when docx specifies dedicated podcast
-      const outdated = await Video.findOne({
-        title: 'How Chronic Stress Shapes Cancer Risk and Recovery – Ground & Root Podcast',
-        url: { $regex: 'youtube\\.com' }
-      });
-
-      if (outdated) {
-        for (const item of MITOREBOOT_LIBRARY_RESOURCES) {
-          const match = await Video.findOne({
-            $or: [{ order: item.order }, { title: item.title }]
-          });
-          if (match) {
-            match.title = item.title;
-            match.category = item.category;
-            match.topic = item.topic;
-            match.topicNumber = item.topicNumber;
-            match.focus = item.focus;
-            match.url = item.url;
-            match.order = item.order;
-            await match.save();
-          } else {
-            await Video.create({ ...item, isPaidOnly: false });
-          }
-        }
-      }
-
-      let videos = await Video.find().sort({ order: 1, createdAt: -1 });
+      let videos = await Video.find().sort({ topicNumber: 1, order: 1, createdAt: 1 });
       
-      // Auto-seed library if empty so mobile and web immediately have the 57 curated resources
+      // Auto-seed library only if the collection is completely empty
       if (videos.length === 0) {
         try {
           await Video.insertMany(MITOREBOOT_LIBRARY_RESOURCES);
-          videos = await Video.find().sort({ order: 1, createdAt: -1 });
+          videos = await Video.find().sort({ topicNumber: 1, order: 1, createdAt: 1 });
         } catch (seedErr) {
           console.error('[EducationalController] Auto-seed error:', seedErr);
         }

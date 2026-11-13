@@ -48,7 +48,18 @@ export const Educational: React.FC = () => {
   const { t } = useLanguage();
   
   const [guides, setGuides] = useState<any[]>([]);
-  const [videos, setVideos] = useState<any[]>(FALLBACK_EDUCATIONAL_VIDEOS);
+  const [videos, setVideos] = useState<any[]>(() => {
+    try {
+      const cached = localStorage.getItem('mitoreboot_cached_educational_videos');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.error('Failed to parse cached videos:', e);
+    }
+    return FALLBACK_EDUCATIONAL_VIDEOS;
+  });
   const [faqs, setFaqs] = useState<any[]>([]);
   const [isPaidUser, setIsPaidUser] = useState<boolean>(false);
   const [activeGuideId, setActiveGuideId] = useState<string | null>(null);
@@ -60,12 +71,13 @@ export const Educational: React.FC = () => {
 
   // Video Link Filtering Controls
   const [videoFilterCategory, setVideoFilterCategory] = useState<'all' | 'damage' | 'repair'>('all');
+  const [videoAccessFilter, setVideoAccessFilter] = useState<'all' | 'free' | 'pro'>('all');
   const [videoSearchTerm, setVideoSearchTerm] = useState<string>('');
   const [selectedTopic, setSelectedTopic] = useState<string>('all');
 
   useEffect(() => {
     fetchMaterials();
-  }, [token]);
+  }, [token, apiUrl]);
 
   const fetchMaterials = async () => {
     try {
@@ -98,7 +110,7 @@ export const Educational: React.FC = () => {
         setGuides(guidesData);
       }
 
-      // Fetch videos (uncached so admin updates to paid/free or URLs reflect immediately)
+      // Fetch videos (uncached so admin updates to paid/free, topics, or URLs reflect immediately)
       const videosRes = await fetch(`${apiUrl}/videos?_t=${Date.now()}`, {
         headers: {
           'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -109,13 +121,13 @@ export const Educational: React.FC = () => {
         const videosData = await videosRes.json();
         if (Array.isArray(videosData) && videosData.length > 0) {
           setVideos(videosData);
-        } else {
-          setVideos(FALLBACK_EDUCATIONAL_VIDEOS);
+          try {
+            localStorage.setItem('mitoreboot_cached_educational_videos', JSON.stringify(videosData));
+          } catch (storageErr) {
+            console.error('Failed to cache educational videos:', storageErr);
+          }
         }
-      } else {
-        setVideos(FALLBACK_EDUCATIONAL_VIDEOS);
       }
-
       // Fetch FAQs
       const faqsRes = await fetch(`${apiUrl}/faqs?platform=App`);
       if (faqsRes.ok) {
@@ -124,7 +136,6 @@ export const Educational: React.FC = () => {
       }
     } catch (err) {
       console.error('Failed to load educational materials:', err);
-      setVideos(FALLBACK_EDUCATIONAL_VIDEOS);
     }
   };
 
@@ -198,6 +209,11 @@ export const Educational: React.FC = () => {
         if (!cat.includes('REPAIR')) return false;
       }
 
+      // Access filter (Free vs Pro Only)
+      const isPaidOnly = vid.isPaidOnly === true || vid.isPaidOnly === 'true';
+      if (videoAccessFilter === 'free' && isPaidOnly) return false;
+      if (videoAccessFilter === 'pro' && !isPaidOnly) return false;
+
       // Topic filter
       if (selectedTopic !== 'all') {
         if (vid.topic !== selectedTopic) return false;
@@ -216,7 +232,7 @@ export const Educational: React.FC = () => {
 
       return true;
     });
-  }, [videos, videoFilterCategory, selectedTopic, videoSearchTerm]);
+  }, [videos, videoFilterCategory, videoAccessFilter, selectedTopic, videoSearchTerm]);
 
   // Group filtered videos by topic
   const topicGroups = useMemo(() => {
@@ -375,40 +391,77 @@ export const Educational: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Subcategory Pills */}
-                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
-                  <button
-                    onClick={() => setVideoFilterCategory('all')}
-                    className={`px-3 py-1 rounded-lg text-[10px] font-extrabold transition-all border ${
-                      videoFilterCategory === 'all'
-                        ? 'bg-slate-800 text-white border-slate-800 dark:bg-slate-100 dark:text-slate-900'
-                        : 'bg-cardBg dark:bg-slate-900 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-800'
-                    }`}
-                  >
-                    All ({videos.length})
-                  </button>
-                  <button
-                    onClick={() => setVideoFilterCategory('damage')}
-                    className={`px-3 py-1 rounded-lg text-[10px] font-extrabold transition-all border flex items-center gap-1 ${
-                      videoFilterCategory === 'damage'
-                        ? 'bg-rose-600 text-white border-rose-600 shadow-xs'
-                        : 'bg-rose-50/70 text-rose-700 dark:bg-rose-950/30 dark:text-rose-300 border-rose-200 dark:border-rose-900/40'
-                    }`}
-                  >
-                    <Flame className="w-3 h-3" />
-                    <span>Damage (Reduce Load)</span>
-                  </button>
-                  <button
-                    onClick={() => setVideoFilterCategory('repair')}
-                    className={`px-3 py-1 rounded-lg text-[10px] font-extrabold transition-all border flex items-center gap-1 ${
-                      videoFilterCategory === 'repair'
-                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
-                        : 'bg-emerald-50/70 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300 border-emerald-200 dark:border-emerald-900/40'
-                    }`}
-                  >
-                    <Award className="w-3 h-3" />
-                    <span>Repair (Build Defence)</span>
-                  </button>
+                {/* Subcategory Pills & Access Filters */}
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                  <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
+                    <button
+                      onClick={() => setVideoFilterCategory('all')}
+                      className={`px-3 py-1 rounded-lg text-[10px] font-extrabold transition-all border ${
+                        videoFilterCategory === 'all'
+                          ? 'bg-slate-800 text-white border-slate-800 dark:bg-slate-100 dark:text-slate-900'
+                          : 'bg-cardBg dark:bg-slate-900 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-800'
+                      }`}
+                    >
+                      All ({videos.length})
+                    </button>
+                    <button
+                      onClick={() => setVideoFilterCategory('damage')}
+                      className={`px-3 py-1 rounded-lg text-[10px] font-extrabold transition-all border flex items-center gap-1 ${
+                        videoFilterCategory === 'damage'
+                          ? 'bg-rose-600 text-white border-rose-600 shadow-xs'
+                          : 'bg-rose-50/70 text-rose-700 dark:bg-rose-950/30 dark:text-rose-300 border-rose-200 dark:border-rose-900/40'
+                      }`}
+                    >
+                      <Flame className="w-3 h-3" />
+                      <span>Damage (Reduce Load)</span>
+                    </button>
+                    <button
+                      onClick={() => setVideoFilterCategory('repair')}
+                      className={`px-3 py-1 rounded-lg text-[10px] font-extrabold transition-all border flex items-center gap-1 ${
+                        videoFilterCategory === 'repair'
+                          ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                          : 'bg-emerald-50/70 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300 border-emerald-200 dark:border-emerald-900/40'
+                      }`}
+                    >
+                      <Award className="w-3 h-3" />
+                      <span>Repair (Build Defence)</span>
+                    </button>
+                  </div>
+
+                  {/* Access Control Filter (Free/Trial vs Pro Exclusive) */}
+                  <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800/80 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700 self-start sm:self-auto">
+                    <button
+                      onClick={() => setVideoAccessFilter('all')}
+                      className={`px-2 py-0.5 rounded-md text-[9.5px] font-bold transition-all ${
+                        videoAccessFilter === 'all'
+                          ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-2xs'
+                          : 'text-slate-500 hover:text-slate-700'
+                      }`}
+                    >
+                      All
+                    </button>
+                    <button
+                      onClick={() => setVideoAccessFilter('free')}
+                      className={`px-2 py-0.5 rounded-md text-[9.5px] font-bold transition-all flex items-center gap-1 ${
+                        videoAccessFilter === 'free'
+                          ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-2xs'
+                          : 'text-slate-500 hover:text-slate-700'
+                      }`}
+                    >
+                      <span>Free & Trial</span>
+                    </button>
+                    <button
+                      onClick={() => setVideoAccessFilter('pro')}
+                      className={`px-2 py-0.5 rounded-md text-[9.5px] font-bold transition-all flex items-center gap-1 ${
+                        videoAccessFilter === 'pro'
+                          ? 'bg-white dark:bg-slate-700 text-amber-600 dark:text-amber-400 shadow-2xs'
+                          : 'text-slate-500 hover:text-slate-700'
+                      }`}
+                    >
+                      <Crown className="w-2.5 h-2.5 text-amber-500" />
+                      <span>Pro Only</span>
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -439,7 +492,7 @@ export const Educational: React.FC = () => {
                     onChange={(e) => setSelectedTopic(e.target.value)}
                     className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-1 focus:ring-primary text-slate-700 dark:text-slate-200 font-bold"
                   >
-                    <option value="all">All Topics (19)</option>
+                    <option value="all">All Topics ({availableTopics.length})</option>
                     {availableTopics.map((top) => (
                       <option key={top} value={top}>
                         {top}
@@ -503,7 +556,8 @@ export const Educational: React.FC = () => {
                         {/* Curated Resources List */}
                         <div className="mt-3.5 space-y-2">
                           {group.resources.map((res, rIdx) => {
-                            const isLocked = !!res.isPaidOnly && !isPaidUser;
+                            const isPaidOnly = res.isPaidOnly === true || res.isPaidOnly === 'true';
+                            const isLocked = isPaidOnly && !isPaidUser;
                             const platform = getPlatformInfo(res.url);
 
                             if (isLocked) {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, Suspense, lazy } from 'react';
+import React, { useState, useEffect, useMemo, useRef, Suspense, lazy } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { HabitsService } from '../services/habitsService';
@@ -44,13 +44,14 @@ import {
   TrendingUp,
   TrendingDown,
   LineChart,
+  Maximize2,
   Info
 } from 'lucide-react';
 import {
   ResponsiveContainer,
   ComposedChart,
-  Area,
   Bar,
+  Area,
   XAxis,
   YAxis,
   Tooltip as RechartsTooltip,
@@ -217,6 +218,12 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
   const [showAiNudgeModal, setShowAiNudgeModal] = useState<boolean>(false);
   const [showFastingDisclaimer, setShowFastingDisclaimer] = useState<boolean>(false);
   const [fastingStep, setFastingStep] = useState<number>(1);
+  const [selectedChartDayIndex, setSelectedChartDayIndex] = useState<number | null>(null);
+  const [chartDisplayMode, setChartDisplayMode] = useState<'capsules' | 'bars' | 'line'>('capsules');
+  const [showChartFullViewModal, setShowChartFullViewModal] = useState<boolean>(false);
+  const chartScrollRef = useRef<HTMLDivElement>(null);
+  const capsulesScrollRef = useRef<HTMLDivElement>(null);
+  const fullViewScrollRef = useRef<HTMLDivElement>(null);
 
   const [, setHasCGMData] = useState<boolean>(() => {
     return localStorage.getItem('mito_has_cgm_reports') === 'true';
@@ -462,6 +469,22 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
   };
 
   const [timePeriod, setTimePeriod] = useState<'today' | 'weekly' | 'monthly' | 'yearly'>('today');
+
+  useEffect(() => {
+    // Auto-scroll 30-day and yearly charts to the right (latest day / today)
+    const timer = setTimeout(() => {
+      if (chartScrollRef.current) {
+        chartScrollRef.current.scrollLeft = chartScrollRef.current.scrollWidth;
+      }
+      if (capsulesScrollRef.current) {
+        capsulesScrollRef.current.scrollLeft = capsulesScrollRef.current.scrollWidth;
+      }
+      if (fullViewScrollRef.current) {
+        fullViewScrollRef.current.scrollLeft = fullViewScrollRef.current.scrollWidth;
+      }
+    }, 60);
+    return () => clearTimeout(timer);
+  }, [timePeriod, chartDisplayMode, showChartFullViewModal]);
   const [balanceViewMode, setBalanceViewMode] = useState<'graph' | 'summary'>('summary');
   const [forcesView, setForcesView] = useState<'all' | 'damage' | 'repair'>('all');
   const [showPeriodFilter, setShowPeriodFilter] = useState(false);
@@ -1476,7 +1499,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
       repairPct: number;
       damagePct: number;
       isLogged: boolean;
-      notScoredHeight?: number | null;
+      unscoredPillar?: number | null;
     }> = [];
 
     // Distinct dates where user has logged habits
@@ -1494,92 +1517,66 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
         .sort((a, b) => new Date(a.timestamp || (a as any).createdAt).getTime() - new Date(b.timestamp || (b as any).createdAt).getTime());
 
       if (todayLogs.length > 0) {
-        // First baseline point: 30 mins before first log of the day
-        const firstTime = new Date(todayLogs[0].timestamp || (todayLogs[0] as any).createdAt);
-        const startTime = new Date(firstTime.getTime() - 30 * 60 * 1000);
+        // Group habits into distinct check-in sessions (habits logged within 5 minutes belong to the same session)
+        // This avoids duplicate same-minute checkpoints and ensures clean, accurate progression
+        const sessions: HabitLog[][] = [];
+        let currentSession: HabitLog[] = [];
 
-        chartData.push({
-          dateStr: startTime.toISOString(),
-          label: startTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }),
-          fullDate: `Today, ${startTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} (Start)`,
-          damage: 0,
-          repair: 0,
-          net: 0,
-          repairPct: 50,
-          damagePct: 50,
-          isLogged: true,
-          notScoredHeight: null
-        });
-
-        // Add cumulative checkpoints as habits were logged throughout today
         todayLogs.forEach((log) => {
-          const logTime = new Date(log.timestamp || (log as any).createdAt);
+          const logTime = new Date(log.timestamp || (log as any).createdAt).getTime();
+          if (currentSession.length === 0) {
+            currentSession.push(log);
+          } else {
+            const prevTime = new Date(currentSession[currentSession.length - 1].timestamp || (currentSession[currentSession.length - 1] as any).createdAt).getTime();
+            if (logTime - prevTime <= 5 * 60 * 1000) {
+              currentSession.push(log);
+            } else {
+              sessions.push(currentSession);
+              currentSession = [log];
+            }
+          }
+        });
+        if (currentSession.length > 0) {
+          sessions.push(currentSession);
+        }
+
+        sessions.forEach((session, sIdx) => {
+          const latestLogInSession = session[session.length - 1];
+          const logTime = new Date(latestLogInSession.timestamp || (latestLogInSession as any).createdAt);
           const logsUpToTime = todayLogs.filter(h => new Date(h.timestamp || (h as any).createdAt).getTime() <= logTime.getTime());
           const forces = computeForcesForLogs(logsUpToTime);
           const tot = forces.damage + forces.repair;
           const repPct = tot === 0 ? 50 : Math.round((forces.repair / tot) * 100);
 
+          const timeStr = logTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+          const label = sessions.length > 1 ? timeStr : timeStr;
+
           chartData.push({
             dateStr: logTime.toISOString(),
-            label: logTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }),
-            fullDate: `Today, ${logTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`,
+            label,
+            fullDate: `Today, ${timeStr} (Check-in #${sIdx + 1})`,
             damage: forces.damage,
             repair: forces.repair,
             net: forces.repair - forces.damage,
             repairPct: repPct,
             damagePct: tot === 0 ? 50 : 100 - repPct,
-            isLogged: true,
-            notScoredHeight: null
+            isLogged: true
           });
         });
-
-        // Add "Current" point if last log was more than 15 minutes ago
-        const lastLogTime = new Date(todayLogs[todayLogs.length - 1].timestamp || (todayLogs[todayLogs.length - 1] as any).createdAt);
-        if (now.getTime() - lastLogTime.getTime() > 15 * 60 * 1000) {
-          const tot = damageCount + repairCount;
-          const repPct = tot === 0 ? 50 : Math.round((repairCount / tot) * 100);
-          chartData.push({
-            dateStr: now.toISOString(),
-            label: 'Now',
-            fullDate: `Today, ${now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} (Current)`,
-            damage: damageCount,
-            repair: repairCount,
-            net: repairCount - damageCount,
-            repairPct: repPct,
-            damagePct: tot === 0 ? 50 : 100 - repPct,
-            isLogged: true,
-            notScoredHeight: null
-          });
-        }
       } else if (repairCount > 0 || damageCount > 0) {
         // Daily aggregate fallback when individual timestamped habit logs haven't been recorded yet
-        const morning = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 7, 0, 0);
-        chartData.push({
-          dateStr: morning.toISOString(),
-          label: 'Baseline',
-          fullDate: `Today, ${morning.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} (Start)`,
-          damage: 0,
-          repair: 0,
-          net: 0,
-          repairPct: 50,
-          damagePct: 50,
-          isLogged: true,
-          notScoredHeight: null
-        });
-
         const tot = damageCount + repairCount;
         const repPct = tot === 0 ? 50 : Math.round((repairCount / tot) * 100);
         chartData.push({
           dateStr: now.toISOString(),
           label: 'Today',
-          fullDate: `Today, ${now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} (Current State)`,
+          fullDate: `Today (Summary)`,
           damage: damageCount,
           repair: repairCount,
           net: repairCount - damageCount,
           repairPct: repPct,
           damagePct: tot === 0 ? 50 : 100 - repPct,
-          isLogged: true,
-          notScoredHeight: null
+          isLogged: true
         });
       }
 
@@ -1615,35 +1612,72 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
         const nextMonth = new Date(now.getFullYear(), now.getMonth() - i + 1, 0, 23, 59, 59, 999);
         const monthEnd = nextMonth > now ? now : nextMonth;
         const monthStart = new Date(now.getFullYear(), now.getMonth() - i, 1, 0, 0, 0, 0);
+
+        // Primary filter: by exact timestamp range
         const logsInMonth = habits.filter(h => {
           const t = new Date(h.timestamp || (h as any).createdAt).getTime();
           return t >= monthStart.getTime() && t <= monthEnd.getTime();
         });
-        const hasLogsInMonth = logsInMonth.length > 0;
+
+        // Fallback: check if userLogDates has any date in this month (handles timezone edge cases)
+        const monthYear = `${d.getFullYear()}-${d.getMonth()}`;
+        const hasLogDateInMonth = !logsInMonth.length && Array.from(userLogDates).some(ds => {
+          const ld = new Date(ds);
+          return `${ld.getFullYear()}-${ld.getMonth()}` === monthYear;
+        });
+
+        // If fallback needed, re-collect logs using Date string month matching
+        const effectiveLogsInMonth = logsInMonth.length > 0
+          ? logsInMonth
+          : hasLogDateInMonth
+            ? habits.filter(h => {
+                const ld = new Date(h.timestamp || (h as any).createdAt);
+                return `${ld.getFullYear()}-${ld.getMonth()}` === monthYear;
+              })
+            : [];
+
+        const hasLogsInMonth = effectiveLogsInMonth.length > 0;
         const monthLabel = d.toLocaleDateString(undefined, { month: 'short' });
         const fullDate = d.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
 
         if (hasLogsInMonth) {
-          const logsUpToMonth = habits.filter(h => {
-            const t = new Date(h.timestamp || (h as any).createdAt).getTime();
-            return t <= monthEnd.getTime();
+          // Group logs in month by individual day to accurately sum forces and count scored days
+          const dayMap = new Map<string, HabitLog[]>();
+          effectiveLogsInMonth.forEach(h => {
+            const dayKey = new Date(h.timestamp || (h as any).createdAt).toDateString();
+            if (!dayMap.has(dayKey)) dayMap.set(dayKey, []);
+            dayMap.get(dayKey)!.push(h);
           });
-          const monthForces = computeForcesForLogs(logsUpToMonth);
-          const dmg = Math.round(monthForces.damage);
-          const rep = Math.round(monthForces.repair);
-          const tot = dmg + rep;
-          const repPct = tot === 0 ? 50 : Math.round((rep / tot) * 100);
+
+          let totalMonthDamage = 0;
+          let totalMonthRepair = 0;
+          dayMap.forEach((dayHabits) => {
+            const dayForces = computeForcesForLogs(dayHabits);
+            totalMonthDamage += Math.round(dayForces.damage);
+            totalMonthRepair += Math.round(dayForces.repair);
+          });
+
+          // Ensure if check-ins exist, at least the distinct logged count is represented
+          if (totalMonthDamage === 0 && totalMonthRepair === 0 && effectiveLogsInMonth.length > 0) {
+            const monthForces = computeForcesForLogs(effectiveLogsInMonth);
+            totalMonthDamage = Math.max(1, Math.round(monthForces.damage));
+            totalMonthRepair = Math.round(monthForces.repair);
+          }
+
+          const scoredDaysCount = dayMap.size;
+          const tot = totalMonthDamage + totalMonthRepair;
+          const repPct = tot === 0 ? 50 : Math.round((totalMonthRepair / tot) * 100);
+
           chartData.push({
             dateStr: d.toISOString(),
             label: monthLabel,
-            fullDate,
-            damage: dmg,
-            repair: rep,
-            net: rep - dmg,
+            fullDate: `${fullDate} (${scoredDaysCount} ${scoredDaysCount === 1 ? 'day' : 'days'} scored)`,
+            damage: totalMonthDamage > 0 ? totalMonthDamage : 0,
+            repair: totalMonthRepair > 0 ? totalMonthRepair : 0,
+            net: totalMonthRepair - totalMonthDamage,
             repairPct: repPct,
             damagePct: tot === 0 ? 50 : 100 - repPct,
-            isLogged: true,
-            notScoredHeight: null
+            isLogged: true
           });
         } else {
           chartData.push({
@@ -1655,8 +1689,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
             net: null,
             repairPct: 0,
             damagePct: 0,
-            isLogged: false,
-            notScoredHeight: 0.25
+            isLogged: false
           });
         }
       }
@@ -1694,16 +1727,15 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
             dateStr: d.toISOString(),
             label,
             fullDate,
-            damage: cleanDmg,
-            repair: cleanRep,
+            damage: cleanDmg > 0 ? cleanDmg : 0,
+            repair: cleanRep > 0 ? cleanRep : 0,
             net: cleanRep - cleanDmg,
             repairPct: repPct,
             damagePct: tot === 0 ? 50 : 100 - repPct,
-            isLogged: true,
-            notScoredHeight: null
+            isLogged: true
           });
         } else {
-          // Unscored day - do not draw graph lines, subtle baseline slot only
+          // Unscored day - do not draw graph lines or bars
           chartData.push({
             dateStr: d.toISOString(),
             label,
@@ -1713,18 +1745,10 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
             net: null,
             repairPct: 0,
             damagePct: 0,
-            isLogged: false,
-            notScoredHeight: 0.25
+            isLogged: false
           });
         }
       }
-
-      // Ensure subtle placeholder height for all unscored days
-      chartData.forEach(pt => {
-        if (!pt.isLogged) {
-          pt.notScoredHeight = 0.25;
-        }
-      });
     }
 
     const activePoints = chartData.filter(c => c.isLogged && c.damage !== null && c.repair !== null);
@@ -1769,6 +1793,15 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
       trendVerdict = `Maintain consistent check-ins to tilt balance toward repair.`;
     }
 
+    // Set proportional height for modern unscored background pillars (avoids flat lines)
+    const maxVal = Math.max(2, ...chartData.map(c => Math.max(c.repair || 0, c.damage || 0)));
+    const pillarHeight = Math.max(1.8, Math.round(maxVal * 0.9 * 10) / 10);
+    chartData.forEach(c => {
+      if (!c.isLogged) {
+        c.unscoredPillar = pillarHeight;
+      }
+    });
+
     return {
       chartData,
       avgRepair,
@@ -1795,6 +1828,13 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
     const logged = cellularTrendData.chartData.filter(c => c.isLogged && (c.damage !== null || c.repair !== null));
     return logged.length > 0 ? logged[logged.length - 1] : null;
   }, [cellularTrendData.chartData]);
+
+  const activeSelectedDay = useMemo(() => {
+    if (selectedChartDayIndex !== null && cellularTrendData.chartData[selectedChartDayIndex]) {
+      return cellularTrendData.chartData[selectedChartDayIndex];
+    }
+    return latestLoggedPoint || cellularTrendData.chartData[cellularTrendData.chartData.length - 1] || null;
+  }, [selectedChartDayIndex, cellularTrendData.chartData, latestLoggedPoint]);
 
   const { setPendingRecommendationId } = useConsultation();
 
@@ -2410,11 +2450,11 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
                   {/* Three Redesigned Summary Cards: Repair habits, Stress indicators, Overall balance */}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
                     {/* 1. REPAIR HABITS CARD */}
-                    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-transparent dark:from-emerald-950/40 dark:via-emerald-900/20 dark:to-transparent border border-emerald-500/25 dark:border-emerald-500/30 p-3 sm:p-3.5 shadow-xs transition-all hover:border-emerald-500/40">
+                    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-transparent dark:from-emerald-950/40 dark:via-emerald-900/20 dark:to-transparent border border-emerald-500/25 dark:border-emerald-500/30 p-3.5 shadow-sm transition-all hover:border-emerald-500/40 hover:shadow-md">
                       <div className="flex items-center justify-between gap-1.5">
-                        <div className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-800 dark:text-emerald-300 min-w-0">
-                          <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-                          <span className="truncate">{t('dashboard.repairHabits', 'Repair habits')}</span>
+                        <div className="flex items-center gap-1.5 text-xs font-black text-emerald-800 dark:text-emerald-300">
+                          <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.8)] shrink-0" />
+                          <span className="whitespace-nowrap">{t('dashboard.repairHabits', 'Repair Habits')}</span>
                           <div className="group relative inline-flex items-center cursor-help">
                             <Info className="w-3 h-3 text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-300 transition-colors shrink-0" />
                             <div className="absolute left-0 bottom-full mb-1.5 hidden group-hover:block z-50 w-52 p-2 bg-slate-900/95 dark:bg-slate-800/95 backdrop-blur text-white text-[10px] rounded-xl shadow-xl border border-slate-700 leading-relaxed pointer-events-none">
@@ -2422,20 +2462,20 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
                             </div>
                           </div>
                         </div>
-                        {/* Status badge supported by rules */}
-                        <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 shrink-0">
+                        {/* Status badge */}
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-black bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/25 shrink-0">
                           {timePeriod === 'today' ? (
                             repairCount >= 7 ? 'Optimal' : repairCount > 0 ? 'Active' : 'Needs attention'
                           ) : (
                             cellularTrendData.repairDiffPct > 0 ? (
                               <>
-                                <TrendingUp className="w-2.5 h-2.5" />
-                                <span>Improving (+{cellularTrendData.repairDiffPct}%)</span>
+                                <TrendingUp className="w-2.5 h-2.5 mr-0.5" />
+                                <span>+{cellularTrendData.repairDiffPct}%</span>
                               </>
                             ) : cellularTrendData.repairDiffPct < 0 ? (
                               <>
-                                <TrendingDown className="w-2.5 h-2.5" />
-                                <span>Declining ({cellularTrendData.repairDiffPct}%)</span>
+                                <TrendingDown className="w-2.5 h-2.5 mr-0.5" />
+                                <span>{cellularTrendData.repairDiffPct}%</span>
                               </>
                             ) : (
                               <span>Consistent</span>
@@ -2444,14 +2484,14 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
                         </span>
                       </div>
                       <div className="flex items-baseline gap-1.5 mt-2">
-                        <span className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+                        <span className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
                           {timePeriod === 'today' ? repairCount : Math.round(Number(cellularTrendData.avgRepair))}
                         </span>
                         <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
                           {timePeriod === 'today' ? 'habits logged' : 'habits / day avg'}
                         </span>
                       </div>
-                      <div className="mt-1 flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400">
+                      <div className="mt-1 flex items-center justify-between text-[10px] font-medium text-slate-500 dark:text-slate-400">
                         <span className="truncate">
                           {timePeriod === 'today' ? 'Restorative habits logged today' : `Period avg: ${cellularTrendData.avgRepair} habits/day`}
                         </span>
@@ -2459,11 +2499,11 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
                     </div>
 
                     {/* 2. STRESS INDICATORS CARD */}
-                    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-rose-500/10 via-rose-500/5 to-transparent dark:from-rose-950/40 dark:via-rose-900/20 dark:to-transparent border border-rose-500/25 dark:border-rose-500/30 p-3 sm:p-3.5 shadow-xs transition-all hover:border-rose-500/40">
+                    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-rose-500/10 via-rose-500/5 to-transparent dark:from-rose-950/40 dark:via-rose-900/20 dark:to-transparent border border-rose-500/25 dark:border-rose-500/30 p-3.5 shadow-sm transition-all hover:border-rose-500/40 hover:shadow-md">
                       <div className="flex items-center justify-between gap-1.5">
-                        <div className="flex items-center gap-1.5 text-[11px] font-bold text-rose-800 dark:text-rose-300 min-w-0">
-                          <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
-                          <span className="truncate">{t('dashboard.stressIndicators', 'Stress indicators')}</span>
+                        <div className="flex items-center gap-1.5 text-xs font-black text-rose-800 dark:text-rose-300">
+                          <span className="w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_6px_rgba(244,63,94,0.8)] shrink-0" />
+                          <span className="whitespace-nowrap">{t('dashboard.stressIndicators', 'Stress Indicators')}</span>
                           <div className="group relative inline-flex items-center cursor-help">
                             <Info className="w-3 h-3 text-slate-400 hover:text-rose-600 dark:hover:text-rose-300 transition-colors shrink-0" />
                             <div className="absolute left-0 bottom-full mb-1.5 hidden group-hover:block z-50 w-52 p-2 bg-slate-900/95 dark:bg-slate-800/95 backdrop-blur text-white text-[10px] rounded-xl shadow-xl border border-slate-700 leading-relaxed pointer-events-none">
@@ -2471,23 +2511,23 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
                             </div>
                           </div>
                         </div>
-                        {/* Status badge supported by rules */}
-                        <span className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[9px] font-extrabold border shrink-0 ${(timePeriod === 'today' && damageCount > (repairCount || 3)) || (timePeriod !== 'today' && cellularTrendData.damageDiffPct > 0)
-                          ? 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/20'
-                          : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/20'
+                        {/* Status badge */}
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-black border shrink-0 ${(timePeriod === 'today' && damageCount > (repairCount || 3)) || (timePeriod !== 'today' && cellularTrendData.damageDiffPct > 0)
+                          ? 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/25'
+                          : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/25'
                           }`}>
                           {timePeriod === 'today' ? (
                             damageCount === 0 ? 'Low stress' : damageCount <= (repairCount || 3) ? 'Controlled' : 'Needs attention'
                           ) : (
                             cellularTrendData.damageDiffPct < 0 ? (
                               <>
-                                <TrendingDown className="w-2.5 h-2.5" />
-                                <span>Decreasing ({cellularTrendData.damageDiffPct}%)</span>
+                                <TrendingDown className="w-2.5 h-2.5 mr-0.5" />
+                                <span>{cellularTrendData.damageDiffPct}%</span>
                               </>
                             ) : cellularTrendData.damageDiffPct > 0 ? (
                               <>
-                                <TrendingUp className="w-2.5 h-2.5" />
-                                <span>Needs attention (+{cellularTrendData.damageDiffPct}%)</span>
+                                <TrendingUp className="w-2.5 h-2.5 mr-0.5" />
+                                <span>+{cellularTrendData.damageDiffPct}%</span>
                               </>
                             ) : (
                               <span>Stable</span>
@@ -2496,14 +2536,14 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
                         </span>
                       </div>
                       <div className="flex items-baseline gap-1.5 mt-2">
-                        <span className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+                        <span className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
                           {timePeriod === 'today' ? damageCount : Math.round(Number(cellularTrendData.avgDamage))}
                         </span>
                         <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
                           {timePeriod === 'today' ? 'indicators logged' : 'indicators / day avg'}
                         </span>
                       </div>
-                      <div className="mt-1 flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400">
+                      <div className="mt-1 flex items-center justify-between text-[10px] font-medium text-slate-500 dark:text-slate-400">
                         <span className="truncate">
                           {timePeriod === 'today' ? 'Active lifestyle stress triggers' : `Period avg: ${cellularTrendData.avgDamage} indicators/day`}
                         </span>
@@ -2511,11 +2551,11 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
                     </div>
 
                     {/* 3. OVERALL BALANCE CARD */}
-                    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-500/10 via-purple-500/5 to-transparent dark:from-indigo-950/40 dark:via-indigo-900/20 dark:to-transparent border border-indigo-500/25 dark:border-indigo-500/30 p-3 sm:p-3.5 shadow-xs transition-all hover:border-indigo-500/40">
+                    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-500/10 via-purple-500/5 to-transparent dark:from-indigo-950/40 dark:via-indigo-900/20 dark:to-transparent border border-indigo-500/25 dark:border-indigo-500/30 p-3.5 shadow-sm transition-all hover:border-indigo-500/40 hover:shadow-md">
                       <div className="flex items-center justify-between gap-1.5">
-                        <div className="flex items-center gap-1.5 text-[11px] font-bold text-indigo-800 dark:text-indigo-300 min-w-0">
+                        <div className="flex items-center gap-1.5 text-xs font-black text-indigo-800 dark:text-indigo-300">
                           <Sparkles className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
-                          <span className="truncate">{t('dashboard.overallBalance', 'Overall balance')}</span>
+                          <span className="whitespace-nowrap">{t('dashboard.overallBalance', 'Overall Balance')}</span>
                           <div className="group relative inline-flex items-center cursor-help">
                             <Info className="w-3 h-3 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-300 transition-colors shrink-0" />
                             <div className="absolute right-0 sm:left-0 bottom-full mb-1.5 hidden group-hover:block z-50 w-52 p-2 bg-slate-900/95 dark:bg-slate-800/95 backdrop-blur text-white text-[10px] rounded-xl shadow-xl border border-slate-700 leading-relaxed pointer-events-none">
@@ -2529,13 +2569,13 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
                           const isGood = netVal > 0;
                           const isEquil = netVal === 0;
                           return (
-                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-extrabold border shrink-0 ${isGood
-                              ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/20'
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-black border shrink-0 ${isGood
+                              ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/25'
                               : isEquil
-                                ? 'bg-slate-500/15 text-slate-700 dark:text-slate-300 border-slate-500/20'
-                                : 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/20'
+                                ? 'bg-slate-500/15 text-slate-700 dark:text-slate-300 border-slate-500/25'
+                                : 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/25'
                               }`}>
-                              {isGood ? 'Good • Repair Ahead' : isEquil ? 'Balanced' : 'Needs attention'}
+                              {isGood ? 'Repair Ahead' : isEquil ? 'Balanced' : 'Needs attention'}
                             </span>
                           );
                         })()}
@@ -2546,7 +2586,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
                           const isPositive = netVal >= 0;
                           return (
                             <>
-                              <span className={`text-2xl sm:text-3xl font-black tracking-tight ${isPositive ? 'text-indigo-600 dark:text-indigo-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                              <span className={`text-3xl font-black tracking-tight ${isPositive ? 'text-indigo-600 dark:text-indigo-400' : 'text-rose-600 dark:text-rose-400'}`}>
                                 {isPositive ? `+${netVal}` : netVal}
                               </span>
                               <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
@@ -2556,7 +2596,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
                           );
                         })()}
                       </div>
-                      <div className="mt-1 flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400">
+                      <div className="mt-1 flex items-center justify-between text-[10px] font-medium text-slate-500 dark:text-slate-400">
                         <span className="truncate">
                           {timePeriod === 'today'
                             ? (repairCount >= damageCount ? 'Restorative defense ahead of stress' : 'Lifestyle stress outpaces repair')
@@ -2588,199 +2628,923 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
                       </button>
                     </div>
                   ) : (
-                    <div className="w-full h-52 sm:h-56 pt-2 px-1">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <ComposedChart data={cellularTrendData.chartData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
-                          <defs>
-                            <linearGradient id="repairTrendGrad" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor="#10b981" stopOpacity={0.25} />
-                              <stop offset="100%" stopColor="#10b981" stopOpacity={0.0} />
-                            </linearGradient>
-                            <linearGradient id="damageTrendGrad" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor="#f43f5e" stopOpacity={0.25} />
-                              <stop offset="100%" stopColor="#f43f5e" stopOpacity={0.0} />
-                            </linearGradient>
-                            <linearGradient id="repairBarGrad" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor="#10b981" stopOpacity={1} />
-                              <stop offset="100%" stopColor="#059669" stopOpacity={0.9} />
-                            </linearGradient>
-                            <linearGradient id="damageBarGrad" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor="#f43f5e" stopOpacity={1} />
-                              <stop offset="100%" stopColor="#e11d48" stopOpacity={0.9} />
-                            </linearGradient>
-                            <pattern id="unscoredPattern" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-                              <line x1="0" y1="0" x2="0" y2="6" stroke="#94a3b8" strokeWidth="1" strokeOpacity="0.35" />
-                            </pattern>
-                          </defs>
-                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" className="text-slate-200/40 dark:text-slate-800/60" />
-                          <XAxis
-                            dataKey="label"
-                            tickLine={false}
-                            axisLine={false}
-                            tick={{ fontSize: 9.5, fill: '#64748b', fontWeight: 600 }}
-                            interval={timePeriod === 'monthly' ? 4 : 0}
-                          />
-                          <YAxis
-                            tickLine={false}
-                            axisLine={false}
-                            tick={{ fontSize: 9.5, fill: '#94a3b8', fontWeight: 600 }}
-                            allowDecimals={false}
-                            domain={[0, 'auto']}
-                          />
-                          <RechartsTooltip
-                            content={({ active, payload }) => {
-                              if (active && payload && payload.length) {
-                                const data = payload[0].payload;
-                                if (!data.isLogged) {
+                    <div className="w-full bg-gradient-to-b from-slate-50/70 via-white to-slate-50/40 dark:from-slate-900/60 dark:via-slate-900/40 dark:to-slate-900/70 rounded-3xl p-3.5 sm:p-4 border border-slate-200/90 dark:border-slate-800 shadow-sm relative overflow-hidden">
+                      {/* Mini Header Inside Chart Canvas */}
+                      <div className="flex items-center justify-between pb-2 mb-2 px-1 text-xs border-b border-slate-100 dark:border-slate-800/80 flex-wrap gap-2">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span className="text-[10.5px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                            {timePeriod === 'today'
+                              ? "Today's Check-ins"
+                              : timePeriod === 'weekly'
+                                ? '7-Day Rhythm'
+                                : timePeriod === 'monthly'
+                                  ? '30-Day Trajectory'
+                                  : 'Annual Overview'}
+                          </span>
+                          {timePeriod === 'weekly' && cellularTrendData.chartData.length >= 2 && (
+                            <span className="text-[9px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 px-1.5 py-0.5 rounded-full border border-indigo-200/60 dark:border-indigo-800/60 whitespace-nowrap">
+                              {cellularTrendData.chartData[0]?.label} – {cellularTrendData.chartData[cellularTrendData.chartData.length - 1]?.label}
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] font-bold shrink-0">
+                          {/* Universal Toggle between Capsules, Bars, and Line for ALL time periods */}
+                          <div className="flex items-center gap-0.5 p-0.5 rounded-lg bg-slate-200/70 dark:bg-slate-800 border border-slate-300/70 dark:border-slate-700">
+                            <button
+                              type="button"
+                              onClick={() => setChartDisplayMode('capsules')}
+                              className={`px-2 py-0.5 rounded-md text-[9.5px] whitespace-nowrap transition-all cursor-pointer ${
+                                chartDisplayMode === 'capsules'
+                                  ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-2xs font-black'
+                                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
+                              }`}
+                            >
+                              Capsules
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setChartDisplayMode('bars')}
+                              className={`px-2 py-0.5 rounded-md text-[9.5px] whitespace-nowrap transition-all cursor-pointer ${
+                                chartDisplayMode === 'bars'
+                                  ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-2xs font-black'
+                                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
+                              }`}
+                            >
+                              Bars
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setChartDisplayMode('line')}
+                              className={`px-2 py-0.5 rounded-md text-[9.5px] whitespace-nowrap transition-all cursor-pointer ${
+                                chartDisplayMode === 'line'
+                                  ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-2xs font-black'
+                                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
+                              }`}
+                            >
+                              Line
+                            </button>
+                          </div>
+
+                          {/* Full View Button - Crisp, Clean, Single-line, Never wraps! */}
+                          <button
+                            type="button"
+                            onClick={() => setShowChartFullViewModal(true)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[9.5px] font-black text-indigo-600 dark:text-indigo-400 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:hover:bg-indigo-900/60 border border-indigo-200/80 dark:border-indigo-800/80 active:scale-95 transition-all cursor-pointer shrink-0 whitespace-nowrap shadow-2xs"
+                            title="Open Full View Chart Modal"
+                          >
+                            <Maximize2 className="w-3 h-3 shrink-0" />
+                            <span className="whitespace-nowrap">Full View</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {chartDisplayMode === 'capsules' ? (
+                        /* === MODERN ACTIVITY CAPSULES / PILLARS FOR ALL PERIODS === */
+                        <div className="w-full pt-2 pb-1">
+                          {timePeriod === 'today' ? (
+                            /* 1. TODAY: Intraday Activity Capsule Pillars */
+                            cellularTrendData.chartData.length === 0 ? (
+                              <div className="p-6 text-center text-xs text-slate-500 dark:text-slate-400">
+                                No check-ins recorded yet today. Complete daily check-in to track cellular balance.
+                              </div>
+                            ) : (
+                              <div className="w-full flex items-center justify-center gap-3 sm:gap-6 py-2 flex-wrap">
+                                {cellularTrendData.chartData.map((checkin, idx) => {
+                                  const isSelected = selectedChartDayIndex === idx || (selectedChartDayIndex === null && idx === cellularTrendData.chartData.length - 1);
+                                  const repairVal = checkin.repair || 0;
+                                  const damageVal = checkin.damage || 0;
+                                  const netVal = checkin.net ?? (repairVal - damageVal);
+                                  const todayMax = Math.max(
+                                    2,
+                                    ...cellularTrendData.chartData.map(c => Math.max(c.repair || 0, c.damage || 0))
+                                  );
+                                  const damageHeightPct = damageVal > 0
+                                    ? Math.min(100, Math.max(26, Math.round((damageVal / todayMax) * 100)))
+                                    : 0;
+                                  const repairHeightPct = repairVal > 0
+                                    ? Math.min(100, Math.max(26, Math.round((repairVal / todayMax) * 100)))
+                                    : 0;
+
                                   return (
-                                    <div className="bg-slate-900/95 dark:bg-slate-800/95 backdrop-blur-md border border-slate-700/80 rounded-2xl p-3 shadow-2xl text-xs text-white z-50 min-w-[190px]">
-                                      <div className="font-bold text-slate-200 border-b border-slate-700/60 pb-1.5 mb-2 flex items-center justify-between gap-3">
-                                        <span>{data.fullDate || data.label}</span>
-                                        <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider bg-slate-700/80 text-slate-300 border border-slate-600/60">
-                                          Not Scored
+                                    <button
+                                      key={checkin.dateStr || idx}
+                                      type="button"
+                                      onClick={() => setSelectedChartDayIndex(idx)}
+                                      className={`group relative min-w-[95px] sm:min-w-[125px] max-w-[160px] flex-1 flex flex-col items-center justify-between rounded-2xl p-2.5 sm:p-3 transition-all cursor-pointer select-none ${
+                                        isSelected
+                                          ? 'bg-indigo-50/90 dark:bg-indigo-950/50 ring-2 ring-indigo-500 shadow-md -translate-y-1'
+                                          : 'bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:bg-white dark:hover:bg-slate-800/80'
+                                      }`}
+                                    >
+                                      {/* Top: Check-in badge and time */}
+                                      <div className="flex flex-col items-center">
+                                        <span className={`text-[10px] sm:text-[11px] font-black uppercase tracking-wider ${
+                                          isSelected ? 'text-indigo-600 dark:text-indigo-400 font-black' : 'text-slate-500 dark:text-slate-400'
+                                        }`}>
+                                          Check-in #{idx + 1}
+                                        </span>
+                                        <span className={`text-xs sm:text-sm font-black mt-0.5 ${
+                                          isSelected ? 'text-indigo-700 dark:text-indigo-300' : 'text-slate-800 dark:text-slate-200'
+                                        }`}>
+                                          {checkin.label}
                                         </span>
                                       </div>
-                                      <p className="text-[11px] text-slate-300 py-0.5 flex items-center gap-1.5">
-                                        <span className="w-2 h-2 rounded-full bg-slate-400 shrink-0" />
-                                        <span>No habit check-in recorded for this day</span>
-                                      </p>
-                                      <div className="mt-2 pt-1.5 border-t border-slate-700/60 text-[10px] text-indigo-400 font-semibold">
-                                        Tap &quot;Daily Check-in&quot; below to log
+
+                                      {/* Middle: Modern Capsule Pillar Tube */}
+                                      <div className="w-full h-28 sm:h-32 my-2 flex items-end justify-center relative">
+                                        <div className="w-full max-w-[44px] sm:max-w-[52px] h-full rounded-2xl bg-slate-100 dark:bg-slate-800/80 p-1 flex items-end justify-center gap-1 relative overflow-hidden shadow-inner border border-slate-200/60 dark:border-slate-700/60">
+                                          {repairVal > 0 && (forcesView === 'all' || forcesView === 'repair') && (
+                                            <div
+                                              style={{ height: `${repairHeightPct}%` }}
+                                              className={`${damageVal > 0 && forcesView === 'all' ? 'w-1/2' : 'w-full'} rounded-xl bg-gradient-to-t from-emerald-600 to-emerald-400 shadow-[0_2px_8px_rgba(16,185,129,0.4)] flex flex-col items-center justify-start pt-1 transition-all duration-300`}
+                                            >
+                                              <span className="text-[9px] font-black text-white leading-none">
+                                                {repairVal}
+                                              </span>
+                                            </div>
+                                          )}
+                                          {damageVal > 0 && (forcesView === 'all' || forcesView === 'damage') && (
+                                            <div
+                                              style={{ height: `${damageHeightPct}%` }}
+                                              className={`${repairVal > 0 && forcesView === 'all' ? 'w-1/2' : 'w-full'} rounded-xl bg-gradient-to-t from-rose-600 to-rose-400 shadow-[0_2px_8px_rgba(244,63,94,0.4)] flex flex-col items-center justify-start pt-1 transition-all duration-300`}
+                                            >
+                                              <span className="text-[9px] font-black text-white leading-none">
+                                                {damageVal}
+                                              </span>
+                                            </div>
+                                          )}
+                                          {repairVal === 0 && damageVal === 0 && (
+                                            <div className="w-full h-2.5 rounded-full bg-slate-300 dark:bg-slate-600 self-center" />
+                                          )}
+                                        </div>
+                                      </div>
+
+                                      {/* Bottom: Net Balance Pill */}
+                                      <div className="w-full flex justify-center">
+                                        <span className={`px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black tracking-tight leading-none ${
+                                          netVal > 0
+                                            ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/25'
+                                            : netVal < 0
+                                              ? 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/25'
+                                              : 'bg-slate-200/80 dark:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-300/60 dark:border-slate-600'
+                                        }`}>
+                                          {netVal > 0 ? `+${netVal} Net Repair` : netVal < 0 ? `${netVal} Net Stress` : '0 Balanced'}
+                                        </span>
+                                      </div>
+                                    </button>
+                                  );
+                                })}
+
+                                {/* Next Check-in Slot Pill */}
+                                <button
+                                  type="button"
+                                  onClick={() => setShowChatbotModal(true)}
+                                  className="group min-w-[95px] sm:min-w-[125px] max-w-[160px] flex-1 flex flex-col items-center justify-between rounded-2xl p-2.5 sm:p-3 border-2 border-dashed border-slate-200 dark:border-slate-700/80 hover:border-indigo-400 dark:hover:border-indigo-600 transition-all cursor-pointer bg-slate-50/30 dark:bg-slate-900/20"
+                                >
+                                  <div className="flex flex-col items-center">
+                                    <span className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-slate-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
+                                      Next
+                                    </span>
+                                    <span className="text-xs sm:text-sm font-bold text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200 mt-0.5">
+                                      Check-in
+                                    </span>
+                                  </div>
+
+                                  <div className="w-full h-28 sm:h-32 my-2 flex items-center justify-center">
+                                    <div className="w-10 h-10 rounded-2xl bg-indigo-50 dark:bg-indigo-950/50 flex items-center justify-center text-indigo-500 group-hover:scale-110 transition-transform">
+                                      <Sparkles className="w-5 h-5" />
+                                    </div>
+                                  </div>
+
+                                  <span className="text-[9px] sm:text-[10px] font-black text-indigo-600 dark:text-indigo-400 group-hover:underline">
+                                    + Log Habits
+                                  </span>
+                                </button>
+                              </div>
+                            )
+                          ) : timePeriod === 'weekly' ? (
+                            /* 2. WEEKLY: 7-Day Responsive Day Activity Pillars */
+                            <div className="grid grid-cols-7 gap-1 sm:gap-2">
+                              {cellularTrendData.chartData.map((dayItem, idx) => {
+                                const isSelected = selectedChartDayIndex === idx || (selectedChartDayIndex === null && activeSelectedDay?.dateStr === dayItem.dateStr);
+                                const isToday = new Date(dayItem.dateStr).toDateString() === new Date().toDateString();
+                                const [weekday, dayNum] = (dayItem.label || '').split(' ');
+                                const isLogged = dayItem.isLogged;
+                                const repairVal = dayItem.repair || 0;
+                                const damageVal = dayItem.damage || 0;
+                                const netVal = (dayItem.net ?? 0);
+
+                                const weeklyMax = Math.max(
+                                  2,
+                                  ...cellularTrendData.chartData.map(c => Math.max(c.repair || 0, c.damage || 0))
+                                );
+
+                                const damageHeightPct = isLogged && damageVal > 0
+                                  ? Math.min(100, Math.max(26, Math.round((damageVal / weeklyMax) * 100)))
+                                  : 0;
+                                const repairHeightPct = isLogged && repairVal > 0
+                                  ? Math.min(100, Math.max(26, Math.round((repairVal / weeklyMax) * 100)))
+                                  : 0;
+
+                                return (
+                                  <button
+                                    key={dayItem.dateStr || idx}
+                                    type="button"
+                                    onClick={() => setSelectedChartDayIndex(idx)}
+                                    className={`group relative flex flex-col items-center justify-between rounded-2xl p-1 sm:p-2 transition-all cursor-pointer select-none ${
+                                      isSelected
+                                        ? 'bg-indigo-50/90 dark:bg-indigo-950/50 ring-2 ring-indigo-500 shadow-md -translate-y-1'
+                                        : 'bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:bg-white dark:hover:bg-slate-800/80'
+                                    }`}
+                                  >
+                                    <div className="flex flex-col items-center">
+                                      <span className={`text-[10px] sm:text-[11px] font-black uppercase tracking-wider ${
+                                        isSelected
+                                          ? 'text-indigo-600 dark:text-indigo-400 font-black'
+                                          : isLogged
+                                            ? 'text-slate-700 dark:text-slate-300'
+                                            : 'text-slate-400 dark:text-slate-500'
+                                      }`}>
+                                        {weekday}
+                                      </span>
+                                      <span className={`text-xs sm:text-sm font-black mt-0.5 ${
+                                        isSelected
+                                          ? 'text-indigo-700 dark:text-indigo-300'
+                                          : isLogged
+                                            ? 'text-slate-900 dark:text-white'
+                                            : 'text-slate-400 dark:text-slate-500'
+                                      }`}>
+                                        {dayNum}
+                                      </span>
+                                      {isToday ? (
+                                        <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 mt-0.5 animate-pulse shadow-[0_0_4px_rgba(99,102,241,0.8)]" />
+                                      ) : (
+                                        <span className="w-1.5 h-1.5 mt-0.5" />
+                                      )}
+                                    </div>
+
+                                    <div className="w-full h-28 sm:h-32 my-1.5 flex items-end justify-center relative">
+                                      {isLogged ? (
+                                        <div className="w-full max-w-[32px] sm:max-w-[38px] h-full rounded-2xl bg-slate-100 dark:bg-slate-800/80 p-1 flex items-end justify-center gap-1 relative overflow-hidden shadow-inner border border-slate-200/60 dark:border-slate-700/60">
+                                          {repairVal > 0 && (forcesView === 'all' || forcesView === 'repair') && (
+                                            <div
+                                              style={{ height: `${repairHeightPct}%` }}
+                                              className={`${damageVal > 0 && forcesView === 'all' ? 'w-1/2' : 'w-full'} rounded-xl bg-gradient-to-t from-emerald-600 to-emerald-400 shadow-[0_2px_8px_rgba(16,185,129,0.4)] flex flex-col items-center justify-start pt-1 transition-all duration-300`}
+                                            >
+                                              <span className="text-[9px] font-black text-white leading-none">
+                                                {repairVal}
+                                              </span>
+                                            </div>
+                                          )}
+                                          {damageVal > 0 && (forcesView === 'all' || forcesView === 'damage') && (
+                                            <div
+                                              style={{ height: `${damageHeightPct}%` }}
+                                              className={`${repairVal > 0 && forcesView === 'all' ? 'w-1/2' : 'w-full'} rounded-xl bg-gradient-to-t from-rose-600 to-rose-400 shadow-[0_2px_8px_rgba(244,63,94,0.4)] flex flex-col items-center justify-start pt-1 transition-all duration-300`}
+                                            >
+                                              <span className="text-[9px] font-black text-white leading-none">
+                                                {damageVal}
+                                              </span>
+                                            </div>
+                                          )}
+                                          {repairVal === 0 && damageVal === 0 && (
+                                            <div className="w-full h-2.5 rounded-full bg-slate-300 dark:bg-slate-600 self-center" />
+                                          )}
+                                        </div>
+                                      ) : (
+                                        <div className="w-full max-w-[32px] sm:max-w-[38px] h-full rounded-2xl border border-dashed border-slate-200 dark:border-slate-700/70 bg-slate-50/50 dark:bg-slate-800/20 flex flex-col items-center justify-center gap-1 group-hover:border-indigo-300 dark:group-hover:border-indigo-600 transition-colors">
+                                          <span className="text-slate-300 dark:text-slate-600 font-black text-xs select-none leading-none">
+                                            —
+                                          </span>
+                                          <span className="text-[7.5px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-tighter leading-none">
+                                            Rest
+                                          </span>
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    <div className="w-full flex justify-center">
+                                      {isLogged ? (
+                                        <span className={`px-1.5 py-0.5 rounded-md text-[9px] font-black tracking-tight leading-none ${
+                                          netVal > 0
+                                            ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/25'
+                                            : netVal < 0
+                                              ? 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/25'
+                                              : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+                                        }`}>
+                                          {netVal > 0 ? `+${netVal}` : netVal}
+                                        </span>
+                                      ) : (
+                                        <span className="text-[10px] font-bold text-slate-300 dark:text-slate-600 leading-none">
+                                          •
+                                        </span>
+                                      )}
+                                    </div>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          ) : timePeriod === 'monthly' ? (
+                            /* 3. MONTHLY: 30-Day Activity Capsule Strip */
+                            <div ref={capsulesScrollRef} className="flex gap-1.5 overflow-x-auto pb-2 scrollbar-thin">
+                              {cellularTrendData.chartData.map((dayItem, idx) => {
+                                const isSelected = selectedChartDayIndex === idx || (selectedChartDayIndex === null && activeSelectedDay?.dateStr === dayItem.dateStr);
+                                const isToday = new Date(dayItem.dateStr).toDateString() === new Date().toDateString();
+                                const labelParts = (dayItem.label || '').split(' ');
+                                const monthPrefix = labelParts[0] || '';
+                                const dayNum = labelParts[1] || '';
+                                const isLogged = dayItem.isLogged;
+                                const repairVal = dayItem.repair || 0;
+                                const damageVal = dayItem.damage || 0;
+                                const netVal = (dayItem.net ?? 0);
+
+                                const monthlyMax = Math.max(
+                                  2,
+                                  ...cellularTrendData.chartData.map(c => Math.max(c.repair || 0, c.damage || 0))
+                                );
+
+                                const damageHeightPct = isLogged && damageVal > 0
+                                  ? Math.min(100, Math.max(26, Math.round((damageVal / monthlyMax) * 100)))
+                                  : 0;
+                                const repairHeightPct = isLogged && repairVal > 0
+                                  ? Math.min(100, Math.max(26, Math.round((repairVal / monthlyMax) * 100)))
+                                  : 0;
+
+                                return (
+                                  <button
+                                    key={dayItem.dateStr || idx}
+                                    type="button"
+                                    onClick={() => setSelectedChartDayIndex(idx)}
+                                    className={`min-w-[46px] flex flex-col items-center justify-between rounded-2xl p-1.5 transition-all cursor-pointer shrink-0 ${
+                                      isSelected
+                                        ? 'bg-indigo-50/90 dark:bg-indigo-950/50 ring-2 ring-indigo-500 shadow-md -translate-y-1'
+                                        : 'bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800 hover:bg-white'
+                                    }`}
+                                  >
+                                    <div className="flex flex-col items-center">
+                                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">
+                                        {monthPrefix}
+                                      </span>
+                                      <span className={`text-xs font-black ${isSelected ? 'text-indigo-600' : isLogged ? 'text-slate-900 dark:text-white' : 'text-slate-400'}`}>
+                                        {dayNum}
+                                      </span>
+                                      {isToday && <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 mt-0.5 animate-pulse" />}
+                                    </div>
+
+                                    <div className="w-full h-24 my-1.5 flex items-end justify-center">
+                                      {isLogged ? (
+                                        <div className="w-6 h-full rounded-xl bg-slate-100 dark:bg-slate-800 p-0.5 flex items-end justify-center gap-0.5 overflow-hidden border border-slate-200/60 dark:border-slate-700/60">
+                                          {repairVal > 0 && (
+                                            <div style={{ height: `${repairHeightPct}%` }} className="w-full rounded-md bg-gradient-to-t from-emerald-600 to-emerald-400 flex items-center justify-center pt-0.5">
+                                              <span className="text-[8px] font-black text-white">{repairVal}</span>
+                                            </div>
+                                          )}
+                                          {damageVal > 0 && (
+                                            <div style={{ height: `${damageHeightPct}%` }} className="w-full rounded-md bg-gradient-to-t from-rose-600 to-rose-400 flex items-center justify-center pt-0.5">
+                                              <span className="text-[8px] font-black text-white">{damageVal}</span>
+                                            </div>
+                                          )}
+                                        </div>
+                                      ) : (
+                                        <div className="w-6 h-full rounded-xl border border-dashed border-slate-200 dark:border-slate-700/60 flex flex-col items-center justify-center gap-0.5">
+                                          <span className="text-slate-300 font-bold text-xs">—</span>
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    <div className="w-full flex justify-center">
+                                      {isLogged ? (
+                                        <span className={`px-1 py-0.5 rounded text-[8.5px] font-black leading-none ${netVal > 0 ? 'bg-emerald-500/15 text-emerald-700' : netVal < 0 ? 'bg-rose-500/15 text-rose-700' : 'bg-slate-200 text-slate-700'}`}>
+                                          {netVal > 0 ? `+${netVal}` : netVal}
+                                        </span>
+                                      ) : (
+                                        <span className="text-[10px] text-slate-300">•</span>
+                                      )}
+                                    </div>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            /* 4. YEARLY: 12-Month Activity Capsules */
+                            <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-12 gap-1.5 sm:gap-2">
+                              {cellularTrendData.chartData.map((monthItem, idx) => {
+                                const isSelected = selectedChartDayIndex === idx || (selectedChartDayIndex === null && activeSelectedDay?.dateStr === monthItem.dateStr);
+                                const isLogged = monthItem.isLogged;
+                                const repairVal = monthItem.repair || 0;
+                                const damageVal = monthItem.damage || 0;
+                                const netVal = (monthItem.net ?? 0);
+                                const yearlyMax = Math.max(2, ...cellularTrendData.chartData.map(c => Math.max(c.repair || 0, c.damage || 0)));
+                                const damageHeightPct = isLogged && damageVal > 0 ? Math.min(100, Math.max(26, Math.round((damageVal / yearlyMax) * 100))) : 0;
+                                const repairHeightPct = isLogged && repairVal > 0 ? Math.min(100, Math.max(26, Math.round((repairVal / yearlyMax) * 100))) : 0;
+
+                                return (
+                                  <button
+                                    key={monthItem.dateStr || idx}
+                                    type="button"
+                                    onClick={() => setSelectedChartDayIndex(idx)}
+                                    className={`group relative flex flex-col items-center justify-between rounded-2xl p-1.5 sm:p-2 transition-all cursor-pointer ${
+                                      isSelected
+                                        ? 'bg-indigo-50/90 dark:bg-indigo-950/50 ring-2 ring-indigo-500 shadow-md -translate-y-1'
+                                        : 'bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800 hover:bg-white'
+                                    }`}
+                                  >
+                                    <span className={`text-[10px] font-black uppercase tracking-wider ${isSelected ? 'text-indigo-600 font-black' : isLogged ? 'text-slate-900 dark:text-white' : 'text-slate-400'}`}>
+                                      {monthItem.label}
+                                    </span>
+
+                                    <div className="w-full h-24 sm:h-28 my-1.5 flex items-end justify-center">
+                                      {isLogged ? (
+                                        <div className="w-full max-w-[32px] h-full rounded-2xl bg-slate-100 dark:bg-slate-800/80 p-1 flex items-end justify-center gap-1 overflow-hidden border border-slate-200/60 dark:border-slate-700/60 shadow-inner">
+                                          {repairVal > 0 && (
+                                            <div style={{ height: `${repairHeightPct}%` }} className={`${damageVal > 0 ? 'w-1/2' : 'w-full'} rounded-xl bg-gradient-to-t from-emerald-600 to-emerald-400 flex flex-col items-center justify-start pt-1`}>
+                                              <span className="text-[9px] font-black text-white">{repairVal}</span>
+                                            </div>
+                                          )}
+                                          {damageVal > 0 && (
+                                            <div style={{ height: `${damageHeightPct}%` }} className={`${repairVal > 0 ? 'w-1/2' : 'w-full'} rounded-xl bg-gradient-to-t from-rose-600 to-rose-400 flex flex-col items-center justify-start pt-1`}>
+                                              <span className="text-[9px] font-black text-white">{damageVal}</span>
+                                            </div>
+                                          )}
+                                        </div>
+                                      ) : (
+                                        <div className="w-full max-w-[32px] h-full rounded-2xl border border-dashed border-slate-200 dark:border-slate-700/70 bg-slate-50/50 dark:bg-slate-800/20 flex flex-col items-center justify-center gap-1">
+                                          <span className="text-slate-300 font-black text-xs">—</span>
+                                          <span className="text-[7.5px] font-bold text-slate-400 uppercase">Rest</span>
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    <div className="w-full flex justify-center">
+                                      {isLogged ? (
+                                        <span className={`px-1.5 py-0.5 rounded-md text-[9px] font-black tracking-tight leading-none ${netVal > 0 ? 'bg-emerald-500/15 text-emerald-700' : netVal < 0 ? 'bg-rose-500/15 text-rose-700' : 'bg-slate-200 text-slate-700'}`}>
+                                          {netVal > 0 ? `+${netVal}` : netVal}
+                                        </span>
+                                      ) : (
+                                        <span className="text-[10px] font-bold text-slate-300">•</span>
+                                      )}
+                                    </div>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        /* === RESPONSIVE BAR CANVAS (MONTHLY / YEARLY / TODAY / WEEKLY BARS) === */
+                        <div
+                          ref={chartScrollRef}
+                          className="w-full overflow-x-auto scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700 pb-2 pt-1 -mx-0.5 px-0.5"
+                        >
+                          <div
+                            style={{
+                              minWidth: timePeriod === 'monthly'
+                                ? Math.max(780, cellularTrendData.chartData.length * 28)
+                                : timePeriod === 'yearly'
+                                  ? 560
+                                  : '100%'
+                            }}
+                            className="h-64 sm:h-68"
+                          >
+                            <ResponsiveContainer width="100%" height="100%">
+                              <ComposedChart
+                                data={cellularTrendData.chartData}
+                                margin={{ top: 15, right: 12, left: -22, bottom: timePeriod === 'weekly' ? 28 : (timePeriod === 'today' ? 12 : 8) }}
+                            onClick={(e: any) => {
+                              if (e && e.activeTooltipIndex !== undefined) {
+                                setSelectedChartDayIndex(e.activeTooltipIndex);
+                              }
+                            }}
+                          >
+                            <defs>
+                              <linearGradient id="repairBarGrad" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor="#10b981" stopOpacity={1} />
+                                <stop offset="100%" stopColor="#059669" stopOpacity={0.9} />
+                              </linearGradient>
+                              <linearGradient id="damageBarGrad" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor="#f43f5e" stopOpacity={1} />
+                                <stop offset="100%" stopColor="#e11d48" stopOpacity={0.9} />
+                              </linearGradient>
+                              <linearGradient id="repairTrendGrad" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor="#10b981" stopOpacity={0.4} />
+                                <stop offset="70%" stopColor="#10b981" stopOpacity={0.08} />
+                                <stop offset="100%" stopColor="#10b981" stopOpacity={0.0} />
+                              </linearGradient>
+                              <linearGradient id="damageTrendGrad" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor="#f43f5e" stopOpacity={0.38} />
+                                <stop offset="70%" stopColor="#f43f5e" stopOpacity={0.06} />
+                                <stop offset="100%" stopColor="#f43f5e" stopOpacity={0.0} />
+                              </linearGradient>
+                              <linearGradient id="unscoredFrostedGrad" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor="#f8fafc" stopOpacity={0.85} />
+                                <stop offset="60%" stopColor="#f1f5f9" stopOpacity={0.55} />
+                                <stop offset="100%" stopColor="#e2e8f0" stopOpacity={0.35} />
+                              </linearGradient>
+                              <filter id="glowRose" x="-20%" y="-20%" width="140%" height="140%">
+                                <feDropShadow dx="0" dy="2" stdDeviation="3" floodColor="#f43f5e" floodOpacity="0.3" />
+                              </filter>
+                              <filter id="glowEmerald" x="-20%" y="-20%" width="140%" height="140%">
+                                <feDropShadow dx="0" dy="2" stdDeviation="3" floodColor="#10b981" floodOpacity="0.3" />
+                              </filter>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" strokeOpacity={0.6} />
+                            <XAxis
+                              dataKey="label"
+                              tickLine={false}
+                              axisLine={false}
+                              interval={timePeriod === 'monthly' ? 4 : 0}
+                              tick={(props: any) => {
+                                const { x, y, payload } = props;
+                                const item = cellularTrendData.chartData[payload.index];
+                                if (!item) return null;
+                                const isSelected = selectedChartDayIndex === payload.index;
+                                const isLogged = item.isLogged;
+                                const labelParts = (item.label || '').split(' ');
+                                const weekday = labelParts[0] || item.label;
+                                const dayNumber = labelParts[1] || '';
+
+                                if (timePeriod === 'weekly') {
+                                  return (
+                                    <g transform={`translate(${x},${y})`}>
+                                      <text
+                                        x={0}
+                                        y={11}
+                                        textAnchor="middle"
+                                        fontSize={10}
+                                        fontWeight={isSelected ? 900 : isLogged ? 700 : 500}
+                                        fill={isSelected ? '#4f46e5' : isLogged ? '#1e293b' : '#94a3b8'}
+                                      >
+                                        {weekday}
+                                      </text>
+                                      {dayNumber && (
+                                        <text
+                                          x={0}
+                                          y={22}
+                                          textAnchor="middle"
+                                          fontSize={10.5}
+                                          fontWeight={isSelected ? 900 : isLogged ? 800 : 600}
+                                          fill={isSelected ? '#4338ca' : isLogged ? '#0f172a' : '#94a3b8'}
+                                        >
+                                          {dayNumber}
+                                        </text>
+                                      )}
+                                      {isLogged ? (
+                                        <circle
+                                          cx={0}
+                                          cy={31}
+                                          r={2.5}
+                                          fill={item.net >= 0 ? '#10b981' : '#f43f5e'}
+                                        />
+                                      ) : (
+                                        <g>
+                                          <rect
+                                            x={-16}
+                                            y={25}
+                                            width={32}
+                                            height={12}
+                                            rx={6}
+                                            fill="#f1f5f9"
+                                            stroke="#cbd5e1"
+                                            strokeWidth={0.8}
+                                            strokeDasharray="2 1.5"
+                                          />
+                                          <text
+                                            x={0}
+                                            y={33.5}
+                                            textAnchor="middle"
+                                            fontSize={6.5}
+                                            fontWeight={800}
+                                            fill="#94a3b8"
+                                            letterSpacing="0.04em"
+                                          >
+                                            REST
+                                          </text>
+                                        </g>
+                                      )}
+                                    </g>
+                                  );
+                                }
+
+                                return (
+                                  <text
+                                    x={x}
+                                    y={y + 12}
+                                    textAnchor="middle"
+                                    fontSize={9.5}
+                                    fontWeight={isLogged ? 700 : 500}
+                                    fill={isLogged ? '#334155' : '#94a3b8'}
+                                  >
+                                    {item.label}
+                                  </text>
+                                );
+                              }}
+                            />
+                            <YAxis
+                              tickLine={false}
+                              axisLine={false}
+                              tick={{ fontSize: 9.5, fill: '#94a3b8', fontWeight: 600 }}
+                              allowDecimals={false}
+                              domain={[0, (dataMax: number) => Math.max(2, Math.ceil(dataMax + 0.5))]}
+                            />
+                            <RechartsTooltip
+                              cursor={{ fill: 'rgba(99, 102, 241, 0.06)', radius: 8 }}
+                              wrapperStyle={{ pointerEvents: 'none', zIndex: 1000 }}
+                              isAnimationActive={false}
+                              content={({ active, payload }) => {
+                                if (active && payload && payload.length) {
+                                  const data = payload[0].payload;
+                                  if (!data.isLogged) {
+                                    return (
+                                      <div className="bg-slate-900/95 dark:bg-slate-800/95 backdrop-blur-md border border-slate-700/80 rounded-2xl p-3.5 shadow-2xl text-xs text-white z-50 min-w-[200px]">
+                                        <div className="font-bold text-slate-200 border-b border-slate-700/60 pb-2 mb-2 flex items-center justify-between gap-3">
+                                          <span>{data.fullDate || data.label}</span>
+                                          <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-slate-700/80 text-slate-300 border border-slate-600/60">
+                                            Not Scored
+                                          </span>
+                                        </div>
+                                        <p className="text-[11px] text-slate-300 py-0.5 flex items-center gap-2">
+                                          <span className="w-2 h-2 rounded-full bg-slate-400 shrink-0" />
+                                          <span>No habit check-in recorded</span>
+                                        </p>
+                                        <div className="mt-2.5 pt-2 border-t border-slate-700/60 text-[10px] text-indigo-400 font-bold">
+                                          Tap column to log check-in
+                                        </div>
+                                      </div>
+                                    );
+                                  }
+                                  const netValue = Math.round(data.net || 0);
+                                  return (
+                                    <div className="bg-slate-900/95 dark:bg-slate-800/95 backdrop-blur-md border border-slate-700/80 rounded-2xl p-3.5 shadow-2xl text-xs text-white z-50 min-w-[200px]">
+                                      <div className="font-bold text-slate-200 border-b border-slate-700/60 pb-2 mb-2 flex items-center justify-between gap-3">
+                                        <span>{data.fullDate || data.label}</span>
+                                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
+                                          netValue > 0
+                                            ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                                            : netValue < 0
+                                              ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                                              : 'bg-slate-700/80 text-slate-300 border border-slate-600/60'
+                                          }`}>
+                                          {netValue > 0 ? `+${netValue} Net Repair` : netValue < 0 ? `${netValue} Net Stress` : '0 Balanced'}
+                                        </span>
+                                      </div>
+                                      <div className="flex items-center justify-between gap-4 text-emerald-400 font-bold py-0.5">
+                                        <span className="flex items-center gap-1.5">
+                                          <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.9)] shrink-0" />
+                                          <span>{t('dashboard.repairHabits', 'Repair habits')}:</span>
+                                        </span>
+                                        <span className="font-black text-white">{Math.round(data.repair || 0)} {timePeriod === 'today' ? 'logged' : 'habits'}</span>
+                                      </div>
+                                      <div className="flex items-center justify-between gap-4 text-rose-400 font-bold py-0.5 mt-0.5">
+                                        <span className="flex items-center gap-1.5">
+                                          <span className="w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.9)] shrink-0" />
+                                          <span>{t('dashboard.stressIndicators', 'Stress indicators')}:</span>
+                                        </span>
+                                        <span className="font-black text-white">{Math.round(data.damage || 0)} {timePeriod === 'today' ? 'logged' : 'indicators'}</span>
                                       </div>
                                     </div>
                                   );
                                 }
+                                return null;
+                              }}
+                            />
+                            
+                            {/* Unscored Days Activity Pillar (Renders in BOTH Bars and Line modes so empty days are never plain blank) */}
+                            <Bar
+                              dataKey="unscoredPillar"
+                              name="Not Scored"
+                              barSize={timePeriod === 'today' ? 28 : (timePeriod === 'monthly' ? 8 : (timePeriod === 'yearly' ? 14 : 34))}
+                              shape={(props: any) => {
+                                const { x, y, width, height, payload } = props;
+                                if (payload.isLogged || !payload.unscoredPillar) return null;
+                                const isWeekly = timePeriod === 'weekly';
+                                const isMonthly = timePeriod === 'monthly';
+
+                                const pillarW = isWeekly
+                                  ? Math.min(36, Math.max(24, width * 0.72))
+                                  : isMonthly
+                                    ? Math.min(8, Math.max(5, width * 0.65))
+                                    : Math.min(18, Math.max(12, width * 0.7));
+                                const pillarX = x + (width - pillarW) / 2;
+                                const pillarH = height;
+                                const pillarY = y;
+                                const radius = isMonthly ? 4 : 10;
+
                                 return (
-                                  <div className="bg-slate-900/95 dark:bg-slate-800/95 backdrop-blur-md border border-slate-700/80 rounded-2xl p-3 shadow-2xl text-xs text-white z-50 min-w-[180px]">
-                                    <div className="font-bold text-slate-200 border-b border-slate-700/60 pb-1.5 mb-2 flex items-center justify-between gap-3">
-                                      <span>{data.fullDate || data.label}</span>
-                                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider ${(data.net || 0) >= 0
-                                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                                        : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
-                                        }`}>
-                                        {(data.net || 0) >= 0 ? `+${Math.round(data.net || 0)} Net Repair` : `${Math.round(data.net || 0)} Net Stress`}
-                                      </span>
-                                    </div>
-                                    <div className="flex items-center justify-between gap-4 text-emerald-400 font-semibold py-0.5">
-                                      <span className="flex items-center gap-1.5">
-                                        <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.8)] shrink-0" />
-                                        <span>{t('dashboard.repairHabits', 'Repair habits')}:</span>
-                                      </span>
-                                      <span className="font-black text-white">{Math.round(data.repair || 0)} {timePeriod === 'today' ? 'logged' : 'habits'}</span>
-                                    </div>
-                                    <div className="flex items-center justify-between gap-4 text-rose-400 font-semibold py-0.5 mt-0.5">
-                                      <span className="flex items-center gap-1.5">
-                                        <span className="w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_6px_rgba(244,63,94,0.8)] shrink-0" />
-                                        <span>{t('dashboard.stressIndicators', 'Stress indicators')}:</span>
-                                      </span>
-                                      <span className="font-black text-white">{Math.round(data.damage || 0)} {timePeriod === 'today' ? 'logged' : 'indicators'}</span>
-                                    </div>
-                                  </div>
+                                  <g className="cursor-pointer transition-opacity hover:opacity-100">
+                                    <rect
+                                      x={pillarX}
+                                      y={pillarY}
+                                      width={pillarW}
+                                      height={pillarH}
+                                      rx={radius}
+                                      ry={radius}
+                                      fill="url(#unscoredFrostedGrad)"
+                                      stroke="#cbd5e1"
+                                      strokeWidth={1.2}
+                                      strokeDasharray={isMonthly ? "2 2" : "3 3"}
+                                      className="transition-all hover:stroke-indigo-400"
+                                    />
+                                    {!isMonthly && pillarW >= 22 && pillarH >= 38 && (
+                                      <g transform={`translate(${pillarX + pillarW / 2}, ${pillarY + pillarH / 2})`}>
+                                        <line x1={-5} y1={-12} x2={5} y2={-12} stroke="#94a3b8" strokeWidth={1.5} strokeLinecap="round" />
+                                        <text
+                                          x={0}
+                                          y={3}
+                                          textAnchor="middle"
+                                          fontSize={8}
+                                          fontWeight={800}
+                                          fill="#94a3b8"
+                                          letterSpacing="0.08em"
+                                        >
+                                          REST
+                                        </text>
+                                        <circle cx={0} cy={14} r={2} fill="#94a3b8" opacity={0.7} />
+                                      </g>
+                                    )}
+                                    {isMonthly && (
+                                      <line
+                                        x1={pillarX + pillarW / 2}
+                                        y1={pillarY + pillarH / 2 - 5}
+                                        x2={pillarX + pillarW / 2}
+                                        y2={pillarY + pillarH / 2 + 5}
+                                        stroke="#cbd5e1"
+                                        strokeWidth={1.2}
+                                        strokeDasharray="2 1.5"
+                                      />
+                                    )}
+                                  </g>
                                 );
-                              }
-                              return null;
-                            }}
-                          />
-                          {/* 1. Subtle Unscored Slot Placeholder at Baseline */}
-                          <Bar
-                            dataKey="notScoredHeight"
-                            name="Not Scored"
-                            fill="#f1f5f9"
-                            stroke="#cbd5e1"
-                            strokeDasharray="2 2"
-                            radius={[3, 3, 3, 3]}
-                            barSize={timePeriod === 'monthly' ? 4 : 12}
-                          />
-                          {/* 2. Scored Forces: Prominent Solid Gradient Pillars */}
-                          <Bar
-                            dataKey="repair"
-                            name={t('dashboard.repairHabits', 'Repair habits')}
-                            fill="url(#repairBarGrad)"
-                            radius={[5, 5, 2, 2]}
-                            barSize={timePeriod === 'monthly' ? 6 : 14}
-                            minPointSize={5}
-                          />
-                          <Bar
-                            dataKey="damage"
-                            name={t('dashboard.stressIndicators', 'Stress indicators')}
-                            fill="url(#damageBarGrad)"
-                            radius={[5, 5, 2, 2]}
-                            barSize={timePeriod === 'monthly' ? 6 : 14}
-                            minPointSize={5}
-                          />
-                          {/* 3. Ambient Trend Flow Connecting Logged Days */}
-                          <Area
-                            type="monotone"
-                            dataKey="repair"
-                            name="Repair habits"
-                            stroke="#10b981"
-                            strokeWidth={2.5}
-                            fillOpacity={1}
-                            fill="url(#repairTrendGrad)"
-                            connectNulls={false}
-                            dot={{ r: 4.5, strokeWidth: 2, fill: '#10b981', stroke: '#fff' }}
-                            activeDot={{ r: 6, strokeWidth: 2.5, fill: '#10b981', stroke: '#fff' }}
-                          />
-                          <Area
-                            type="monotone"
-                            dataKey="damage"
-                            name="Stress indicators"
-                            stroke="#f43f5e"
-                            strokeWidth={2.5}
-                            fillOpacity={1}
-                            fill="url(#damageTrendGrad)"
-                            connectNulls={false}
-                            dot={{ r: 4.5, strokeWidth: 2, fill: '#f43f5e', stroke: '#fff' }}
-                            activeDot={{ r: 6, strokeWidth: 2.5, fill: '#f43f5e', stroke: '#fff' }}
-                          />
-                        </ComposedChart>
-                      </ResponsiveContainer>
+                              }}
+                            />
+
+                            {/* Renders Bars or Area Line based on user toggle */}
+                            {chartDisplayMode === 'bars' ? (
+                              <>
+                                {(forcesView === 'all' || forcesView === 'repair') && (
+                                  <Bar
+                                    dataKey="repair"
+                                    name={t('dashboard.repairHabits', 'Repair habits')}
+                                    fill="url(#repairBarGrad)"
+                                    radius={[8, 8, 4, 4]}
+                                    barSize={timePeriod === 'today' ? (cellularTrendData.chartData.length === 1 ? 36 : 28) : (timePeriod === 'monthly' ? 7 : (timePeriod === 'yearly' ? 14 : 22))}
+                                    filter="url(#glowEmerald)"
+                                  />
+                                )}
+                                {(forcesView === 'all' || forcesView === 'damage') && (
+                                  <Bar
+                                    dataKey="damage"
+                                    name={t('dashboard.stressIndicators', 'Stress indicators')}
+                                    fill="url(#damageBarGrad)"
+                                    radius={[8, 8, 4, 4]}
+                                    barSize={timePeriod === 'today' ? (cellularTrendData.chartData.length === 1 ? 36 : 28) : (timePeriod === 'monthly' ? 7 : (timePeriod === 'yearly' ? 14 : 22))}
+                                    filter="url(#glowRose)"
+                                  />
+                                )}
+                              </>
+                            ) : (
+                              <>
+                                {(forcesView === 'all' || forcesView === 'repair') && (
+                                  <Area
+                                    type="monotone"
+                                    dataKey="repair"
+                                    name={t('dashboard.repairHabits', 'Repair habits')}
+                                    stroke="#10b981"
+                                    strokeWidth={3}
+                                    fillOpacity={1}
+                                    fill="url(#repairTrendGrad)"
+                                    connectNulls={true}
+                                    dot={(dotProps: any) => {
+                                      const { cx, cy, payload } = dotProps;
+                                      if (!payload || !payload.isLogged || payload.repair === null || payload.repair === undefined) return <circle key={`r-empty-${cx}`} r={0} />;
+                                      return (
+                                        <circle
+                                          key={`r-${cx}-${cy}`}
+                                          cx={cx}
+                                          cy={cy}
+                                          r={4.5}
+                                          fill="#10b981"
+                                          stroke="#ffffff"
+                                          strokeWidth={2}
+                                          className="drop-shadow-xs cursor-pointer"
+                                        />
+                                      );
+                                    }}
+                                    activeDot={{ r: 6.5, strokeWidth: 2.5, fill: '#10b981', stroke: '#fff' }}
+                                  />
+                                )}
+                                {(forcesView === 'all' || forcesView === 'damage') && (
+                                  <Area
+                                    type="monotone"
+                                    dataKey="damage"
+                                    name={t('dashboard.stressIndicators', 'Stress indicators')}
+                                    stroke="#f43f5e"
+                                    strokeWidth={3}
+                                    fillOpacity={1}
+                                    fill="url(#damageTrendGrad)"
+                                    connectNulls={true}
+                                    dot={(dotProps: any) => {
+                                      const { cx, cy, payload } = dotProps;
+                                      if (!payload || !payload.isLogged || payload.damage === null || payload.damage === undefined) return <circle key={`d-empty-${cx}`} r={0} />;
+                                      return (
+                                        <circle
+                                          key={`d-${cx}-${cy}`}
+                                          cx={cx}
+                                          cy={cy}
+                                          r={4.5}
+                                          fill="#f43f5e"
+                                          stroke="#ffffff"
+                                          strokeWidth={2}
+                                          className="drop-shadow-xs cursor-pointer"
+                                        />
+                                      );
+                                    }}
+                                    activeDot={{ r: 6.5, strokeWidth: 2.5, fill: '#f43f5e', stroke: '#fff' }}
+                                  />
+                                )}
+                              </>
+                            )}
+                          </ComposedChart>
+                        </ResponsiveContainer>
+                      </div>
                     </div>
                   )}
+                  </div>
+                  )}
 
-                  {/* Latest Recorded Scored Day Card */}
-                  {latestLoggedPoint && timePeriod !== 'today' && (
-                    <div className="rounded-2xl bg-gradient-to-r from-slate-50/90 via-white to-slate-50/90 dark:from-slate-800/80 dark:via-slate-800/50 dark:to-slate-800/80 border border-slate-200/90 dark:border-slate-700/80 p-3 sm:p-3.5 shadow-xs">
+                  {/* Interactive Selected Day or Latest Recorded Scored Day Card */}
+                  {activeSelectedDay && (
+                    <div className="rounded-2xl bg-gradient-to-r from-slate-50/90 via-white to-slate-50/90 dark:from-slate-800/80 dark:via-slate-800/50 dark:to-slate-800/80 border border-slate-200/90 dark:border-slate-700/80 p-3 sm:p-3.5 shadow-xs transition-all">
                       <div className="flex items-center justify-between gap-2 border-b border-slate-200/60 dark:border-slate-700/60 pb-2 mb-2.5 flex-wrap">
                         <div className="flex items-center gap-2">
-                          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_6px_rgba(16,185,129,0.8)]" />
+                          <span className={`w-2 h-2 rounded-full ${activeSelectedDay.isLogged ? 'bg-emerald-500 animate-pulse shadow-[0_0_6px_rgba(16,185,129,0.8)]' : 'bg-slate-400'}`} />
                           <span className="text-xs font-bold text-slate-800 dark:text-slate-100">
-                            Recorded Check-in: <strong className="text-indigo-600 dark:text-indigo-400 font-extrabold">{latestLoggedPoint.fullDate || latestLoggedPoint.label}</strong>
+                            {timePeriod === 'today' ? 'Check-in Details:' : activeSelectedDay.isLogged ? 'Daily Check-in:' : 'Day Status:'} <strong className="text-indigo-600 dark:text-indigo-400 font-extrabold">{activeSelectedDay.fullDate || activeSelectedDay.label}</strong>
                           </span>
                         </div>
-                        <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${(latestLoggedPoint.net || 0) >= 0
-                          ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/25'
-                          : 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/25'
-                          }`}>
-                          {(latestLoggedPoint.net || 0) >= 0 ? `+${latestLoggedPoint.net} Net Repair` : `${latestLoggedPoint.net} Net Stress`}
-                        </span>
+                        {activeSelectedDay.isLogged ? (
+                          <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
+                            (activeSelectedDay.net || 0) > 0
+                              ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/25'
+                              : (activeSelectedDay.net || 0) < 0
+                                ? 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/25'
+                                : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-300/60 dark:border-slate-600'
+                            }`}>
+                            {(activeSelectedDay.net || 0) > 0
+                              ? `+${activeSelectedDay.net} Net Repair`
+                              : (activeSelectedDay.net || 0) < 0
+                                ? `${activeSelectedDay.net} Net Stress`
+                                : '0 Balanced'}
+                          </span>
+                        ) : (
+                          <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-300/60 dark:border-slate-600">
+                            Not Scored
+                          </span>
+                        )}
                       </div>
-                      <div className="grid grid-cols-2 gap-2 text-xs">
-                        <div className="flex items-center justify-between p-2.5 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-100/90 dark:border-emerald-900/40">
-                          <div className="flex items-center gap-2 min-w-0">
-                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0" />
-                            <div className="flex flex-col">
-                              <span className="font-extrabold text-[11px] text-emerald-900 dark:text-emerald-200">Repair Habits</span>
-                              <span className="text-[9px] text-emerald-700/80 dark:text-emerald-400/80">Restorative defense</span>
+
+                      {activeSelectedDay.isLogged ? (
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div className="flex items-center justify-between p-2.5 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-100/90 dark:border-emerald-900/40">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0" />
+                              <div className="flex flex-col">
+                                <span className="font-extrabold text-[11px] text-emerald-900 dark:text-emerald-200">Repair Habits</span>
+                                <span className="text-[9px] text-emerald-700/80 dark:text-emerald-400/80">Restorative defense</span>
+                              </div>
                             </div>
+                            <span className="font-black text-base text-emerald-600 dark:text-emerald-300 pl-2">
+                              {activeSelectedDay.repair || 0}
+                            </span>
                           </div>
-                          <span className="font-black text-base text-emerald-600 dark:text-emerald-300 pl-2">
-                            {latestLoggedPoint.repair || 0}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between p-2.5 rounded-xl bg-rose-50/70 dark:bg-rose-950/30 border border-rose-100/90 dark:border-rose-900/40">
-                          <div className="flex items-center gap-2 min-w-0">
-                            <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shrink-0" />
-                            <div className="flex flex-col">
-                              <span className="font-extrabold text-[11px] text-rose-900 dark:text-rose-200">Stress Triggers</span>
-                              <span className="text-[9px] text-rose-700/80 dark:text-rose-400/80">Cellular damage</span>
+                          <div className="flex items-center justify-between p-2.5 rounded-xl bg-rose-50/70 dark:bg-rose-950/30 border border-rose-100/90 dark:border-rose-900/40">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shrink-0" />
+                              <div className="flex flex-col">
+                                <span className="font-extrabold text-[11px] text-rose-900 dark:text-rose-200">Stress Triggers</span>
+                                <span className="text-[9px] text-rose-700/80 dark:text-rose-400/80">Cellular damage</span>
+                              </div>
                             </div>
+                            <span className="font-black text-base text-rose-600 dark:text-rose-300 pl-2">
+                              {activeSelectedDay.damage || 0}
+                            </span>
                           </div>
-                          <span className="font-black text-base text-rose-600 dark:text-rose-300 pl-2">
-                            {latestLoggedPoint.damage || 0}
-                          </span>
                         </div>
-                      </div>
+                      ) : (
+                        <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex items-center justify-between gap-3 text-xs">
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                            No check-in was logged on this day.
+                          </p>
+                          <button
+                            onClick={() => {
+                              const firstHabit = isCancerPatient ? 'fasting' : 'stress';
+                              setActiveScreen(firstHabit);
+                            }}
+                            className="px-3 py-1.5 rounded-xl bg-primary text-white text-[11px] font-bold hover:bg-primary-dark transition-all shrink-0 shadow-xs"
+                          >
+                            Log Habits Now
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -3029,7 +3793,39 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
                               : `Lifestyle stress factors exceed restorative defense (+${Math.abs(displayNet)} stress/day).`)
                           : t('dashboard.forcesEquilibrium', 'Cellular forces in dynamic equilibrium.')}
                     </p>
+
+                    {/* Trend Verdict Info — same verdict shown in Trend view footer */}
+                    {cellularTrendData.trendVerdict && (
+                      <div className="flex items-center gap-2 mt-2 pt-2 border-t border-slate-200/60 dark:border-slate-700/60">
+                        <span className="w-2 h-2 rounded-full bg-indigo-500 shrink-0 shadow-[0_0_6px_rgba(99,102,241,0.5)]" />
+                        <span className="text-[10px] sm:text-[11px] font-semibold text-slate-700 dark:text-slate-300 leading-tight">
+                          {cellularTrendData.trendVerdict}
+                        </span>
+                      </div>
+                    )}
                   </div>
+
+                  {/* Unscored Days Status Callout for Gauge Mode */}
+                  {cellularTrendData.unloggedCount > 0 && timePeriod !== 'today' && (
+                    <div className="rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/40 p-2.5 sm:p-3 flex items-center justify-between gap-3 text-xs">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-sm shrink-0">🗓️</span>
+                        <p className="text-[11px] text-slate-600 dark:text-slate-300 truncate">
+                          <strong className="text-slate-800 dark:text-slate-100 font-bold">
+                            {cellularTrendData.unloggedCount} {cellularTrendData.unloggedCount === 1 ? 'day was' : 'days were'}
+                          </strong>{' '}
+                          not scored in this period ({cellularTrendData.totalPoints - cellularTrendData.unloggedCount} scored).
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowChatbotModal(true)}
+                        className="shrink-0 text-[10px] font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 hover:underline cursor-pointer"
+                      >
+                        Complete Check-in →
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -3531,6 +4327,348 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
                 </div>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Full View Chart Modal */}
+      {/* Full View Chart Modal - Clean, Neat & Modern Layout */}
+      {showChartFullViewModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-2.5 sm:p-4 overflow-y-auto animate-in fade-in duration-200">
+          <div className="relative w-full max-w-4xl my-auto bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl p-4 sm:p-6 overflow-hidden flex flex-col max-h-[92vh]">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3 mb-3 shrink-0">
+              <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                <div className="w-9 h-9 rounded-xl bg-indigo-500/10 dark:bg-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0">
+                  <Scale className="w-5 h-5" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="text-sm sm:text-base font-black text-slate-900 dark:text-white leading-tight">
+                      Cellular Rhythm & Force Trajectory
+                    </h3>
+                    <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400 border border-indigo-200/60 dark:border-indigo-800/60 shrink-0 whitespace-nowrap">
+                      Full View
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                    Lifestyle Stress load vs Restorative Defense breakdown
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowChartFullViewModal(false)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-900 dark:hover:text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Modal Controls Bar - Clean, Compact 2-row layout */}
+            <div className="bg-slate-50/90 dark:bg-slate-800/40 p-2.5 rounded-2xl border border-slate-200/70 dark:border-slate-700/60 mb-3 space-y-2 shrink-0">
+              {/* Row 1: Periods & Display Mode */}
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                {/* Period Selectors */}
+                <div className="flex items-center gap-0.5 bg-white dark:bg-slate-800 p-0.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-2xs">
+                  {(['today', 'weekly', 'monthly', 'yearly'] as const).map((period) => (
+                    <button
+                      key={period}
+                      type="button"
+                      onClick={() => { setTimePeriod(period); setSelectedChartDayIndex(null); }}
+                      className={`px-2.5 sm:px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                        timePeriod === period
+                          ? 'bg-indigo-600 text-white shadow-xs'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                      }`}
+                    >
+                      {period === 'today' ? 'Today' : period === 'weekly' ? '7 Days' : period === 'monthly' ? '30 Days' : '1 Year'}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Chart Mode */}
+                <div className="flex items-center gap-0.5 bg-white dark:bg-slate-800 p-0.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-2xs">
+                  {(['capsules', 'bars', 'line'] as const).map((mode) => (
+                    <button
+                      key={mode}
+                      type="button"
+                      onClick={() => setChartDisplayMode(mode)}
+                      className={`px-2.5 sm:px-3 py-1 rounded-lg text-xs font-bold capitalize transition-all cursor-pointer whitespace-nowrap ${
+                        chartDisplayMode === mode
+                          ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-xs'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                      }`}
+                    >
+                      {mode}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Row 2: Force Filter Pills & Quick Legend */}
+              <div className="flex items-center justify-between gap-2 flex-wrap pt-0.5 border-t border-slate-200/50 dark:border-slate-700/40">
+                <div className="flex items-center gap-1.5 text-xs font-bold">
+                  <button
+                    type="button"
+                    onClick={() => setForcesView('all')}
+                    className={`px-2.5 py-0.5 rounded-lg border text-[11px] font-extrabold transition-all cursor-pointer whitespace-nowrap ${
+                      forcesView === 'all'
+                        ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border-indigo-300 shadow-2xs'
+                        : 'border-transparent text-slate-500 hover:text-slate-700'
+                    }`}
+                  >
+                    All Forces
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setForcesView('repair')}
+                    className={`px-2.5 py-0.5 rounded-lg border text-[11px] font-extrabold transition-all flex items-center gap-1 cursor-pointer whitespace-nowrap ${
+                      forcesView === 'repair'
+                        ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-300 shadow-2xs'
+                        : 'border-transparent text-slate-500 hover:text-slate-700'
+                    }`}
+                  >
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_4px_rgba(16,185,129,0.7)]" />
+                    <span>Repair Habits</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setForcesView('damage')}
+                    className={`px-2.5 py-0.5 rounded-lg border text-[11px] font-extrabold transition-all flex items-center gap-1 cursor-pointer whitespace-nowrap ${
+                      forcesView === 'damage'
+                        ? 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border-rose-300 shadow-2xs'
+                        : 'border-transparent text-slate-500 hover:text-slate-700'
+                    }`}
+                  >
+                    <span className="w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_4px_rgba(244,63,94,0.7)]" />
+                    <span>Stress Indicators</span>
+                  </button>
+                </div>
+
+                <div className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
+                  {cellularTrendData.chartData.filter(c => c.isLogged).length} of {cellularTrendData.chartData.length} scored
+                </div>
+              </div>
+            </div>
+
+            {/* Scrollable Content inside modal */}
+            <div className="flex-1 overflow-y-auto pr-0.5 space-y-3.5">
+              {/* 4 Compact KPI Summary Cards */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <div className="p-2.5 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/20 border border-emerald-200/80 dark:border-emerald-800/40">
+                  <span className="text-[9.5px] font-bold text-emerald-800 dark:text-emerald-300 uppercase tracking-wider">Total Repair</span>
+                  <div className="text-xl font-black text-emerald-600 dark:text-emerald-400 mt-0.5">
+                    {timePeriod === 'today' ? repairCount : Math.round(cellularTrendData.chartData.reduce((acc, c) => acc + (c.repair || 0), 0))}
+                  </div>
+                  <span className="text-[9.5px] text-emerald-700/80 font-medium">Restorative habits</span>
+                </div>
+
+                <div className="p-2.5 rounded-xl bg-rose-50/70 dark:bg-rose-950/20 border border-rose-200/80 dark:border-rose-800/40">
+                  <span className="text-[9.5px] font-bold text-rose-800 dark:text-rose-300 uppercase tracking-wider">Total Stress</span>
+                  <div className="text-xl font-black text-rose-600 dark:text-rose-400 mt-0.5">
+                    {timePeriod === 'today' ? damageCount : Math.round(cellularTrendData.chartData.reduce((acc, c) => acc + (c.damage || 0), 0))}
+                  </div>
+                  <span className="text-[9.5px] text-rose-700/80 font-medium">Stress triggers</span>
+                </div>
+
+                <div className="p-2.5 rounded-xl bg-indigo-50/70 dark:bg-indigo-950/20 border border-indigo-200/80 dark:border-indigo-800/40">
+                  <span className="text-[9.5px] font-bold text-indigo-800 dark:text-indigo-300 uppercase tracking-wider">Net Margin</span>
+                  <div className="text-xl font-black text-indigo-600 dark:text-indigo-400 mt-0.5">
+                    {timePeriod === 'today'
+                      ? (repairCount - damageCount >= 0 ? `+${repairCount - damageCount}` : `${repairCount - damageCount}`)
+                      : (Number(cellularTrendData.avgRepair) - Number(cellularTrendData.avgDamage) >= 0
+                          ? `+${Math.round((Number(cellularTrendData.avgRepair) - Number(cellularTrendData.avgDamage)) * 10) / 10}`
+                          : `${Math.round((Number(cellularTrendData.avgRepair) - Number(cellularTrendData.avgDamage)) * 10) / 10}`)}
+                  </div>
+                  <span className="text-[9.5px] text-indigo-700/80 font-medium">Cellular trajectory</span>
+                </div>
+
+                <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
+                  <span className="text-[9.5px] font-bold text-slate-500 uppercase tracking-wider">Consistency</span>
+                  <div className="text-xl font-black text-slate-800 dark:text-white mt-0.5">
+                    {cellularTrendData.chartData.filter(c => c.isLogged).length} / {cellularTrendData.chartData.length}
+                  </div>
+                  <span className="text-[9.5px] text-slate-400 font-medium">Days check-ins logged</span>
+                </div>
+              </div>
+
+              {/* Large Chart Canvas with Horizontal Scrolling & Auto-scroll */}
+              <div className="w-full bg-slate-50/50 dark:bg-slate-800/30 rounded-2xl p-3 border border-slate-200/80 dark:border-slate-700/80">
+                <div
+                  ref={fullViewScrollRef}
+                  className="w-full overflow-x-auto scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700 pb-2"
+                >
+                  <div style={{ minWidth: timePeriod === 'monthly' ? Math.max(820, cellularTrendData.chartData.length * 28) : (timePeriod === 'yearly' ? 560 : '100%') }} className="h-68 sm:h-76">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <ComposedChart
+                        data={cellularTrendData.chartData}
+                        margin={{ top: 20, right: 16, left: -20, bottom: 20 }}
+                        onClick={(e: any) => {
+                          if (e && e.activeTooltipIndex !== undefined) {
+                            setSelectedChartDayIndex(e.activeTooltipIndex);
+                          }
+                        }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" strokeOpacity={0.6} />
+                        <XAxis
+                          dataKey="label"
+                          tickLine={false}
+                          axisLine={false}
+                          tick={{ fontSize: 9.5, fill: '#64748b', fontWeight: 700 }}
+                        />
+                        <YAxis
+                          tickLine={false}
+                          axisLine={false}
+                          tick={{ fontSize: 9.5, fill: '#94a3b8', fontWeight: 600 }}
+                          allowDecimals={false}
+                          domain={[0, (dataMax: number) => Math.max(2, Math.ceil(dataMax + 0.5))]}
+                        />
+                        <RechartsTooltip
+                          cursor={{ fill: 'rgba(99, 102, 241, 0.08)', radius: 8 }}
+                          content={({ active, payload }) => {
+                            if (active && payload && payload.length) {
+                              const data = payload[0].payload;
+                              return (
+                                <div className="bg-slate-900/95 text-white p-3 rounded-2xl shadow-xl text-xs min-w-[180px] border border-slate-700">
+                                  <div className="font-bold border-b border-slate-700 pb-1 mb-1.5 flex justify-between">
+                                    <span>{data.fullDate || data.label}</span>
+                                    <span className="text-[10px] text-indigo-400 font-black">{data.isLogged ? 'Scored' : 'Not Scored'}</span>
+                                  </div>
+                                  <div className="text-emerald-400 font-bold flex justify-between">
+                                    <span>Repair:</span>
+                                    <span className="text-white">{data.repair || 0}</span>
+                                  </div>
+                                  <div className="text-rose-400 font-bold flex justify-between">
+                                    <span>Stress:</span>
+                                    <span className="text-white">{data.damage || 0}</span>
+                                  </div>
+                                  <div className="mt-1 pt-1 border-t border-slate-700 flex justify-between text-indigo-300 font-extrabold">
+                                    <span>Net:</span>
+                                    <span>{data.net !== null && data.net !== undefined ? (data.net > 0 ? `+${data.net}` : data.net) : '—'}</span>
+                                  </div>
+                                </div>
+                              );
+                            }
+                            return null;
+                          }}
+                        />
+                        <Bar
+                          dataKey="unscoredPillar"
+                          name="Not Scored"
+                          barSize={timePeriod === 'monthly' ? 10 : 26}
+                          shape={(props: any) => {
+                            const { x, y, width, height, payload } = props;
+                            if (payload.isLogged || !payload.unscoredPillar) return null;
+                            const pillarW = timePeriod === 'monthly' ? 8 : (timePeriod === 'yearly' ? 14 : 26);
+                            const pillarX = x + (width - pillarW) / 2;
+                            return (
+                              <g>
+                                <rect
+                                  x={pillarX}
+                                  y={y}
+                                  width={pillarW}
+                                  height={height}
+                                  rx={6}
+                                  fill="#f1f5f9"
+                                  stroke="#cbd5e1"
+                                  strokeWidth={1}
+                                  strokeDasharray="3 3"
+                                />
+                                {pillarW >= 22 && (
+                                  <text x={pillarX + pillarW / 2} y={y + height / 2 + 3} textAnchor="middle" fontSize={7.5} fontWeight={800} fill="#94a3b8">
+                                    REST
+                                  </text>
+                                )}
+                              </g>
+                            );
+                          }}
+                        />
+                        {chartDisplayMode === 'bars' ? (
+                          <>
+                            {(forcesView === 'all' || forcesView === 'repair') && (
+                              <Bar dataKey="repair" fill="#10b981" radius={[6, 6, 2, 2]} barSize={timePeriod === 'monthly' ? 8 : 20} />
+                            )}
+                            {(forcesView === 'all' || forcesView === 'damage') && (
+                              <Bar dataKey="damage" fill="#f43f5e" radius={[6, 6, 2, 2]} barSize={timePeriod === 'monthly' ? 8 : 20} />
+                            )}
+                          </>
+                        ) : (
+                          <>
+                            {(forcesView === 'all' || forcesView === 'repair') && (
+                              <Area type="monotone" dataKey="repair" stroke="#10b981" strokeWidth={3} fill="#10b981" fillOpacity={0.15} connectNulls={true} />
+                            )}
+                            {(forcesView === 'all' || forcesView === 'damage') && (
+                              <Area type="monotone" dataKey="damage" stroke="#f43f5e" strokeWidth={3} fill="#f43f5e" fillOpacity={0.15} connectNulls={true} />
+                            )}
+                          </>
+                        )}
+                      </ComposedChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              </div>
+
+              {/* Day-by-Day Historical Inspection List - Clean, Neat Single-Line Rows */}
+              <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 overflow-hidden shadow-2xs">
+                <div className="bg-slate-100/90 dark:bg-slate-800/90 px-4 py-2.5 flex items-center justify-between text-xs font-black text-slate-700 dark:text-slate-200">
+                  <span>Day-by-Day Historical Breakdown</span>
+                  <span className="text-[10px] font-bold text-slate-500">{cellularTrendData.chartData.length} records</span>
+                </div>
+                <div className="divide-y divide-slate-100 dark:divide-slate-800/60 max-h-56 overflow-y-auto">
+                  {cellularTrendData.chartData.slice().reverse().map((dayItem, dIdx) => (
+                    <div
+                      key={dayItem.dateStr || dIdx}
+                      onClick={() => setSelectedChartDayIndex(cellularTrendData.chartData.length - 1 - dIdx)}
+                      className="px-3.5 py-2.5 flex items-center justify-between gap-3 text-xs hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer transition-colors"
+                    >
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                        <span className={`w-2 h-2 rounded-full shrink-0 ${dayItem.isLogged ? 'bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,0.8)]' : 'bg-slate-300 dark:bg-slate-600'}`} />
+                        <span className="font-extrabold text-slate-800 dark:text-slate-100 truncate">{dayItem.fullDate || dayItem.label}</span>
+                        {!dayItem.isLogged && (
+                          <span className="text-[9px] font-black uppercase tracking-wider text-slate-400 bg-slate-100 dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700 px-1.5 py-0.5 rounded shrink-0">
+                            Not Scored
+                          </span>
+                        )}
+                      </div>
+
+                      {dayItem.isLogged ? (
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/60 whitespace-nowrap">
+                            +{dayItem.repair || 0} Repair
+                          </span>
+                          <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 border border-rose-200/60 dark:border-rose-800/60 whitespace-nowrap">
+                            +{dayItem.damage || 0} Stress
+                          </span>
+                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black whitespace-nowrap ${
+                            (dayItem.net || 0) > 0
+                              ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-200'
+                              : (dayItem.net || 0) < 0
+                                ? 'bg-rose-100 text-rose-800 dark:bg-rose-900/60 dark:text-rose-200'
+                                : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                          }`}>
+                            {(dayItem.net || 0) > 0 ? `+${dayItem.net}` : dayItem.net} Net
+                          </span>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShowChartFullViewModal(false);
+                            setActiveScreen('stress');
+                          }}
+                          className="px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 text-[10px] font-black shrink-0 whitespace-nowrap cursor-pointer transition-colors"
+                        >
+                          + Log Habits
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}

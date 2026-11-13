@@ -894,6 +894,7 @@ const AdminPanelContent: React.FC = () => {
     thumbnailUrl: '',
     category: 'DAMAGE – REDUCE THE LOAD',
     topic: 'Stress',
+    topicNumber: 1,
     focus: '',
     speaker: '',
     duration: '',
@@ -1954,6 +1955,7 @@ const getPlatformLabel = (url: string) => {
           thumbnailUrl: '',
           category: 'DAMAGE – REDUCE THE LOAD',
           topic: 'Stress',
+          topicNumber: 1,
           focus: '',
           speaker: '',
           duration: '',
@@ -5944,6 +5946,7 @@ const getPlatformLabel = (url: string) => {
                         thumbnailUrl: '',
                         category: 'DAMAGE – REDUCE THE LOAD',
                         topic: 'Stress',
+                        topicNumber: 1,
                         focus: '',
                         speaker: '',
                         duration: '20 min',
@@ -6018,13 +6021,7 @@ const getPlatformLabel = (url: string) => {
                     className="px-2.5 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-primary font-bold text-slate-700"
                   >
                     <option value="all">All Topics</option>
-                    {[
-                      'Stress', 'Sleep Debt', 'Smoking & Chewing', 'Alcohol', 'Substances',
-                      'Environment', 'Check Your Kitchen', 'Obesity', 'Dental Health',
-                      'Gastritis', 'Genetic Risk', 'Intermittent Fasting', 'Diet',
-                      'Antioxidants', 'Exercise', 'Stillness', 'Power of Breath',
-                      'Things You Love', 'Safer Products'
-                    ].map((t) => (
+                    {Array.from(new Set(videos.map((v) => v.topic).filter(Boolean))).sort().map((t: any) => (
                       <option key={t} value={t}>{t}</option>
                     ))}
                   </select>
@@ -6171,6 +6168,7 @@ const getPlatformLabel = (url: string) => {
                                     thumbnailUrl: vid.thumbnailUrl || '',
                                     category: vid.category || 'DAMAGE – REDUCE THE LOAD',
                                     topic: vid.topic || 'Stress',
+                                    topicNumber: vid.topicNumber || 1,
                                     focus: vid.focus || '',
                                     speaker: vid.speaker || '',
                                     duration: vid.duration || '',
@@ -6223,30 +6221,72 @@ const getPlatformLabel = (url: string) => {
                         />
                       </div>
 
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
+                      <div className="grid grid-cols-4 gap-2">
+                        <div className="col-span-1">
                           <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Category *</label>
-                          <select
+                          <input
+                            type="text"
+                            required
+                            list="adminCategoriesList"
                             value={videoForm.category}
                             onChange={(e) => setVideoForm({ ...videoForm, category: e.target.value })}
-                            className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-bold focus:ring-1 focus:ring-primary"
-                          >
-                            <option value="DAMAGE – REDUCE THE LOAD">DAMAGE – REDUCE THE LOAD</option>
-                            <option value="REPAIR – BUILD THE DEFENCE">REPAIR – BUILD THE DEFENCE</option>
-                            <option value="General Health">General Health</option>
-                          </select>
+                            placeholder="DAMAGE / REPAIR"
+                            className="w-full px-2 py-2 border border-slate-200 rounded-xl text-xs font-bold focus:ring-1 focus:ring-primary truncate"
+                          />
+                          <datalist id="adminCategoriesList">
+                            <option value="DAMAGE – REDUCE THE LOAD" />
+                            <option value="REPAIR – BUILD THE DEFENCE" />
+                            <option value="General Health" />
+                          </datalist>
                         </div>
-                        <div>
+                        <div className="col-span-1">
                           <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Topic *</label>
                           <input
                             type="text"
                             required
+                            list="adminTopicsList"
                             value={videoForm.topic}
                             onChange={(e) => setVideoForm({ ...videoForm, topic: e.target.value })}
-                            placeholder="e.g. Stress, Sleep Debt, Fasting"
-                            className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-bold focus:ring-1 focus:ring-primary"
+                            placeholder="e.g. Stress"
+                            className="w-full px-2 py-2 border border-slate-200 rounded-xl text-xs font-bold focus:ring-1 focus:ring-primary"
+                          />
+                          <datalist id="adminTopicsList">
+                            {Array.from(new Set(videos.map((v) => v.topic).filter(Boolean))).map((t: any) => (
+                              <option key={t} value={t} />
+                            ))}
+                          </datalist>
+                        </div>
+                        <div className="col-span-1">
+                          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Topic #</label>
+                          <input
+                            type="number"
+                            value={videoForm.topicNumber || ''}
+                            onChange={(e) => setVideoForm({ ...videoForm, topicNumber: Number(e.target.value) || 1 })}
+                            placeholder="1 to 19"
+                            className="w-full px-2 py-2 border border-slate-200 rounded-xl text-xs font-bold focus:ring-1 focus:ring-primary"
                           />
                         </div>
+                        <div className="col-span-1">
+                          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Order #</label>
+                          <input
+                            type="number"
+                            value={videoForm.order || ''}
+                            onChange={(e) => setVideoForm({ ...videoForm, order: Number(e.target.value) || 1 })}
+                            placeholder="1, 2, 3..."
+                            className="w-full px-2 py-2 border border-slate-200 rounded-xl text-xs font-bold focus:ring-1 focus:ring-primary"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Scientific Focus (Mechanism / Explanation)</label>
+                        <input
+                          type="text"
+                          value={videoForm.focus}
+                          onChange={(e) => setVideoForm({ ...videoForm, focus: e.target.value })}
+                          placeholder="e.g. Cortisol, sympathetic activation, inflammation, immune surveillance and cancer."
+                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-medium focus:ring-1 focus:ring-primary"
+                        />
                       </div>
 
                       <div className="grid grid-cols-2 gap-3">
