@@ -31,36 +31,57 @@ export class PrescriptionService {
         const writeStream = fs.createWriteStream(filePath);
         doc.pipe(writeStream);
 
-        // --- HEADER SECTION ---
-        // Top banner background
-        doc.rect(40, 40, 515, 75).fill('#F8FAFC');
-
-        // Platform Brand
-        doc.fillColor('#0284C7').fontSize(16).font('Helvetica-Bold').text(`${appName.toUpperCase()} CLINICAL CARE`, 52, 50);
-        doc.fillColor('#64748B').fontSize(8).font('Helvetica').text(appTagline, 52, 68);
-        doc.fontSize(7.5).fillColor('#94A3B8').text('Telemedicine Practice Guidelines (2020) Compliant', 52, 80);
-
-        // Doctor Header Info (Right Aligned)
+        // Doctor Header Details
         const docName = doctor.name ? (doctor.name.startsWith('Dr.') ? doctor.name : `Dr. ${doctor.name}`) : 'Consulting Specialist';
-        doc.fillColor('#0F172A').fontSize(12).font('Helvetica-Bold').text(docName, 260, 50, { width: 280, align: 'right' });
-        
         const docQual = doctor.qualification ? `${doctor.qualification} • ` : '';
         const docSpec = doctor.specialty || doctor.focusTitle || 'Consultant Physician';
-        doc.fillColor('#475569').fontSize(8.5).font('Helvetica-Bold').text(`${docQual}${docSpec}`, 260, 65, { width: 280, align: 'right' });
-
         const docAffil = doctor.hospitalName || 'Mito Reboot Specialist Panel';
         const docContact = doctor.email ? ` | ${doctor.email}` : '';
-        doc.fillColor('#64748B').fontSize(7.5).font('Helvetica').text(`${docAffil}${docContact}`, 260, 78, { width: 280, align: 'right' });
+        const docReg = doctor.registrationNumber ? `Reg. No: ${doctor.registrationNumber}` : '';
 
-        if (doctor.registrationNumber) {
-          doc.fillColor('#0284C7').fontSize(7.5).font('Helvetica-Bold').text(`Reg. No: ${doctor.registrationNumber}`, 260, 90, { width: 280, align: 'right' });
+        // Pre-calculate heights to dynamically size the top banner without overlap
+        doc.fontSize(11).font('Helvetica-Bold');
+        const nameH = doc.heightOfString(docName, { width: 310 });
+        doc.fontSize(8).font('Helvetica-Bold');
+        const specH = doc.heightOfString(`${docQual}${docSpec}`, { width: 310, lineGap: 1.5 });
+        doc.fontSize(7.5).font('Helvetica');
+        const affilH = doc.heightOfString(`${docAffil}${docContact}`, { width: 310, lineGap: 1 });
+        doc.fontSize(7.5).font('Helvetica-Bold');
+        const regH = docReg ? doc.heightOfString(docReg, { width: 310 }) + 2 : 0;
+
+        const rightBlockH = nameH + specH + affilH + regH + 6;
+        const bannerH = Math.max(76, rightBlockH + 16);
+
+        // --- HEADER SECTION ---
+        // Top banner background
+        doc.rect(40, 40, 515, bannerH).fill('#F8FAFC');
+
+        // Platform Brand (Left Aligned)
+        doc.fillColor('#0284C7').fontSize(15).font('Helvetica-Bold').text(`${appName.toUpperCase()} CLINICAL CARE`, 52, 48);
+        doc.fillColor('#64748B').fontSize(8).font('Helvetica').text(appTagline, 52, 66);
+        doc.fontSize(7.5).fillColor('#94A3B8').text('Telemedicine Practice Guidelines (2020) Compliant', 52, 78);
+
+        // Doctor Header Info (Right Aligned, dynamic Y so wrapped text never overlaps)
+        let currDocY = 48;
+        doc.fillColor('#0F172A').fontSize(11).font('Helvetica-Bold').text(docName, 235, currDocY, { width: 310, align: 'right' });
+        currDocY = doc.y + 2;
+
+        doc.fillColor('#475569').fontSize(8).font('Helvetica-Bold').text(`${docQual}${docSpec}`, 235, currDocY, { width: 310, align: 'right', lineGap: 1.5 });
+        currDocY = doc.y + 2;
+
+        doc.fillColor('#64748B').fontSize(7.5).font('Helvetica').text(`${docAffil}${docContact}`, 235, currDocY, { width: 310, align: 'right', lineGap: 1 });
+        currDocY = doc.y + 2;
+
+        if (docReg) {
+          doc.fillColor('#0284C7').fontSize(7.5).font('Helvetica-Bold').text(docReg, 235, currDocY, { width: 310, align: 'right' });
         }
 
         // Primary Accent Line
-        doc.rect(40, 115, 515, 3).fill('#0284C7');
+        const accentY = 40 + bannerH;
+        doc.rect(40, accentY, 515, 3).fill('#0284C7');
 
         // --- PATIENT & CONSULTATION META BAR ---
-        const metaTop = 125;
+        const metaTop = accentY + 8;
         doc.rect(40, metaTop, 515, 48).fill('#F1F5F9');
 
         doc.fillColor('#475569').fontSize(8).font('Helvetica-Bold').text('PATIENT NAME:', 50, metaTop + 8);

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, Suspense, lazy } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { ToastProvider, useToast } from './context/ToastContext';
+import { ToastProvider } from './context/ToastContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { LanguageProvider, useLanguage } from './context/LanguageContext';
 import { ConsultationProvider } from './context/ConsultationContext';
@@ -72,7 +72,6 @@ import { initNotificationScheduler } from './utils/notificationScheduler';
 const MainAppContent: React.FC = () => {
   const { isAuthenticated, isLoading, token, apiUrl, logout, branding, user, activeMode, isOnline, refreshProfile } = useAuth();
   const { t } = useLanguage();
-  const { showToast } = useToast();
   // Theme toggle moved to Profile settings
 
   // Parse route and orderId from URL (supports https://app.mitoreboot.in/orders/:id and ?tab=orders)
@@ -249,6 +248,7 @@ const MainAppContent: React.FC = () => {
   const [showDailyMotivation, setShowDailyMotivation] = useState<boolean>(false);
   const [dailyMotivationData, setDailyMotivationData] = useState<{ dayNumber: number; message: string }>({ dayNumber: 1, message: '' });
   const [inAppReminder, setInAppReminder] = useState<{ title: string; body: string; type?: string } | null>(null);
+  const [showExitToast, setShowExitToast] = useState<boolean>(false);
 
   const [versionCheckData, setVersionCheckData] = useState<{
     isOpen: boolean;
@@ -626,15 +626,16 @@ const MainAppContent: React.FC = () => {
             }
             App.exitApp();
           } else {
-            // First back press: prompt user with toast and start 2-second confirmation window
+            // First back press: prompt user with Instagram-style bottom snackbar
             lastBackPressTimeRef.current = now;
-            showToast(t('app.pressBackAgainToExit', 'Press back again to exit'), 'info', 2000);
+            setShowExitToast(true);
 
             if (exitResetTimerRef.current) {
               clearTimeout(exitResetTimerRef.current);
             }
             exitResetTimerRef.current = setTimeout(() => {
               lastBackPressTimeRef.current = 0;
+              setShowExitToast(false);
             }, 2000);
           }
         });
@@ -1399,6 +1400,15 @@ const MainAppContent: React.FC = () => {
         onClose={() => setShowAskMitoDrawer(false)}
         onNavigateToTab={setActiveTab}
       />
+
+      {/* Instagram-Style "Tap again to exit" Bottom Snackbar */}
+      {showExitToast && (
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-[999999] px-6 py-3 rounded-2xl bg-[#1e2329]/95 dark:bg-[#1e2329]/95 border border-white/10 shadow-2xl backdrop-blur-md pointer-events-none select-none flex items-center justify-center animate-in fade-in slide-in-from-bottom-2 duration-150">
+          <span className="text-white text-xs font-semibold tracking-wide">
+            Tap again to exit
+          </span>
+        </div>
+      )}
     </div>
   );
 };

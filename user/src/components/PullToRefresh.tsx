@@ -1,8 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import { RefreshCw, CheckCircle2, ArrowDown, Loader2 } from 'lucide-react';
+import { CheckCircle2 } from 'lucide-react';
 import { triggerHaptic } from '../utils/hapticHelper';
-import { useLanguage } from '../context/LanguageContext';
 
 interface PullToRefreshProps {
   onRefresh: () => Promise<void>;
@@ -11,7 +10,6 @@ interface PullToRefreshProps {
 }
 
 export const PullToRefresh: React.FC<PullToRefreshProps> = ({ onRefresh, children, disabled = false }) => {
-  const { t } = useLanguage();
   const [pullDistance, setPullDistance] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -104,50 +102,49 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({ onRefresh, childre
     };
   }, [pullDistance, isRefreshing, disabled, onRefresh]);
 
-  const rotation = Math.min(360, (pullDistance / THRESHOLD) * 360);
-
   return (
     <div ref={containerRef} className="relative w-full h-full overflow-y-auto overscroll-none">
-      {/* Modern Floating Dynamic Pill Indicator */}
+      {/* Instagram-Style Circular Floating Pull Indicator */}
       <div
-        className="fixed top-4 left-1/2 -translate-x-1/2 z-[999] pointer-events-none transition-all duration-200 ease-out"
+        className="fixed top-2.5 left-1/2 -translate-x-1/2 z-[999] pointer-events-none transition-all duration-200 ease-out"
         style={{
-          transform: `translate(-50%, ${isRefreshing || showSuccess ? '0' : Math.max(-50, pullDistance - 55)}px)`,
-          opacity: pullDistance > 12 || isRefreshing || showSuccess ? 1 : 0
+          transform: `translate(-50%, ${isRefreshing || showSuccess ? '16px' : Math.max(-48, pullDistance - 48)}px) scale(${pullDistance > 8 || isRefreshing || showSuccess ? 1 : 0.6})`,
+          opacity: pullDistance > 8 || isRefreshing || showSuccess ? 1 : 0
         }}
       >
-        <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200/90 dark:border-slate-800 shadow-xl shadow-slate-900/10 dark:shadow-black/50 text-xs font-bold text-slate-800 dark:text-slate-100 transition-all">
+        <div className="w-10 h-10 rounded-full bg-white/95 dark:bg-[#262626]/95 backdrop-blur-md border border-slate-200/90 dark:border-white/10 shadow-xl shadow-black/15 flex items-center justify-center transition-all">
           {showSuccess ? (
-            <>
-              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-              <span className="text-emerald-700 dark:text-emerald-300 font-black text-[11px] tracking-tight">
-                {t('pullToRefresh.recordsUpToDate', 'Records Up to Date')}
-              </span>
-            </>
+            <CheckCircle2 className="w-5 h-5 text-emerald-500 animate-in zoom-in duration-150" />
           ) : isRefreshing ? (
-            <>
-              <Loader2 className="w-4 h-4 text-blue-600 dark:text-blue-400 animate-spin shrink-0" />
-              <span className="text-slate-700 dark:text-slate-200 font-extrabold text-[11px] tracking-tight">
-                {t('pullToRefresh.syncingLogs', 'Syncing Cellular Logs...')}
-              </span>
-            </>
-          ) : pullDistance >= THRESHOLD ? (
-            <>
-              <ArrowDown className="w-4 h-4 text-blue-600 dark:text-blue-400 animate-bounce shrink-0" />
-              <span className="text-blue-600 dark:text-blue-400 font-black text-[11px] tracking-tight">
-                {t('pullToRefresh.releaseToRefresh', 'Release to Refresh')}
-              </span>
-            </>
-          ) : (
-            <>
-              <RefreshCw
-                className="w-3.5 h-3.5 text-slate-500 shrink-0"
-                style={{ transform: `rotate(${rotation}deg)` }}
+            <svg className="w-5 h-5 text-blue-600 dark:text-blue-400 animate-spin" viewBox="0 0 24 24" fill="none">
+              <circle
+                cx="12"
+                cy="12"
+                r="9"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeDasharray="38 20"
               />
-              <span className="text-slate-500 font-medium text-[11px]">
-                {t('pullToRefresh.pullToRefresh', 'Pull to Refresh')}
-              </span>
-            </>
+            </svg>
+          ) : (
+            <svg
+              className="w-5 h-5 text-slate-700 dark:text-slate-200 transition-transform"
+              viewBox="0 0 24 24"
+              fill="none"
+              style={{ transform: `rotate(${Math.min(360, (pullDistance / THRESHOLD) * 270)}deg)` }}
+            >
+              <circle
+                cx="12"
+                cy="12"
+                r="9"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeDasharray="56.5"
+                strokeDashoffset={56.5 * (1 - Math.min(1, pullDistance / THRESHOLD))}
+              />
+            </svg>
           )}
         </div>
       </div>
