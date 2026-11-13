@@ -51,6 +51,10 @@ const corsOptions: cors.CorsOptions = {
     'x-request-id',
     'X-Request-Id',
     'Cache-Control',
+    'Pragma',
+    'Expires',
+    'If-None-Match',
+    'If-Modified-Since',
     'sec-ch-ua',
     'sec-ch-ua-mobile',
     'sec-ch-ua-platform'

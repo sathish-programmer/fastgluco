@@ -1147,14 +1147,16 @@ const AdminPanelContent: React.FC = () => {
         return `"${strVal.replace(/"/g, '""')}"`;
       }).join(",")
     );
-    const csvContent = "data:text/csv;charset=utf-8," + [headers, ...rows].join("\n");
-    const encodedUri = encodeURI(csvContent);
+    const csvString = [headers, ...rows].join("\n");
+    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+    const blobUrl = window.URL.createObjectURL(blob);
     const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
+    link.setAttribute("href", blobUrl);
     link.setAttribute("download", `${filename}_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    setTimeout(() => window.URL.revokeObjectURL(blobUrl), 1500);
   };
 
   const handleLoginSubmit = async (e: React.FormEvent) => {

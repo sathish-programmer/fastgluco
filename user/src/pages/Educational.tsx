@@ -111,12 +111,7 @@ export const Educational: React.FC = () => {
       }
 
       // Fetch videos (uncached so admin updates to paid/free, topics, or URLs reflect immediately)
-      const videosRes = await fetch(`${apiUrl}/videos?_t=${Date.now()}`, {
-        headers: {
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache'
-        }
-      });
+      const videosRes = await fetch(`${apiUrl}/videos?_t=${Date.now()}`);
       if (videosRes.ok) {
         const videosData = await videosRes.json();
         if (Array.isArray(videosData) && videosData.length > 0) {

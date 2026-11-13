@@ -833,13 +833,14 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
 </html>`;
 
       const dateStamp = new Date().toISOString().split('T')[0];
-      const fileName = `MitoReboot_Cellular_Balance_${timePeriod}_${dateStamp}.html`;
+      const fileName = `MitoReboot_Cellular_Balance_${timePeriod}_${dateStamp}.pdf`;
 
-      // 1. Native iOS & Android handling via Capacitor Filesystem + Share plugin
+      // 1. Native iOS & Android: write HTML to cache, open in browser for Print-to-PDF
       if (Capacitor.isNativePlatform()) {
         try {
+          const htmlFileName = `MitoReboot_Report_${dateStamp}.html`;
           const writtenFile = await Filesystem.writeFile({
-            path: fileName,
+            path: htmlFileName,
             data: htmlContent,
             directory: Directory.Cache,
             encoding: Encoding.UTF8,
@@ -847,9 +848,9 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
 
           await Share.share({
             title: `MitoReboot Cellular Balance (${periodTitle})`,
-            text: `Cellular Balance Report for ${userName} (${periodTitle})`,
+            text: `Cellular Balance Report for ${userName} (${periodTitle}) — Open in browser and use "Print → Save as PDF" to download as PDF.`,
             url: writtenFile.uri,
-            dialogTitle: 'Download / Share Cellular Report',
+            dialogTitle: 'Save / Share Cellular Report',
           });
           return;
         } catch (nativeErr) {
@@ -857,68 +858,48 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
         }
       }
 
-      // 2. Mobile Browser Navigator Share (iOS Safari / Android Chrome)
-      if (navigator.canShare) {
-        try {
-          const file = new File([htmlContent], fileName, { type: 'text/html' });
-          if (navigator.canShare({ files: [file] })) {
-            await navigator.share({
-              files: [file],
-              title: `Cellular Balance Report — ${periodTitle}`,
-              text: `MitoReboot Cellular Balance Report for ${userName}`,
-            });
-            return;
-          }
-        } catch (shareErr) {
-          console.log('navigator.share aborted or unsupported:', shareErr);
+      // 2. Web: Open Print-to-PDF dialog using hidden iframe (saves as PDF)
+      try {
+        const oldIframe = document.getElementById('mr_pdf_print_iframe');
+        if (oldIframe) oldIframe.remove();
+
+        const iframe = document.createElement('iframe');
+        iframe.id = 'mr_pdf_print_iframe';
+        iframe.style.position = 'fixed';
+        iframe.style.right = '0';
+        iframe.style.bottom = '0';
+        iframe.style.width = '0';
+        iframe.style.height = '0';
+        iframe.style.border = '0';
+        document.body.appendChild(iframe);
+
+        const doc = iframe.contentWindow?.document || iframe.contentDocument;
+        if (doc) {
+          doc.open();
+          doc.write(htmlContent);
+          doc.close();
+
+          setTimeout(() => {
+            try {
+              iframe.contentWindow?.focus();
+              iframe.contentWindow?.print();
+            } catch (e) {
+              console.error('Iframe print error:', e);
+              // Fallback: download as HTML file
+              const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+              const blobUrl = window.URL.createObjectURL(blob);
+              const link = document.createElement('a');
+              link.href = blobUrl;
+              link.download = fileName.replace('.pdf', '.html');
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+              setTimeout(() => window.URL.revokeObjectURL(blobUrl), 1500);
+            }
+          }, 600);
         }
-      }
-
-      // 3. Web Download fallback via Blob and anchor tag
-      const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
-      const blobUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = blobUrl;
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      setTimeout(() => window.URL.revokeObjectURL(blobUrl), 1500);
-
-      // 4. Desktop Print Fallback (allows instant Print to PDF)
-      if (!Capacitor.isNativePlatform()) {
-        try {
-          const oldIframe = document.getElementById('mr_pdf_print_iframe');
-          if (oldIframe) oldIframe.remove();
-
-          const iframe = document.createElement('iframe');
-          iframe.id = 'mr_pdf_print_iframe';
-          iframe.style.position = 'fixed';
-          iframe.style.right = '0';
-          iframe.style.bottom = '0';
-          iframe.style.width = '0';
-          iframe.style.height = '0';
-          iframe.style.border = '0';
-          document.body.appendChild(iframe);
-
-          const doc = iframe.contentWindow?.document || iframe.contentDocument;
-          if (doc) {
-            doc.open();
-            doc.write(htmlContent);
-            doc.close();
-
-            setTimeout(() => {
-              try {
-                iframe.contentWindow?.focus();
-                iframe.contentWindow?.print();
-              } catch (e) {
-                console.error('Iframe print error:', e);
-              }
-            }, 600);
-          }
-        } catch (e) {
-          console.error('Print iframe creation error:', e);
-        }
+      } catch (e) {
+        console.error('Print iframe creation error:', e);
       }
     } catch (e) {
       console.error('Failed to generate HTML report', e);
@@ -3089,9 +3070,9 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
                                   ? Math.max(780, cellularTrendData.chartData.length * 28)
                                   : timePeriod === 'yearly'
                                     ? 560
-                                    : '100%'
+                                    : '100%',
+                                height: 272
                               }}
-                              className="h-64 sm:h-68"
                             >
                               <ResponsiveContainer width="100%" height="100%">
                                 <ComposedChart
@@ -4747,23 +4728,139 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
                       ref={fullViewScrollRef}
                       className="w-full overflow-x-auto scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700 pb-2"
                     >
-                      <div style={{ minWidth: timePeriod === 'monthly' ? Math.max(820, cellularTrendData.chartData.length * 28) : (timePeriod === 'yearly' ? 560 : '100%') }} className="h-68 sm:h-76">
+                      <div style={{ minWidth: timePeriod === 'monthly' ? Math.max(820, cellularTrendData.chartData.length * 28) : (timePeriod === 'yearly' ? 560 : '100%'), height: 304 }}>
                         <ResponsiveContainer width="100%" height="100%">
                           <ComposedChart
                             data={cellularTrendData.chartData}
-                            margin={{ top: 20, right: 18, left: -20, bottom: 20 }}
+                            margin={{ top: 18, right: 16, left: -20, bottom: timePeriod === 'weekly' ? 28 : (timePeriod === 'today' ? 12 : 10) }}
                             onClick={(e: any) => {
                               if (e && e.activeTooltipIndex !== undefined) {
                                 setSelectedChartDayIndex(e.activeTooltipIndex);
                               }
                             }}
                           >
+                            <defs>
+                              <linearGradient id="fvRepairBarGrad" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor="#10b981" stopOpacity={1} />
+                                <stop offset="100%" stopColor="#059669" stopOpacity={0.9} />
+                              </linearGradient>
+                              <linearGradient id="fvDamageBarGrad" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor="#f43f5e" stopOpacity={1} />
+                                <stop offset="100%" stopColor="#e11d48" stopOpacity={0.9} />
+                              </linearGradient>
+                              <linearGradient id="fvRepairTrendGrad" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor="#10b981" stopOpacity={0.4} />
+                                <stop offset="70%" stopColor="#10b981" stopOpacity={0.08} />
+                                <stop offset="100%" stopColor="#10b981" stopOpacity={0.0} />
+                              </linearGradient>
+                              <linearGradient id="fvDamageTrendGrad" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor="#f43f5e" stopOpacity={0.38} />
+                                <stop offset="70%" stopColor="#f43f5e" stopOpacity={0.06} />
+                                <stop offset="100%" stopColor="#f43f5e" stopOpacity={0.0} />
+                              </linearGradient>
+                              <linearGradient id="fvUnscoredFrostedGrad" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor="#f8fafc" stopOpacity={0.85} />
+                                <stop offset="60%" stopColor="#f1f5f9" stopOpacity={0.55} />
+                                <stop offset="100%" stopColor="#e2e8f0" stopOpacity={0.35} />
+                              </linearGradient>
+                              <filter id="fvGlowRose" x="-20%" y="-20%" width="140%" height="140%">
+                                <feDropShadow dx="0" dy="2" stdDeviation="3" floodColor="#f43f5e" floodOpacity="0.3" />
+                              </filter>
+                              <filter id="fvGlowEmerald" x="-20%" y="-20%" width="140%" height="140%">
+                                <feDropShadow dx="0" dy="2" stdDeviation="3" floodColor="#10b981" floodOpacity="0.3" />
+                              </filter>
+                            </defs>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" strokeOpacity={0.6} />
                             <XAxis
                               dataKey="label"
                               tickLine={false}
                               axisLine={false}
-                              tick={{ fontSize: 9.5, fill: '#64748b', fontWeight: 700 }}
+                              interval={timePeriod === 'monthly' ? 4 : 0}
+                              tick={(props: any) => {
+                                const { x, y, payload } = props;
+                                const item = cellularTrendData.chartData[payload.index];
+                                if (!item) return null;
+                                const isSelected = selectedChartDayIndex === payload.index;
+                                const isLogged = item.isLogged;
+                                const labelParts = (item.label || '').split(' ');
+                                const weekday = labelParts[0] || item.label;
+                                const dayNumber = labelParts[1] || '';
+
+                                if (timePeriod === 'weekly') {
+                                  return (
+                                    <g transform={`translate(${x},${y})`}>
+                                      <text
+                                        x={0}
+                                        y={11}
+                                        textAnchor="middle"
+                                        fontSize={10}
+                                        fontWeight={isSelected ? 900 : isLogged ? 700 : 500}
+                                        fill={isSelected ? '#4f46e5' : isLogged ? '#1e293b' : '#94a3b8'}
+                                      >
+                                        {weekday}
+                                      </text>
+                                      {dayNumber && (
+                                        <text
+                                          x={0}
+                                          y={22}
+                                          textAnchor="middle"
+                                          fontSize={10.5}
+                                          fontWeight={isSelected ? 900 : isLogged ? 800 : 600}
+                                          fill={isSelected ? '#4338ca' : isLogged ? '#0f172a' : '#94a3b8'}
+                                        >
+                                          {dayNumber}
+                                        </text>
+                                      )}
+                                      {isLogged ? (
+                                        <circle
+                                          cx={0}
+                                          cy={31}
+                                          r={2.5}
+                                          fill={item.net >= 0 ? '#10b981' : '#f43f5e'}
+                                        />
+                                      ) : (
+                                        <g>
+                                          <rect
+                                            x={-16}
+                                            y={25}
+                                            width={32}
+                                            height={12}
+                                            rx={6}
+                                            fill="#f1f5f9"
+                                            stroke="#cbd5e1"
+                                            strokeWidth={0.8}
+                                            strokeDasharray="2 1.5"
+                                          />
+                                          <text
+                                            x={0}
+                                            y={33.5}
+                                            textAnchor="middle"
+                                            fontSize={6.5}
+                                            fontWeight={800}
+                                            fill="#94a3b8"
+                                            letterSpacing="0.04em"
+                                          >
+                                            REST
+                                          </text>
+                                        </g>
+                                      )}
+                                    </g>
+                                  );
+                                }
+
+                                return (
+                                  <text
+                                    x={x}
+                                    y={y + 12}
+                                    textAnchor="middle"
+                                    fontSize={9.5}
+                                    fontWeight={isLogged ? 700 : 500}
+                                    fill={isLogged ? '#334155' : '#94a3b8'}
+                                  >
+                                    {item.label}
+                                  </text>
+                                );
+                              }}
                             />
                             <YAxis
                               tickLine={false}
@@ -4773,27 +4870,55 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
                               domain={[0, (dataMax: number) => Math.max(2, Math.ceil(dataMax + 0.5))]}
                             />
                             <RechartsTooltip
-                              cursor={{ fill: 'rgba(99, 102, 241, 0.08)', radius: 8 }}
+                              cursor={{ fill: 'rgba(99, 102, 241, 0.06)', radius: 8 }}
+                              wrapperStyle={{ pointerEvents: 'none', zIndex: 1000 }}
+                              isAnimationActive={false}
                               content={({ active, payload }) => {
                                 if (active && payload && payload.length) {
                                   const data = payload[0].payload;
+                                  if (!data.isLogged) {
+                                    return (
+                                      <div className="bg-slate-900/95 dark:bg-slate-800/95 backdrop-blur-md border border-slate-700/80 rounded-2xl p-3.5 shadow-2xl text-xs text-white z-50 min-w-[200px]">
+                                        <div className="font-bold text-slate-200 border-b border-slate-700/60 pb-2 mb-2 flex items-center justify-between gap-3">
+                                          <span>{data.fullDate || data.label}</span>
+                                          <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-slate-700/80 text-slate-300 border border-slate-600/60">
+                                            Not Scored
+                                          </span>
+                                        </div>
+                                        <p className="text-[11px] text-slate-300 py-0.5 flex items-center gap-2">
+                                          <span className="w-2 h-2 rounded-full bg-slate-400 shrink-0" />
+                                          <span>No habit check-in recorded</span>
+                                        </p>
+                                      </div>
+                                    );
+                                  }
+                                  const netValue = Math.round(data.net || 0);
                                   return (
-                                    <div className="bg-slate-900/95 text-white p-3 rounded-2xl shadow-xl text-xs min-w-[180px] border border-slate-700">
-                                      <div className="font-bold border-b border-slate-700 pb-1 mb-1.5 flex justify-between">
+                                    <div className="bg-slate-900/95 dark:bg-slate-800/95 backdrop-blur-md border border-slate-700/80 rounded-2xl p-3.5 shadow-2xl text-xs text-white z-50 min-w-[200px]">
+                                      <div className="font-bold text-slate-200 border-b border-slate-700/60 pb-2 mb-2 flex items-center justify-between gap-3">
                                         <span>{data.fullDate || data.label}</span>
-                                        <span className="text-[10px] text-indigo-400 font-black">{data.isLogged ? 'Scored' : 'Not Scored'}</span>
+                                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${netValue > 0
+                                            ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                                            : netValue < 0
+                                              ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                                              : 'bg-slate-700/80 text-slate-300 border border-slate-600/60'
+                                          }`}>
+                                          {netValue > 0 ? `+${netValue} Net Repair` : netValue < 0 ? `${netValue} Net Stress` : '0 Balanced'}
+                                        </span>
                                       </div>
-                                      <div className="text-emerald-400 font-bold flex justify-between">
-                                        <span>Repair:</span>
-                                        <span className="text-white">{data.repair || 0}</span>
+                                      <div className="flex items-center justify-between gap-4 text-emerald-400 font-bold py-0.5">
+                                        <span className="flex items-center gap-1.5">
+                                          <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.9)] shrink-0" />
+                                          <span>Repair habits:</span>
+                                        </span>
+                                        <span className="font-black text-white">{Math.round(data.repair || 0)} {timePeriod === 'today' ? 'logged' : 'habits'}</span>
                                       </div>
-                                      <div className="text-rose-400 font-bold flex justify-between">
-                                        <span>Stress:</span>
-                                        <span className="text-white">{data.damage || 0}</span>
-                                      </div>
-                                      <div className="mt-1 pt-1 border-t border-slate-700 flex justify-between text-indigo-300 font-extrabold">
-                                        <span>Net:</span>
-                                        <span>{data.net !== null && data.net !== undefined ? (data.net > 0 ? `+${data.net}` : data.net) : '—'}</span>
+                                      <div className="flex items-center justify-between gap-4 text-rose-400 font-bold py-0.5 mt-0.5">
+                                        <span className="flex items-center gap-1.5">
+                                          <span className="w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.9)] shrink-0" />
+                                          <span>Stress indicators:</span>
+                                        </span>
+                                        <span className="font-black text-white">{Math.round(data.damage || 0)} {timePeriod === 'today' ? 'logged' : 'indicators'}</span>
                                       </div>
                                     </div>
                                   );
@@ -4801,32 +4926,57 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
                                 return null;
                               }}
                             />
+                            {/* Unscored frosted pillar */}
                             <Bar
                               dataKey="unscoredPillar"
                               name="Not Scored"
-                              barSize={timePeriod === 'monthly' ? 10 : 26}
+                              barSize={timePeriod === 'today' ? 28 : (timePeriod === 'monthly' ? 8 : (timePeriod === 'yearly' ? 14 : 34))}
                               shape={(props: any) => {
                                 const { x, y, width, height, payload } = props;
                                 if (payload.isLogged || !payload.unscoredPillar) return null;
-                                const pillarW = timePeriod === 'monthly' ? 8 : (timePeriod === 'yearly' ? 14 : 26);
+                                const isWeekly = timePeriod === 'weekly';
+                                const isMonthly = timePeriod === 'monthly';
+
+                                const pillarW = isWeekly
+                                  ? Math.min(36, Math.max(24, width * 0.72))
+                                  : isMonthly
+                                    ? Math.min(8, Math.max(5, width * 0.65))
+                                    : Math.min(18, Math.max(12, width * 0.7));
                                 const pillarX = x + (width - pillarW) / 2;
+                                const pillarH = height;
+                                const pillarY = y;
+                                const radius = isMonthly ? 4 : 10;
+
                                 return (
-                                  <g>
+                                  <g className="cursor-pointer transition-opacity hover:opacity-100">
                                     <rect
                                       x={pillarX}
-                                      y={y}
+                                      y={pillarY}
                                       width={pillarW}
-                                      height={height}
-                                      rx={6}
-                                      fill="#f1f5f9"
+                                      height={pillarH}
+                                      rx={radius}
+                                      ry={radius}
+                                      fill="url(#fvUnscoredFrostedGrad)"
                                       stroke="#cbd5e1"
-                                      strokeWidth={1}
-                                      strokeDasharray="3 3"
+                                      strokeWidth={1.2}
+                                      strokeDasharray={isMonthly ? "2 2" : "3 3"}
                                     />
-                                    {pillarW >= 22 && (
-                                      <text x={pillarX + pillarW / 2} y={y + height / 2 + 3} textAnchor="middle" fontSize={7.5} fontWeight={800} fill="#94a3b8">
-                                        REST
-                                      </text>
+                                    {!isMonthly && pillarW >= 22 && pillarH >= 38 && (
+                                      <g transform={`translate(${pillarX + pillarW / 2}, ${pillarY + pillarH / 2})`}>
+                                        <line x1={-5} y1={-12} x2={5} y2={-12} stroke="#94a3b8" strokeWidth={1.5} strokeLinecap="round" />
+                                        <text
+                                          x={0}
+                                          y={3}
+                                          textAnchor="middle"
+                                          fontSize={8}
+                                          fontWeight={800}
+                                          fill="#94a3b8"
+                                          letterSpacing="0.08em"
+                                        >
+                                          REST
+                                        </text>
+                                        <circle cx={0} cy={14} r={2} fill="#94a3b8" opacity={0.7} />
+                                      </g>
                                     )}
                                   </g>
                                 );
@@ -4835,10 +4985,24 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
                             {chartDisplayMode === 'bars' ? (
                               <>
                                 {(forcesView === 'all' || forcesView === 'repair') && (
-                                  <Bar dataKey="repair" fill="#10b981" radius={[6, 6, 2, 2]} barSize={timePeriod === 'monthly' ? 8 : 20} />
+                                  <Bar
+                                    dataKey="repair"
+                                    name="Repair habits"
+                                    fill="url(#fvRepairBarGrad)"
+                                    radius={[8, 8, 4, 4]}
+                                    barSize={timePeriod === 'today' ? (cellularTrendData.chartData.length === 1 ? 36 : 28) : (timePeriod === 'monthly' ? 7 : (timePeriod === 'yearly' ? 14 : 22))}
+                                    filter="url(#fvGlowEmerald)"
+                                  />
                                 )}
                                 {(forcesView === 'all' || forcesView === 'damage') && (
-                                  <Bar dataKey="damage" fill="#f43f5e" radius={[6, 6, 2, 2]} barSize={timePeriod === 'monthly' ? 8 : 20} />
+                                  <Bar
+                                    dataKey="damage"
+                                    name="Stress indicators"
+                                    fill="url(#fvDamageBarGrad)"
+                                    radius={[8, 8, 4, 4]}
+                                    barSize={timePeriod === 'today' ? (cellularTrendData.chartData.length === 1 ? 36 : 28) : (timePeriod === 'monthly' ? 7 : (timePeriod === 'yearly' ? 14 : 22))}
+                                    filter="url(#fvGlowRose)"
+                                  />
                                 )}
                               </>
                             ) : (
@@ -4847,10 +5011,11 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
                                   <Area
                                     type="monotone"
                                     dataKey="repair"
+                                    name="Repair habits"
                                     stroke="#10b981"
                                     strokeWidth={3}
-                                    fill="#10b981"
-                                    fillOpacity={0.15}
+                                    fillOpacity={1}
+                                    fill="url(#fvRepairTrendGrad)"
                                     connectNulls={true}
                                     dot={(dotProps: any) => {
                                       const { cx, cy, payload } = dotProps;
@@ -4866,20 +5031,22 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
                                           fill="#10b981"
                                           stroke="#ffffff"
                                           strokeWidth={2}
-                                          className="cursor-pointer"
+                                          className="drop-shadow-xs cursor-pointer"
                                         />
                                       );
                                     }}
+                                    activeDot={{ r: 6.5, strokeWidth: 2.5, fill: '#10b981', stroke: '#fff' }}
                                   />
                                 )}
                                 {(forcesView === 'all' || forcesView === 'damage') && (
                                   <Area
                                     type="monotone"
                                     dataKey="damage"
+                                    name="Stress indicators"
                                     stroke="#f43f5e"
                                     strokeWidth={3}
-                                    fill="#f43f5e"
-                                    fillOpacity={0.15}
+                                    fillOpacity={1}
+                                    fill="url(#fvDamageTrendGrad)"
                                     connectNulls={true}
                                     dot={(dotProps: any) => {
                                       const { cx, cy, payload } = dotProps;
@@ -4895,10 +5062,11 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
                                           fill="#f43f5e"
                                           stroke="#ffffff"
                                           strokeWidth={2}
-                                          className="cursor-pointer"
+                                          className="drop-shadow-xs cursor-pointer"
                                         />
                                       );
                                     }}
+                                    activeDot={{ r: 6.5, strokeWidth: 2.5, fill: '#f43f5e', stroke: '#fff' }}
                                   />
                                 )}
                               </>
