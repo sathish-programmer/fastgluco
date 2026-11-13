@@ -210,7 +210,7 @@ export const Educational: React.FC = () => {
       }
 
       // Access filter (Free vs Pro Only)
-      const isPaidOnly = vid.isPaidOnly === true || vid.isPaidOnly === 'true';
+      const isPaidOnly = vid.isPaidOnly === true || vid.isPaidOnly === 'true' || vid.isPaidOnly === 1 || Boolean(vid.isPaidOnly);
       if (videoAccessFilter === 'free' && isPaidOnly) return false;
       if (videoAccessFilter === 'pro' && !isPaidOnly) return false;
 
@@ -508,7 +508,7 @@ export const Educational: React.FC = () => {
                   <div className="text-center py-8 bg-cardBg dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl">
                     <p className="text-xs text-slate-400 font-semibold">{t('common.noDataFound', 'No educational video links match your filter.')}</p>
                     <button
-                      onClick={() => { setVideoFilterCategory('all'); setVideoSearchTerm(''); setSelectedTopic('all'); }}
+                      onClick={() => { setVideoFilterCategory('all'); setVideoSearchTerm(''); setSelectedTopic('all'); setVideoAccessFilter('all'); }}
                       className="mt-2 text-xs font-bold text-primary hover:underline"
                     >
                       Reset filters

@@ -20,7 +20,8 @@ export const MITOREBOOT_LIBRARY_RESOURCES: IEducationalLibrarySeed[] = [
     "topicNumber": 1,
     "focus": "Cortisol, sympathetic activation, inflammation, immune surveillance and cancer.",
     "url": "https://www.buzzsprout.com/2539990/episodes/18617849-how-chronic-stress-shapes-cancer-risk-and-recovery",
-    "order": 1
+    "order": 1,
+    "isPaidOnly": true
   },
   {
     "title": "Chronic stress, cortisol and cancer \u2013 expert video discussions",
