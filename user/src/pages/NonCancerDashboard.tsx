@@ -362,6 +362,17 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
     }
   }, [activeScreen, apiUrl, token]);
 
+  // Listen to habit logging events from anywhere in the app to immediately update dashboard
+  useEffect(() => {
+    const handleHabitChange = () => {
+      fetchHabitsAndAppointments();
+    };
+    window.addEventListener('habit_logged', handleHabitChange);
+    return () => {
+      window.removeEventListener('habit_logged', handleHabitChange);
+    };
+  }, [apiUrl, token]);
+
   // Dynamically keep pendingHabitsCount in sync with the 19 dashboard modules
   useEffect(() => {
     const todayStr = new Date().toDateString();

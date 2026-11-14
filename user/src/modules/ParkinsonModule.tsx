@@ -118,7 +118,7 @@ export const ParkinsonModule: React.FC = () => {
           }
           if (val.slept8 !== undefined) setSlept8(val.slept8);
           if (val.lovedActivity !== undefined) setLovedActivity(val.lovedActivity);
-          if (val.lovedActivityNote && !lovedActivityNote) setLovedActivityNote(val.lovedActivityNote);
+          if (val.lovedActivityNote && !localStorage.getItem('mito_pd_loved_note')) setLovedActivityNote(val.lovedActivityNote);
           if (val.darkChocolate !== undefined) setDarkChocolate(val.darkChocolate);
           if (val.boosters) {
             setBoosters(prev => ({ ...val.boosters, ...prev }));
@@ -137,7 +137,7 @@ export const ParkinsonModule: React.FC = () => {
     } catch (e) {
       console.error('Failed to load parkinson history from cloud', e);
     }
-  }, [apiUrl, token, lovedActivityNote]);
+  }, [apiUrl, token]);
 
   useEffect(() => {
     if (user?.id && token) {

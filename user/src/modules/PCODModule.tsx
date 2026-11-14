@@ -78,8 +78,8 @@ export const PCODModule: React.FC = () => {
         for (const log of logs) {
           const val = log.value;
           if (val) {
-            if (val.height && !height) setHeight(val.height);
-            if (val.weight && !weight) setWeight(val.weight);
+            if (val.height && !localStorage.getItem('mito_pcod_height')) setHeight(val.height);
+            if (val.weight && !localStorage.getItem('mito_pcod_weight')) setWeight(val.weight);
             if (val.periodDates && Array.isArray(val.periodDates)) {
               setPeriodDates(prev => {
                 const set = new Set([...val.periodDates, ...prev]);
@@ -113,7 +113,7 @@ export const PCODModule: React.FC = () => {
     } catch (e) {
       console.error('Failed to load PCOD history from cloud', e);
     }
-  }, [apiUrl, token, height, weight]);
+  }, [apiUrl, token]);
 
   useEffect(() => {
     if (user?.id && token) {

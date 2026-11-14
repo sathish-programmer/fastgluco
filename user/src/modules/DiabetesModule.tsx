@@ -29,7 +29,7 @@ export const DiabetesModule: React.FC = () => {
   const { t, language } = useLanguage();
   const { apiUrl, token, user } = useAuth();
   const activeLocale = LOCALE_MAP[language] || 'en-US';
-  const [mode, setMode] = useState<string>('Prevention');
+  const [mode, setMode] = useState<string>(() => localStorage.getItem('mito_diab_mode') || 'Prevention');
   const [showHba1cHistoryModal, setShowHba1cHistoryModal] = useState<boolean>(false);
   const [showHistoryModal, setShowHistoryModal] = useState<boolean>(false);
   const [isSaving, setIsSaving] = useState<boolean>(false);
@@ -107,7 +107,7 @@ export const DiabetesModule: React.FC = () => {
         for (const log of logs) {
           const val = log.value;
           if (val) {
-            if (val.mode && !mode) setMode(val.mode);
+            if (val.mode && !localStorage.getItem('mito_diab_mode')) setMode(val.mode);
             if (val.lastFbsPpbs && !lastFbsPpbs) setLastFbsPpbs(val.lastFbsPpbs);
             if (val.hba1cLog && Array.isArray(val.hba1cLog)) {
               setHba1cLog(prev => {
@@ -131,7 +131,7 @@ export const DiabetesModule: React.FC = () => {
         const todayLog = logs.find(l => new Date(l.timestamp || (l as any).createdAt).toDateString() === currentToday);
         if (todayLog?.value) {
           const val = todayLog.value;
-          if (val.mode) setMode(val.mode);
+          if (val.mode && !localStorage.getItem('mito_diab_mode')) setMode(val.mode);
           if (val.exercised !== undefined) setExercised(val.exercised);
           if (val.tookAlcohol !== undefined) setTookAlcohol(val.tookAlcohol);
           if (val.ateJunk !== undefined) setAteJunk(val.ateJunk);
@@ -154,7 +154,7 @@ export const DiabetesModule: React.FC = () => {
     } finally {
       setIsLoadingCloud(false);
     }
-  }, [apiUrl, token, mode, lastFbsPpbs]);
+  }, [apiUrl, token]);
 
   useEffect(() => {
     if (user?.id && token) {
@@ -162,6 +162,8 @@ export const DiabetesModule: React.FC = () => {
     }
   }, [user?.id, token, loadHistory]);
 
+  // Persist State
+  useEffect(() => { localStorage.setItem('mito_diab_mode', mode); }, [mode]);
   // Persist State to Local Storage as secondary cache (stamped with date)
   useEffect(() => {
     const today = new Date().toDateString();

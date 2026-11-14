@@ -8,7 +8,7 @@ import { HabitsService, type HabitLog } from '../services/habitsService';
 export const CardiacModule: React.FC = () => {
   const { t } = useLanguage();
   const { apiUrl, token, user } = useAuth();
-  const [mode, setMode] = useState<string>('Prevention');
+  const [mode, setMode] = useState<string>(() => localStorage.getItem('mito_cardiac_mode') || 'Prevention');
   const [showHistoryModal, setShowHistoryModal] = useState<boolean>(false);
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
@@ -97,9 +97,9 @@ export const CardiacModule: React.FC = () => {
         for (const log of logs) {
           const val = log.value;
           if (val) {
-            if (val.mode && !mode) setMode(val.mode);
-            if (val.height && !height) setHeight(val.height);
-            if (val.weight && !weight) setWeight(val.weight);
+            if (val.mode && !localStorage.getItem('mito_cardiac_mode')) setMode(val.mode);
+            if (val.height && !localStorage.getItem('mito_cardiac_height')) setHeight(val.height);
+            if (val.weight && !localStorage.getItem('mito_cardiac_weight')) setWeight(val.weight);
             break;
           }
         }
@@ -109,7 +109,7 @@ export const CardiacModule: React.FC = () => {
         const todayLog = logs.find(l => new Date(l.timestamp || (l as any).createdAt).toDateString() === currentToday);
         if (todayLog?.value) {
           const val = todayLog.value;
-          if (val.mode) setMode(val.mode);
+          if (val.mode && !localStorage.getItem('mito_cardiac_mode')) setMode(val.mode);
           if (val.exercised !== undefined) setExercised(val.exercised);
           if (val.lowSalt !== undefined) setLowSalt(val.lowSalt);
           if (val.lowSugarJunk !== undefined) setLowSugarJunk(val.lowSugarJunk);
@@ -142,7 +142,7 @@ export const CardiacModule: React.FC = () => {
     } catch (e) {
       console.error('Failed to load cardiac history from cloud', e);
     }
-  }, [apiUrl, token, mode, height, weight]);
+  }, [apiUrl, token]);
 
   useEffect(() => {
     if (user?.id && token) {
@@ -194,6 +194,7 @@ export const CardiacModule: React.FC = () => {
   };
 
   // Persist State
+  useEffect(() => { localStorage.setItem('mito_cardiac_mode', mode); }, [mode]);
   useEffect(() => { localStorage.setItem('mito_cardiac_height', height); }, [height]);
   useEffect(() => { localStorage.setItem('mito_cardiac_weight', weight); }, [weight]);
   useEffect(() => {

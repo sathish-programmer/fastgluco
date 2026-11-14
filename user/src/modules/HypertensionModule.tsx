@@ -19,7 +19,7 @@ export const HypertensionModule: React.FC = () => {
   const { t, language } = useLanguage();
   const activeLocale = LOCALE_MAP[language] || 'en-US';
   const { apiUrl, token, user } = useAuth();
-  const [mode, setMode] = useState<string>('Prevention');
+  const [mode, setMode] = useState<string>(() => localStorage.getItem('mito_htn_mode') || 'Prevention');
   const [showBpHistoryModal, setShowBpHistoryModal] = useState<boolean>(false);
   const [showHistoryModal, setShowHistoryModal] = useState<boolean>(false);
   const [isSaving, setIsSaving] = useState<boolean>(false);
@@ -114,7 +114,7 @@ export const HypertensionModule: React.FC = () => {
         for (const log of logs) {
           const val = log.value;
           if (val) {
-            if (val.mode && !mode) setMode(val.mode);
+            if (val.mode && !localStorage.getItem('mito_htn_mode')) setMode(val.mode);
             if (val.bpLog && Array.isArray(val.bpLog)) {
               setBpLog(prev => {
                 const map = new Map<string, any>();
@@ -132,7 +132,7 @@ export const HypertensionModule: React.FC = () => {
         const todayLog = logs.find(l => new Date(l.timestamp || (l as any).createdAt).toDateString() === currentToday);
         if (todayLog?.value) {
           const val = todayLog.value;
-          if (val.mode) setMode(val.mode);
+          if (val.mode && !localStorage.getItem('mito_htn_mode')) setMode(val.mode);
           if (val.exercised !== undefined) setExercised(val.exercised);
           if (val.meditated !== undefined) setMeditated(val.meditated);
           if (val.lowSalt !== undefined) setLowSalt(val.lowSalt);
@@ -163,7 +163,7 @@ export const HypertensionModule: React.FC = () => {
     } catch (e) {
       console.error('Failed to load hypertension history from cloud', e);
     }
-  }, [apiUrl, token, mode]);
+  }, [apiUrl, token]);
 
   useEffect(() => {
     if (user?.id && token) {
@@ -212,6 +212,7 @@ export const HypertensionModule: React.FC = () => {
   };
 
   // Persist State
+  useEffect(() => { localStorage.setItem('mito_htn_mode', mode); }, [mode]);
   useEffect(() => {
     const today = new Date().toDateString();
     if (exercised !== null || meditated !== null || lowSalt !== null || slept8 !== null || highSaltToday !== null || exercisedTx !== null || meditatedTx !== null || lovedActivity !== null || slept8Tx !== null) {

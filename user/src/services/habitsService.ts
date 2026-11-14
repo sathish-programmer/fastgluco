@@ -17,6 +17,9 @@ export const HabitsService = {
       body: JSON.stringify({ type, value, timestamp: timestamp || new Date().toISOString() })
     });
     if (!res.ok) throw new Error('Failed to log habit');
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('habit_logged', { detail: { type, value } }));
+    }
   },
 
   getRecentHabits: async (apiUrl: string, token: string, type: string, days: number = 7): Promise<HabitLog[]> => {
@@ -38,5 +41,8 @@ export const HabitsService = {
       }
     });
     if (!res.ok) throw new Error('Failed to delete habit');
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('habit_logged', { detail: { id } }));
+    }
   }
 };
