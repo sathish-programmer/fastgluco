@@ -270,11 +270,15 @@ export const AgeingModule: React.FC = () => {
       const logs = await HabitsService.getRecentHabits(apiUrl, token, 'ageing', 365);
       setHistoryLogs(logs || []);
       if (logs && logs.length > 0) {
-        // 1. Persistent decade selection
-        for (const log of logs) {
-          if (log.value?.selectedAge && !selectedAge) {
-            setSelectedAge(log.value.selectedAge);
-            break;
+        // 1. Initial persistent decade selection (only if user has not set one locally)
+        const localSavedDecade = localStorage.getItem('mito_ageing_selected_decade');
+        if (!localSavedDecade) {
+          for (const log of logs) {
+            if (log.value?.selectedAge) {
+              setSelectedAge(log.value.selectedAge);
+              localStorage.setItem('mito_ageing_selected_decade', log.value.selectedAge);
+              break;
+            }
           }
         }
 
@@ -283,7 +287,10 @@ export const AgeingModule: React.FC = () => {
         const todayLog = logs.find(l => new Date(l.timestamp || (l as any).createdAt).toDateString() === currentToday);
         if (todayLog?.value) {
           const val = todayLog.value;
-          if (val.selectedAge) setSelectedAge(val.selectedAge);
+          if (!localSavedDecade && val.selectedAge) {
+            setSelectedAge(val.selectedAge);
+            localStorage.setItem('mito_ageing_selected_decade', val.selectedAge);
+          }
           if (val.checkedFactors) {
             setCheckedFactors(prev => ({ ...val.checkedFactors, ...prev }));
           }
@@ -296,7 +303,7 @@ export const AgeingModule: React.FC = () => {
     } catch (e) {
       console.error('Failed to load ageing history from cloud', e);
     }
-  }, [apiUrl, token, selectedAge]);
+  }, [apiUrl, token]);
 
   useEffect(() => {
     if (user?.id && token) {
@@ -354,6 +361,7 @@ export const AgeingModule: React.FC = () => {
         overallScore
       };
       await HabitsService.logHabit(apiUrl, token, 'ageing', payload);
+      localStorage.setItem('mito_ageing_selected_decade', selectedAge);
       setLastSaved(new Date());
       await loadHistory();
     } catch (err) {
@@ -401,6 +409,7 @@ export const AgeingModule: React.FC = () => {
           {AGE_GROUPS.map(age => (
             <button
               key={age}
+              type="button"
               onClick={() => {
                 setSelectedAge(age);
                 localStorage.setItem('mito_ageing_selected_decade', age);
