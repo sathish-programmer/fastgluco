@@ -45,6 +45,7 @@ import { OrderManagementController } from '../controllers/orderManagementControl
 import { MotivationController } from '../controllers/motivationController';
 import * as EducationalVideoController from '../controllers/educationalVideoController';
 import { RevenueAnalyticsController } from '../controllers/revenueAnalyticsController';
+import { cacheService } from '../services/cacheService';
 
 const router = Router();
 
@@ -173,39 +174,33 @@ router.post('/auth/verify-otp', otpLimiter, AuthController.verifyOtp);
 router.post('/auth/firebase-login', AuthController.firebaseLogin);
 router.post('/auth/onboard', authenticateToken, AuthController.onboardNewUser);
 
-// Public System Configuration Endpoint
+// Public System Configuration Endpoint (Cached in Redis for high concurrency)
 router.get('/config/public', async (req, res) => {
-  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-  res.setHeader('Pragma', 'no-cache');
-  res.setHeader('Expires', '0');
+  res.setHeader('Cache-Control', 'public, max-age=30, s-maxage=120');
   try {
-    let config = await PaymentGatewayConfig.findOne();
-    if (!config) {
-      config = new PaymentGatewayConfig({
-        enableHydrationTracker: true,
-        hydrationDailyLimitMl: 3000,
-        enableWorkoutTracker: true
-      });
-      await config.save();
-    }
-    if (!config.appTagline || config.appTagline === 'The circadian fasting app') {
-      config.appTagline = 'Preventive Lifestyle App';
-      await config.save();
-    }
-    return res.status(200).json({
-      enableHydrationTracker: config.enableHydrationTracker ?? true,
-      hydrationDailyLimitMl: config.hydrationDailyLimitMl ?? 3000,
-      enableWorkoutTracker: config.enableWorkoutTracker ?? true,
-      aiSpikeThreshold: config.aiSpikeThreshold ?? 110,
-      enableSubscriptions: config.enableSubscriptions,
-      enableSubscriptionCoupons: config.enableSubscriptionCoupons ?? true,
-      enableExternalPayments: config.enableExternalPayments ?? true,
-      enableSaferFoodCoupons: config.enableSaferFoodCoupons ?? true,
-      enablePayments: config.enablePayments,
-      appName: config.appName || 'Mito_Reboot',
-      appTagline: config.appTagline || 'Preventive Lifestyle App',
-      appLogoUrl: config.appLogoUrl || '',
-      cancerTreatmentDisclaimer: config.cancerTreatmentDisclaimer || `Lifestyle Guidance & Legal Disclaimer
+    const configData = await cacheService.remember('system:config:public', 600, async () => {
+      let config: any = await PaymentGatewayConfig.findOne().lean();
+      if (!config) {
+        config = await PaymentGatewayConfig.create({
+          enableHydrationTracker: true,
+          hydrationDailyLimitMl: 3000,
+          enableWorkoutTracker: true
+        });
+      }
+      return {
+        enableHydrationTracker: config.enableHydrationTracker ?? true,
+        hydrationDailyLimitMl: config.hydrationDailyLimitMl ?? 3000,
+        enableWorkoutTracker: config.enableWorkoutTracker ?? true,
+        aiSpikeThreshold: config.aiSpikeThreshold ?? 110,
+        enableSubscriptions: config.enableSubscriptions,
+        enableSubscriptionCoupons: config.enableSubscriptionCoupons ?? true,
+        enableExternalPayments: config.enableExternalPayments ?? true,
+        enableSaferFoodCoupons: config.enableSaferFoodCoupons ?? true,
+        enablePayments: config.enablePayments,
+        appName: config.appName || 'Mito_Reboot',
+        appTagline: config.appTagline || 'Preventive Lifestyle App',
+        appLogoUrl: config.appLogoUrl || '',
+        cancerTreatmentDisclaimer: config.cancerTreatmentDisclaimer || `Lifestyle Guidance & Legal Disclaimer
 The recommendations provided in this application are intended solely for educational and general wellness purposes. They are designed to complement—not replace—the advice, diagnosis, or treatment provided by your healthcare professionals.
 
 Recommended Healthy Lifestyle Practices
@@ -230,7 +225,7 @@ By using this application, you acknowledge and agree that:
 • To the fullest extent permitted by applicable law, the Company and its associated healthcare professionals disclaim all legal responsibility and liability for any decisions made or actions taken based on the information provided in this application.
 
 By continuing to use this application, you confirm that you have read, understood, and accepted this disclaimer and agree to use the recommendations only in consultation with your treating healthcare team.`,
-      cancerSecondaryDisclaimer: config.cancerSecondaryDisclaimer || `Lifestyle, Nutrition & Antioxidant Guidance for Cancer Survivors
+        cancerSecondaryDisclaimer: config.cancerSecondaryDisclaimer || `Lifestyle, Nutrition & Antioxidant Guidance for Cancer Survivors
 (Cancer Prevention and Survivorship)
 
 Congratulations on completing your cancer treatment. The recommendations provided in this application are intended to support healthy living after cancer treatment and may contribute to overall health and reducing the risk of cancer recurrence. They are not intended to replace regular medical follow-up or evidence-based medical care.
@@ -270,7 +265,7 @@ By using this application, you acknowledge and agree that:
 • To the fullest extent permitted by applicable law, the Company and its associated healthcare professionals disclaim all legal responsibility and liability for any decisions made or actions taken based on the information provided in this application.
 
 By continuing to use this application, you confirm that you have read, understood, and accepted this disclaimer and agree to use the recommendations only as a complement to regular medical follow-up and professional medical advice.`,
-      cancerPreventionDisclaimer: config.cancerPreventionDisclaimer || `Lifestyle Guidance & Legal Disclaimer for the General Public
+        cancerPreventionDisclaimer: config.cancerPreventionDisclaimer || `Lifestyle Guidance & Legal Disclaimer for the General Public
 (Primary Cancer Prevention and Healthy Living)
 
 This application is designed to promote healthy lifestyle habits that are supported by current scientific evidence and public health recommendations. The goal is to encourage behaviours that may help reduce the risk of cancer and other chronic diseases while improving overall health and well-being.
@@ -303,8 +298,10 @@ By using this application, you acknowledge and agree that:
 • To the fullest extent permitted by applicable law, the Company and its associated healthcare professionals disclaim all legal responsibility and liability for any decisions made or actions taken based on the information provided in this application.
 
 By continuing to use this application, you confirm that you have read, understood, and accepted this disclaimer and agree to use the information responsibly as part of a healthy lifestyle, while seeking professional medical advice whenever appropriate.`,
-      founderNote: config.founderNote || DEFAULT_FOUNDER_NOTE
+        founderNote: config.founderNote || DEFAULT_FOUNDER_NOTE
+      };
     });
+    return res.status(200).json(configData);
   } catch (error: any) {
     return res.status(500).json({ message: error.message || 'Error fetching system configurations.' });
   }

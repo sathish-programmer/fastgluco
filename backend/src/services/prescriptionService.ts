@@ -11,7 +11,7 @@ export class PrescriptionService {
    */
   public static async generatePrescriptionPDF(appointment: any): Promise<string> {
     const config = await PaymentGatewayConfig.findOne();
-    const appName = config?.appName || 'Mito Reboot';
+    const appName = config?.appName || 'Mito_Reboot';
     const appTagline = config?.appTagline || 'Integrative Healthcare & Metabolic Lifestyle Care';
 
     const doctor = appointment.doctorId || {};

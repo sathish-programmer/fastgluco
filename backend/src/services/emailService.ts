@@ -132,9 +132,9 @@ transporter.sendMail = (async (mailOptions: any, callback?: any) => {
 }) as any;
 
 export const generateEmailFooterHtml = (appName: string = 'Mito_Reboot'): string => {
-  const cleanAppName = appName.replace(/_/g, ' ');
-  const smartPlayStoreLink = 'https://api.mitoreboot.in/open-app?fallback=store&store=google';
-  const smartAppStoreLink = 'https://api.mitoreboot.in/open-app?fallback=store&store=apple';
+  const cleanAppName = appName || 'Mito_Reboot';
+  const smartPlayStoreLink = 'https://api.mitoreboot.in/open-app?store=google';
+  const smartAppStoreLink = 'https://api.mitoreboot.in/open-app?store=apple';
   const websiteUrl = 'https://www.mitoreboot.in';
   const privacyUrl = 'https://www.mitoreboot.in/privacy-policy';
   const termsUrl = 'https://www.mitoreboot.in/terms-and-conditions';
@@ -474,7 +474,7 @@ export const generateShopCoBrandedEmailTemplate = ({
       <p style="margin: 0;">This order update is delivered via the <strong>MitoReboot &times; ${vendorName}</strong> fulfillment network.</p>
     </div>
 
-    ${generateEmailFooterHtml('MitoReboot')}
+    ${generateEmailFooterHtml('Mito_Reboot')}
 
   </div>
 </body>

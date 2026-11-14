@@ -2,6 +2,7 @@ import { Response } from 'express';
 import Razorpay from 'razorpay';
 import { AuthRequest } from '../middlewares/authMiddleware';
 import { PaymentGatewayConfig } from '../models/PaymentGatewayConfig';
+import { cacheService } from '../services/cacheService';
 import { PaymentTransaction } from '../models/PaymentTransaction';
 import { UserSubscription } from '../models/UserSubscription';
 import { SubscriptionPlan } from '../models/SubscriptionPlan';
@@ -32,6 +33,7 @@ export class PaymentAdminController {
           enableWorkoutTracker: true
         });
         await config.save();
+      cacheService.del('system:config:public').catch(() => {});
       }
       return res.status(200).json(config);
     } catch (error: any) {
@@ -131,6 +133,7 @@ export class PaymentAdminController {
       config.updatedBy = req.user?.id as any;
 
       await config.save();
+      cacheService.del('system:config:public').catch(() => {});
 
       await AuditLog.create({
         adminId: req.user?.id,

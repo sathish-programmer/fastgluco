@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { AuthRequest } from '../middlewares/authMiddleware';
 import { SubscriptionPlan } from '../models/SubscriptionPlan';
 import { AuditLog } from '../models/AuditLog';
+import { cacheService } from '../services/cacheService';
 
 export class PlanAdminController {
   /**
@@ -55,6 +56,7 @@ export class PlanAdminController {
       });
 
       await plan.save();
+      cacheService.del('system:subscriptions:active-plans').catch(() => {});
 
       await AuditLog.create({
         adminId: req.user?.id,
@@ -113,6 +115,7 @@ export class PlanAdminController {
       }
 
       await plan.save();
+      cacheService.del('system:subscriptions:active-plans').catch(() => {});
 
       await AuditLog.create({
         adminId: req.user?.id,
@@ -141,6 +144,7 @@ export class PlanAdminController {
 
       plan.isDeleted = true;
       await plan.save();
+      cacheService.del('system:subscriptions:active-plans').catch(() => {});
 
       await AuditLog.create({
         adminId: req.user?.id,

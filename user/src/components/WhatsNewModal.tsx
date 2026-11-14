@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import type { SupportedLanguage } from '../i18n/types';
 
-export const CURRENT_APP_VERSION = 'v6.3.4';
+export const CURRENT_APP_VERSION = 'v6.3.5';
 
 interface WhatsNewModalProps {
   isOpen?: boolean;
@@ -112,7 +112,7 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({
                   </span>
                 </div>
                 <h3 className="text-base sm:text-lg font-black text-white tracking-tight leading-tight mt-0.5 truncate">
-                  {t('whatsNew.title', 'What’s New in')} {branding.appName || 'Mito Reboot'}
+                  {t('whatsNew.title', 'What’s New in')} {branding.appName || 'Mito_Reboot'}
                 </h3>
               </div>
             </div>

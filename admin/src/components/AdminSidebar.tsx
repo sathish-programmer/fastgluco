@@ -216,7 +216,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
           {!sidebarCollapsed && (
             <div className="min-w-0">
               <h1 className="text-xs font-black text-white tracking-tight leading-tight truncate">
-                {paymentConfig?.appName?.replace(/_/g, ' ') || 'Mito Reboot'}
+                {paymentConfig?.appName || 'Mito_Reboot'}
               </h1>
               <span className="text-[9px] font-black uppercase tracking-wider text-blue-400">
                 Clinical Admin

@@ -63,7 +63,7 @@ export const BrandName: React.FC<{
   supClassName = 'text-[0.6em] font-extrabold text-blue-600 ml-0.5 -top-1.5 relative select-none leading-none tracking-normal',
   showTM = true
 }) => {
-  const formatted = appName ? appName.replace(/_/g, ' ') : 'Mito Reboot';
+  const formatted = appName || 'Mito_Reboot';
   return (
     <span className={`inline-flex items-baseline font-inherit ${className}`}>
       <span>{formatted}</span>
@@ -190,7 +190,7 @@ export default function App() {
         const webVideos = vid && vid.length > 0 ? vid.filter((v: any) => v.targetPlatform === 'Website' || v.targetPlatform === 'Both') : [];
         setVideosData(webVideos.length > 0 ? webVideos : vid);
         if (config.appName) {
-          const formattedName = config.appName.replace(/_/g, ' ');
+          const formattedName = config.appName || 'Mito_Reboot';
           const tagline = (!config.appTagline || config.appTagline === 'The circadian fasting app' || config.appTagline === 'Preventive Lifestyle & Cellular Health') ? 'Preventive Lifestyle App' : config.appTagline;
           setBranding({
             appName: config.appName,

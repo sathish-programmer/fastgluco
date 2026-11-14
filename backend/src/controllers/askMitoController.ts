@@ -9,6 +9,7 @@ import { SubscriptionPlan } from '../models/SubscriptionPlan';
 import { PaymentGatewayConfig } from '../models/PaymentGatewayConfig';
 import { PaymentTransaction } from '../models/PaymentTransaction';
 import { User } from '../models/User';
+import { cacheService } from '../services/cacheService';
 
 const SYSTEM_PROMPT = `You are Mito, an expert AI health companion for the Mito_Reboot app — a cancer prevention and metabolic health platform.
 
@@ -29,10 +30,12 @@ Rules:
 5. If asked about Mito_Reboot app features, explain how the relevant feature works.
 6. If the question is a greeting or asks for help/support, provide a warm summary of available health topics.`;
 
-// ─── GET /api/ask-mito/topics — Returns active topics for user app ─────────
+// ─── GET /api/ask-mito/topics — Returns active topics for user app (Cached in Redis) ─────────
 export const getAskMitoTopics = async (_req: Request, res: Response) => {
   try {
-    const topics = await AskMitoTopic.find({ isActive: true }).sort({ order: 1 });
+    const topics = await cacheService.remember('system:ask-mito:topics', 3600, async () => {
+      return AskMitoTopic.find({ isActive: true }).sort({ order: 1 }).lean();
+    });
     return res.json(topics);
   } catch (err) {
     console.error('Error fetching Ask Mito topics:', err);
@@ -54,6 +57,7 @@ export const createAskMitoTopic = async (req: Request, res: Response) => {
   try {
     const topic = new AskMitoTopic(req.body);
     await topic.save();
+    cacheService.del('system:ask-mito:topics').catch(() => {});
     return res.status(201).json(topic);
   } catch (err) {
     return res.status(500).json({ message: 'Error creating topic' });
@@ -65,6 +69,7 @@ export const updateAskMitoTopic = async (req: Request, res: Response) => {
     const { id } = req.params;
     const topic = await AskMitoTopic.findByIdAndUpdate(id, req.body, { new: true });
     if (!topic) return res.status(404).json({ message: 'Topic not found' });
+    cacheService.del('system:ask-mito:topics').catch(() => {});
     return res.json(topic);
   } catch (err) {
     return res.status(500).json({ message: 'Error updating topic' });
@@ -75,6 +80,7 @@ export const deleteAskMitoTopic = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     await AskMitoTopic.findByIdAndDelete(id);
+    cacheService.del('system:ask-mito:topics').catch(() => {});
     return res.json({ message: 'Topic deleted successfully' });
   } catch (err) {
     return res.status(500).json({ message: 'Error deleting topic' });

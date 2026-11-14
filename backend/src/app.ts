@@ -6,6 +6,7 @@ import path from 'path';
 import crypto from 'crypto';
 import mongoose from 'mongoose';
 import { compressionMiddleware } from './middlewares/compressionMiddleware';
+import { cacheService } from './services/cacheService';
 import apiRouter from './routes/api';
 
 const app = express();
@@ -143,6 +144,7 @@ const handleHealthCheck = async (_req: Request, res: Response) => {
       latencyMs: dbLatencyMs,
       readyState: mongoose.connection.readyState
     },
+    cache: cacheService.getStatus(),
     system: {
       nodeVersion: process.version,
       memoryMB: {

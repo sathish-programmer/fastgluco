@@ -783,7 +783,7 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
           </div>
 
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight flex items-start justify-center">
-            <span>{branding.appName ? branding.appName.replace(/_/g, ' ') : 'Mito Reboot'}</span>
+            <span>{branding.appName || 'Mito_Reboot'}</span>
             <sup className="text-[10px] font-bold text-primary ml-1 -top-1.5 relative select-none leading-none tracking-tight">
               TM
             </sup>

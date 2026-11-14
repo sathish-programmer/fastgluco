@@ -8,6 +8,7 @@ import { GeminiVisionService, GeminiFoodDetectionResult } from '../services/gemi
 import { GoogleVisionService } from '../services/googleVisionService';
 import { lookupNutrition } from '../services/localNutritionDB';
 import { determinePortionType } from '../utils/foodUtils';
+import { cacheService } from '../services/cacheService';
 export class FoodController {
   /**
    * Search Pre-seeded Food Library
@@ -24,7 +25,10 @@ export class FoodController {
         filter.category = category as string;
       }
 
-      const foods = await FoodMaster.find(filter).sort({ verified: -1 }).limit(50);
+      const cacheKey = `food:search:${String(q || '').toLowerCase().trim()}:${String(category || '').toLowerCase().trim()}`;
+      const foods = await cacheService.remember(cacheKey, 1800, async () => {
+        return FoodMaster.find(filter).sort({ verified: -1 }).limit(50).lean();
+      });
       return res.status(200).json(foods);
     } catch (error: any) {
       return res.status(500).json({ message: error.message || 'Error searching food library.' });

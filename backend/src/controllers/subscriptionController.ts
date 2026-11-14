@@ -15,14 +15,17 @@ import { EmailService } from '../services/emailService';
 import { User } from '../models/User';
 import { AutoPayService } from '../services/autoPayService';
 import { AutoPayAuditLog } from '../models/AutoPayAuditLog';
+import { cacheService } from '../services/cacheService';
 
 export class SubscriptionController {
   /**
-   * List Active Plans for Users
+   * List Active Plans for Users (Cached in Redis for fast load)
    */
   public static async listActivePlans(req: AuthRequest, res: Response) {
     try {
-      const plans = await SubscriptionPlan.find({ isActive: true }).sort({ displayOrder: 1 });
+      const plans = await cacheService.remember('system:subscriptions:active-plans', 3600, async () => {
+        return SubscriptionPlan.find({ isActive: true }).sort({ displayOrder: 1 }).lean();
+      });
       return res.status(200).json(plans);
     } catch (error: any) {
       return res.status(500).json({ message: error.message || 'Error listing subscription plans.' });

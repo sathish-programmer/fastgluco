@@ -59,7 +59,7 @@ export const HeroAppShowcase: React.FC<HeroAppShowcaseProps> = ({ appName = 'Mit
               </div>
               <div>
                 <div className="text-xs font-black tracking-tight text-white leading-none">
-                  {appName.replace(/_/g, ' ')}
+                  {appName || 'Mito_Reboot'}
                   <span className="text-[8px] text-blue-400 ml-0.5">PRO</span>
                 </div>
                 <span className="text-[9px] text-slate-400 font-semibold">Cellular Engine Active</span>

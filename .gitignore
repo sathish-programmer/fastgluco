@@ -21,3 +21,7 @@ website/dist
 *firebase-adminsdk*.json
 backend/config/firebase-service-account.json
 user/miti-reboot-firebase-adminsdk-fbsvc-84ac44eeb3.json
+
+# Local store listing screenshots - keep local only
+app_store_screenshots/
+

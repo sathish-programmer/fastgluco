@@ -1117,7 +1117,7 @@ const MainAppContent: React.FC = () => {
             <div className="flex flex-col justify-center min-w-0">
               <div className="flex items-center gap-1 sm:gap-2 leading-none">
                 <span className="text-xs min-[360px]:text-sm sm:text-base font-extrabold text-slate-900 dark:text-white tracking-tight leading-none whitespace-nowrap">
-                  {branding.appName ? branding.appName.replace(/_/g, ' ') : 'Mito Reboot'}
+                  {branding.appName || 'Mito_Reboot'}
                 </span>
                 {branding.enableSubscriptions !== false && (
                   <button
