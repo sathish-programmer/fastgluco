@@ -80,8 +80,8 @@ export class GlucoseController {
         }
       }
 
-      // Fetch in chronological order for graphs
-      const readings = await GlucoseReading.find(filter).sort({ timestamp: 1 });
+      // Fetch in chronological order for graphs (use lean for sub-10ms JSON response)
+      const readings = await GlucoseReading.find(filter).lean().sort({ timestamp: 1 });
       return res.status(200).json(readings);
     } catch (error: any) {
       return res.status(500).json({ message: error.message || 'Error fetching glucose readings.' });
@@ -93,8 +93,17 @@ export class GlucoseController {
       const userId = req.user?.id;
       const { range, startDate, endDate } = req.query;
 
-      // Trigger analysis for any pending logs before returning list
-      await GlucoseService.analyzeAllUserFoodLogs(userId!);
+      // Opportunistically analyze pending unanalyzed food logs asynchronously without freezing HTTP latency
+      setImmediate(async () => {
+        try {
+          const pendingLogs = await FoodLog.find({ userId, 'glucoseAnalysis.beforeGlucose': { $exists: false } }).limit(20);
+          for (const pl of pendingLogs) {
+            await GlucoseService.analyzeFoodLog(pl.id);
+          }
+        } catch (err) {
+          console.warn('[Background] Pending food log spike analysis warning:', err);
+        }
+      });
 
       const query: any = {
         userId,

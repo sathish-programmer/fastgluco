@@ -151,7 +151,7 @@ export const getRecentHabits = async (req: Request, res: Response) => {
       }
     }
 
-    const logs = await HabitLog.find({ $and: andConditions }).sort({ timestamp: -1, createdAt: -1 });
+    const logs = await HabitLog.find({ $and: andConditions }).lean().sort({ timestamp: -1 });
 
     // Deduplicate by day string (keep latest log per day for clean history)
     const seenDays = new Set<string>();

@@ -5,6 +5,8 @@ import { useLanguage } from '../../context/LanguageContext';
 import { HabitsService } from '../../services/habitsService';
 import { scheduleSymptomCheckinReminder } from '../../utils/notificationScheduler';
 import { EducationalVideoModal, getYouTubeThumbnailUrl } from '../../components/EducationalVideoModal';
+import { getStoredSymptomCheckins, getNextCheckinDueDate, deduplicateHistory } from '../../utils/symptomCheckinHelper';
+export { getStoredSymptomCheckins, getNextCheckinDueDate, deduplicateHistory };
 
 export interface SymptomQuestion {
   id: string;
@@ -88,53 +90,6 @@ export const areAnswersEqual = (
     }
   }
   return true;
-};
-
-export const deduplicateHistory = (items: CheckinHistoryItem[]): CheckinHistoryItem[] => {
-  if (!items || items.length <= 1) return items || [];
-  const result: CheckinHistoryItem[] = [];
-  for (let i = 0; i < items.length; i++) {
-    const curr = items[i];
-    const prev = result[result.length - 1];
-    if (!prev) {
-      result.push(curr);
-      continue;
-    }
-    // If on the exact same calendar day, merge/keep the latest one
-    if (isSameCalendarDay(prev.date, curr.date)) {
-      result[result.length - 1] = curr;
-    } else {
-      result.push(curr);
-    }
-  }
-  return result;
-};
-
-export const getStoredSymptomCheckins = (): CheckinHistoryItem[] => {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    const deduped = deduplicateHistory(parsed);
-    // If deduplicated count differs, clean up localStorage immediately
-    if (deduped.length !== parsed.length) {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(deduped));
-      } catch {}
-    }
-    return deduped;
-  } catch {
-    return [];
-  }
-};
-
-export const getNextCheckinDueDate = (): { nextDue: Date | null; isDue: boolean } => {
-  const history = getStoredSymptomCheckins();
-  if (!history.length) return { nextDue: null, isDue: true };
-  const last = history[history.length - 1];
-  const due = new Date(last.date);
-  due.setDate(due.getDate() + INTERVAL_DAYS);
-  return { nextDue: due, isDue: due <= new Date() };
 };
 
 interface SymptomCheckinScreenProps {

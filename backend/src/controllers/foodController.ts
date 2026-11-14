@@ -78,7 +78,7 @@ export class FoodController {
         query.mealType = mealType as string;
       }
 
-      const logs = await FoodLog.find(query).sort({ loggedAt: -1 });
+      const logs = await FoodLog.find(query).lean().sort({ loggedAt: -1 });
       return res.status(200).json(logs);
     } catch (error: any) {
       return res.status(500).json({ message: error.message || 'Error fetching food logs.' });

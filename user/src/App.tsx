@@ -6,11 +6,11 @@ import { LanguageProvider, useLanguage } from './context/LanguageContext';
 import { ConsultationProvider } from './context/ConsultationContext';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
-import { NonCancerDashboard } from './pages/NonCancerDashboard';
-import { Dashboard } from './pages/Dashboard';
 import { triggerHaptic } from './utils/hapticHelper';
 
 // Code-split heavy screens via React.lazy to drastically reduce initial bundle size & memory footprint
+const NonCancerDashboard = lazy(() => import('./pages/NonCancerDashboard').then(m => ({ default: m.NonCancerDashboard })));
+const Dashboard = lazy(() => import('./pages/Dashboard').then(m => ({ default: m.Dashboard })));
 const Reports = lazy(() => import('./pages/Reports').then(m => ({ default: m.Reports })));
 const FoodLog = lazy(() => import('./pages/FoodLog').then(m => ({ default: m.FoodLog })));
 const RecommendedFoodsScreen = lazy(() => import('./screens/RecommendedFoodsScreen').then(m => ({ default: m.RecommendedFoodsScreen })));

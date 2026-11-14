@@ -64,7 +64,7 @@ import { DailyLoggingChatbotModal } from '../components/DailyLoggingChatbotModal
 import { SymptomCheckAIChatModal } from '../components/SymptomCheckAIChatModal';
 import { AiBannerQuickNudge } from '../components/AiBannerQuickNudge';
 import { useConsultation } from '../context/ConsultationContext';
-import { getNextCheckinDueDate } from '../screens/HabitScreens/SymptomCheckinScreen';
+import { getNextCheckinDueDate } from '../utils/symptomCheckinHelper';
 import { ModeSwitcher } from '../components/ModeSwitcher';
 import { Dashboard } from './Dashboard';
 import { ExploreFeaturesGrid } from '../components/ExploreFeaturesGrid';
