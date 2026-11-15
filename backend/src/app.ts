@@ -15,7 +15,8 @@ const app = express();
 app.set('trust proxy', 1); // Trust first proxy (e.g. Nginx, CloudFront) to get real client IPs for rate-limiting
 
 app.use(helmet({
-  crossOriginResourcePolicy: { policy: 'cross-origin' }
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+  crossOriginOpenerPolicy: false // Allows links from email clients and external openers to load and redirect without ERR_BLOCKED_BY_RESPONSE
 }));
 
 // 2. CORS configurations

@@ -136,9 +136,9 @@ export const generateEmailFooterHtml = (appName: string = 'Mito_Reboot'): string
   const smartPlayStoreLink = 'https://api.mitoreboot.in/open-app?store=google';
   const smartAppStoreLink = 'https://api.mitoreboot.in/open-app?store=apple';
   const websiteUrl = 'https://www.mitoreboot.in';
-  const privacyUrl = 'https://www.mitoreboot.in/privacy-policy';
-  const termsUrl = 'https://www.mitoreboot.in/terms-and-conditions';
-  const supportEmail = 'support@mitoreboot.in';
+  const privacyUrl = 'https://www.mitoreboot.in/privacy-policy.html';
+  const termsUrl = 'https://www.mitoreboot.in/terms-and-conditions.html';
+  const supportUrl = 'https://www.mitoreboot.in/#contact';
 
   return `
       <!-- ==================== MODERN COMPACT EMAIL FOOTER (INDmoney Clean Style) ==================== -->
@@ -176,7 +176,7 @@ export const generateEmailFooterHtml = (appName: string = 'Mito_Reboot'): string
           <span style="color: #cbd5e1; margin: 0 7px;">&bull;</span>
           <a href="${termsUrl}" target="_blank" rel="noopener noreferrer" style="color: #0f172a !important; text-decoration: none !important; font-weight: 700;">Terms &amp; Conditions</a>
           <span style="color: #cbd5e1; margin: 0 7px;">&bull;</span>
-          <a href="mailto:${supportEmail}" style="color: #0f172a !important; text-decoration: none !important; font-weight: 700;">Support</a>
+          <a href="${supportUrl}" target="_blank" rel="noopener noreferrer" style="color: #0f172a !important; text-decoration: none !important; font-weight: 700;">Support</a>
           <span style="color: #cbd5e1; margin: 0 7px;">&bull;</span>
           <a href="${websiteUrl}" target="_blank" rel="noopener noreferrer" style="color: #0f172a !important; text-decoration: none !important; font-weight: 700;">Website</a>
         </p>

@@ -19,6 +19,9 @@ const APP_STORE_URL = 'https://apps.apple.com/in/app/mito-reboot/id6783705985';
  * - orderId: optional specific order ID
  */
 const renderUniversalAppBridge = async (req: Request, res: Response) => {
+  res.setHeader('Cross-Origin-Opener-Policy', 'unsafe-none');
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+
   const target = (req.query.target || req.query.screen || req.query.tab || req.query.path || '').toString().trim();
   const orderId = (req.query.orderId || req.query.id || '').toString().trim();
   const store = (req.query.store || '').toString().toLowerCase().trim();
@@ -40,34 +43,31 @@ const renderUniversalAppBridge = async (req: Request, res: Response) => {
 
   const fallback = (req.query.fallback || req.query.default || '').toString().trim();
   const websiteUrl = 'https://www.mitoreboot.in';
-  const targetFallbackUrl = (fallback === 'store' || store === 'google' || store === 'play') ? PLAY_STORE_URL : websiteUrl;
-  const iosFallbackUrl = (fallback === 'store' || store === 'apple' || store === 'ios') ? APP_STORE_URL : websiteUrl;
 
   const ua = req.headers['user-agent'] || '';
   const isAndroid = /Android/i.test(ua);
   const isIOS = /iPhone|iPad|iPod/i.test(ua);
 
-  // 1. Direct Store Redirects for non-matching mobile platforms or desktop
-  if (store === 'google' || store === 'play') {
-    if (!isAndroid) {
-      return res.redirect(302, PLAY_STORE_URL);
-    }
-  } else if (store === 'apple' || store === 'ios') {
-    if (!isIOS) {
+  // 1. Direct Store / Website Redirects for Desktop browsers
+  if (!isAndroid && !isIOS) {
+    if (store === 'apple' || store === 'ios') {
       return res.redirect(302, APP_STORE_URL);
     }
-  } else if (!isAndroid && !isIOS) {
-    // Desktop browser for general links: forward smoothly to website or store
+    if (store === 'google' || store === 'play') {
+      return res.redirect(302, PLAY_STORE_URL);
+    }
     if (fallback === 'store') {
       return res.redirect(302, PLAY_STORE_URL);
     }
     return res.redirect(302, websiteUrl);
   }
 
+  // 2. Mobile deep-linking:
+  // If user is on Android, fallback to Google Play. If on iOS, fallback to Apple App Store.
+  const primaryFallbackUrl = isIOS ? APP_STORE_URL : PLAY_STORE_URL;
   const appSchemeUrl = `mitoreboot://${cleanPath}`;
-  const androidIntentUrl = `intent://${cleanPath}#Intent;scheme=mitoreboot;package=com.mitoreboot.app;S.browser_fallback_url=${encodeURIComponent(targetFallbackUrl)};end`;
-  const primaryAutoUrl = isAndroid ? androidIntentUrl : (isIOS ? appSchemeUrl : targetFallbackUrl);
-  const primaryFallbackUrl = isIOS ? iosFallbackUrl : targetFallbackUrl;
+  const androidIntentUrl = `intent://${cleanPath}#Intent;scheme=mitoreboot;package=com.mitoreboot.app;S.browser_fallback_url=${encodeURIComponent(primaryFallbackUrl)};end`;
+  const primaryAutoUrl = isAndroid ? androidIntentUrl : appSchemeUrl;
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -76,7 +76,6 @@ const renderUniversalAppBridge = async (req: Request, res: Response) => {
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>${title}</title>
   <meta name="description" content="Open the Mito_Reboot app directly or download it from the official App Store and Google Play." />
-  <meta http-equiv="refresh" content="0;url=${primaryAutoUrl}" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -328,6 +327,8 @@ const renderUniversalAppBridge = async (req: Request, res: Response) => {
  * - GET /open/order/:orderId
  */
 const renderOrderBridge = async (req: Request, res: Response) => {
+  res.setHeader('Cross-Origin-Opener-Policy', 'unsafe-none');
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
   const orderId = (req.params.orderId || req.query.orderId || req.query.id || '').toString().trim();
 
   let orderData: any = null;
