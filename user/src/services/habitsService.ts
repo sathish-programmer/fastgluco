@@ -32,7 +32,8 @@ export const HabitsService = {
   },
 
   getRecentHabits: async (apiUrl: string, token: string, type: string, days: number = 7, forceRefresh = false): Promise<HabitLog[]> => {
-    const cacheKey = `${type}_${days}`;
+    const tokenKey = token ? token.slice(-16) : 'anon';
+    const cacheKey = `${tokenKey}_${type}_${days}`;
     const cached = habitMemoryCache.get(cacheKey);
     const now = Date.now();
     if (!forceRefresh && cached && cached.expiry > now) {

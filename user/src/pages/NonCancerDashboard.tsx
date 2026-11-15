@@ -243,9 +243,9 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
     setShowTugOfWarState(!savedShowCGM);
   }, [activeMode]);
 
-  const fetchHabitsAndAppointments = async () => {
+  const fetchHabitsAndAppointments = async (forceRefresh = false) => {
     try {
-      const logs = await HabitsService.getRecentHabits(apiUrl, token, 'all', 365);
+      const logs = await HabitsService.getRecentHabits(apiUrl, token, 'all', 365, forceRefresh);
       setHabits(logs);
       checkHealthDanger(logs);
 
@@ -2139,7 +2139,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
   };
 
   return (
-    <PullToRefresh onRefresh={fetchHabitsAndAppointments}>
+    <PullToRefresh onRefresh={() => fetchHabitsAndAppointments(true)}>
       <div className="pb-24 pt-4 px-3.5 sm:px-4 max-w-5xl mx-auto bg-gradient-to-b from-slate-50/90 to-slate-100/80 dark:from-slate-900/90 dark:to-slate-950/80 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-200 transition-colors duration-300">
 
         {/* Feature Discovery & Ask Mito Modals */}

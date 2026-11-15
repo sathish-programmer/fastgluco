@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { SupportedLanguage } from '../i18n/types';
 import { pushNotificationService } from '../services/pushNotificationService';
 import { telemetryService } from '../services/telemetryService';
+import { HabitsService } from '../services/habitsService';
 
 export type FocusModeType =
   | 'PREVENTION'
@@ -566,6 +567,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
+    HabitsService.clearCache();
     if (token) {
       pushNotificationService.logout(apiUrl, token);
     }
