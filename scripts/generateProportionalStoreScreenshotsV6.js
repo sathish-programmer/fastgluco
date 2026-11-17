@@ -8,13 +8,15 @@ const OUTPUT_DIR = path.join(__dirname, '../app_store_screenshots');
 // Target Directories for All Platforms
 const iosDir = path.join(OUTPUT_DIR, 'ios'); // Default for iPhone with Dynamic Island (1179 x 2556)
 const iosLargeDir = path.join(OUTPUT_DIR, 'ios_6.7_large'); // For iPhone 6.7" / 6.9" display (1290 x 2796)
+const iosMediumScreensDir = path.join(OUTPUT_DIR, 'ios_medium_screens'); // 1179 x 2556
 const androidDir = path.join(OUTPUT_DIR, 'android');
 const featureGraphicDir = path.join(OUTPUT_DIR, 'feature_graphic');
 const tabletIosDir = path.join(OUTPUT_DIR, 'tablet_ios');
+const ipad13Dir = path.join(OUTPUT_DIR, 'ipad_13');
 const tabletAndroidDir = path.join(OUTPUT_DIR, 'tablet_android');
 const desktopDir = path.join(OUTPUT_DIR, 'desktop');
 
-[iosDir, iosLargeDir, androidDir, featureGraphicDir, tabletIosDir, tabletAndroidDir, desktopDir].forEach(d => {
+[iosDir, iosLargeDir, iosMediumScreensDir, androidDir, featureGraphicDir, tabletIosDir, ipad13Dir, tabletAndroidDir, desktopDir].forEach(d => {
   fs.mkdirSync(d, { recursive: true });
 });
 
@@ -722,6 +724,730 @@ const screens = [
         </div>
       `;
     }
+  },
+
+  // 7. CELLULAR REPAIR VS DAMAGE FORCES
+  {
+    id: '07_cellular_repair_vs_damage',
+    headline: 'Track Cellular Repair &<br>Neutralize Damage Forces',
+    accentColor: '#10B981',
+    bgGlow: 'radial-gradient(circle at 85% 15%, rgba(16, 185, 129, 0.28) 0%, transparent 60%), radial-gradient(circle at 15% 85%, rgba(244, 63, 94, 0.22) 0%, transparent 60%)',
+    renderScreen: (scale) => {
+      const s = (val) => Math.round(val * scale);
+      return `
+        <div style="width: 100%; height: 100%; background: #F8FAFC; display: flex; flex-direction: column; justify-content: space-between; padding: ${s(28)}px ${s(30)}px; overflow: hidden;">
+          <div style="display: flex; flex-direction: column; gap: ${s(14)}px;">
+            <!-- Top Hero Card: Net Cellular Forces Live Balance -->
+            <div style="background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%); border-radius: ${s(28)}px; padding: ${s(24)}px ${s(28)}px; color: white; box-shadow: 0 14px 40px rgba(15,23,42,0.25); position: relative; overflow: hidden;">
+              <div style="position: absolute; -right: ${s(30)}px; -bottom: ${s(30)}px; width: ${s(160)}px; height: ${s(160)}px; background: radial-gradient(circle, rgba(16,185,129,0.3) 0%, transparent 70%); pointer-events: none;"></div>
+
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: ${s(8)}px;">
+                <div style="display: flex; align-items: center; gap: ${s(10)}px;">
+                  <span style="width: ${s(12)}px; height: ${s(12)}px; border-radius: 50%; background: #10B981; box-shadow: 0 0 14px #10B981;"></span>
+                  <span style="font-size: ${s(17)}px; font-weight: 900; color: #34D399; text-transform: uppercase; letter-spacing: 0.8px;">CELLULAR FORCE AUDIT • LIVE</span>
+                </div>
+                <span style="background: rgba(16,185,129,0.2); color: #6EE7B7; border: 1.5px solid #10B981; font-size: ${s(15)}px; font-weight: 800; padding: ${s(4)}px ${s(12)}px; border-radius: ${s(10)}px;">High Anabolic Repair</span>
+              </div>
+
+              <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: ${s(16)}px;">
+                <div>
+                  <div style="font-size: ${s(76)}px; font-weight: 900; color: #10B981; line-height: 1;">+6 <span style="font-size: ${s(30)}px; color: white;">Net Repair</span></div>
+                  <div style="font-size: ${s(18)}px; color: #94A3B8; font-weight: 700; margin-top: ${s(6)}px;">9 Repair Forces Active • 3 Stressors Neutralized</div>
+                </div>
+                <div style="text-align: right;">
+                  <div style="font-size: ${s(36)}px; font-weight: 900; color: #34D399;">75%</div>
+                  <div style="font-size: ${s(15)}px; color: #94A3B8;">Repair Dominance</div>
+                </div>
+              </div>
+
+              <!-- Dual Split Progress Bar -->
+              <div style="width: 100%; height: ${s(15)}px; background: rgba(255,255,255,0.1); border-radius: ${s(8)}px; overflow: hidden; display: flex; gap: 3px;">
+                <div style="width: 75%; height: 100%; background: linear-gradient(90deg, #10B981, #34D399); border-radius: ${s(6)}px 0 0 ${s(6)}px;"></div>
+                <div style="width: 25%; height: 100%; background: linear-gradient(90deg, #F43F5E, #FB7185); border-radius: 0 ${s(6)}px ${s(6)}px 0;"></div>
+              </div>
+              <div style="display: flex; justify-content: space-between; font-size: ${s(14)}px; font-weight: 800; margin-top: ${s(8)}px;">
+                <span style="color: #34D399;">+9 Repair Stimuli (Autophagy, Diet, Sleep)</span>
+                <span style="color: #FB7185;">-3 Damage Mitigated</span>
+              </div>
+            </div>
+
+            <!-- Daily Check-ins Forces Timeline -->
+            <div style="background: white; border: 2px solid #E2E8F0; border-radius: ${s(24)}px; padding: ${s(18)}px ${s(22)}px; box-shadow: 0 8px 24px rgba(0,0,0,0.04);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: ${s(12)}px;">
+                <span style="font-size: ${s(17)}px; font-weight: 900; color: #0F172A; text-transform: uppercase;">Today's Check-in Forces</span>
+                <span style="font-size: ${s(15)}px; font-weight: 800; color: #64748B;">4 Logs Completed</span>
+              </div>
+
+              <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: ${s(10)}px;">
+                <!-- Checkin 1 -->
+                <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; border-radius: ${s(18)}px; padding: ${s(12)}px ${s(8)}px; display: flex; flex-direction: column; align-items: center; text-align: center;">
+                  <span style="font-size: ${s(13)}px; font-weight: 800; color: #64748B;">7:30 AM</span>
+                  <span style="font-size: ${s(16)}px; font-weight: 900; color: #0F172A; margin: ${s(3)}px 0 ${s(8)}px;">Fasting</span>
+                  <div style="height: ${s(115)}px; width: ${s(34)}px; background: #E2E8F0; border-radius: ${s(12)}px; display: flex; align-items: flex-end; overflow: hidden; padding: 2px;">
+                    <div style="height: 80%; width: 100%; background: linear-gradient(180deg, #34D399, #10B981); border-radius: ${s(10)}px; display: flex; align-items: center; justify-content: center; color: white; font-size: ${s(15)}px; font-weight: 900;">+4</div>
+                  </div>
+                  <span style="background: #ECFDF5; color: #059669; font-size: ${s(12)}px; font-weight: 900; padding: 2px 6px; border-radius: 6px; margin-top: ${s(8)}px;">+4 Net</span>
+                </div>
+
+                <!-- Checkin 2 -->
+                <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; border-radius: ${s(18)}px; padding: ${s(12)}px ${s(8)}px; display: flex; flex-direction: column; align-items: center; text-align: center;">
+                  <span style="font-size: ${s(13)}px; font-weight: 800; color: #64748B;">1:15 PM</span>
+                  <span style="font-size: ${s(16)}px; font-weight: 900; color: #0F172A; margin: ${s(3)}px 0 ${s(8)}px;">Lunch</span>
+                  <div style="height: ${s(115)}px; width: ${s(40)}px; background: #E2E8F0; border-radius: ${s(12)}px; display: flex; align-items: flex-end; gap: 2px; overflow: hidden; padding: 2px;">
+                    <div style="height: 60%; width: 50%; background: linear-gradient(180deg, #34D399, #10B981); border-radius: ${s(8)}px; display: flex; align-items: center; justify-content: center; color: white; font-size: ${s(13)}px; font-weight: 900;">+3</div>
+                    <div style="height: 40%; width: 50%; background: linear-gradient(180deg, #FB7185, #F43F5E); border-radius: ${s(8)}px; display: flex; align-items: center; justify-content: center; color: white; font-size: ${s(13)}px; font-weight: 900;">-2</div>
+                  </div>
+                  <span style="background: #ECFDF5; color: #059669; font-size: ${s(12)}px; font-weight: 900; padding: 2px 6px; border-radius: 6px; margin-top: ${s(8)}px;">+1 Net</span>
+                </div>
+
+                <!-- Checkin 3 -->
+                <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; border-radius: ${s(18)}px; padding: ${s(12)}px ${s(8)}px; display: flex; flex-direction: column; align-items: center; text-align: center;">
+                  <span style="font-size: ${s(13)}px; font-weight: 800; color: #64748B;">6:00 PM</span>
+                  <span style="font-size: ${s(16)}px; font-weight: 900; color: #0F172A; margin: ${s(3)}px 0 ${s(8)}px;">Move</span>
+                  <div style="height: ${s(115)}px; width: ${s(40)}px; background: #E2E8F0; border-radius: ${s(12)}px; display: flex; align-items: flex-end; gap: 2px; overflow: hidden; padding: 2px;">
+                    <div style="height: 85%; width: 60%; background: linear-gradient(180deg, #34D399, #10B981); border-radius: ${s(8)}px; display: flex; align-items: center; justify-content: center; color: white; font-size: ${s(13)}px; font-weight: 900;">+5</div>
+                    <div style="height: 25%; width: 40%; background: linear-gradient(180deg, #FB7185, #F43F5E); border-radius: ${s(8)}px; display: flex; align-items: center; justify-content: center; color: white; font-size: ${s(13)}px; font-weight: 900;">-1</div>
+                  </div>
+                  <span style="background: #ECFDF5; color: #059669; font-size: ${s(12)}px; font-weight: 900; padding: 2px 6px; border-radius: 6px; margin-top: ${s(8)}px;">+4 Net</span>
+                </div>
+
+                <!-- Checkin 4 (Active Selected) -->
+                <div style="background: #ECFDF5; border: 2.5px solid #10B981; border-radius: ${s(18)}px; padding: ${s(12)}px ${s(8)}px; display: flex; flex-direction: column; align-items: center; text-align: center; box-shadow: 0 6px 18px rgba(16,185,129,0.18);">
+                  <span style="font-size: ${s(13)}px; font-weight: 800; color: #059669;">10:00 PM</span>
+                  <span style="font-size: ${s(16)}px; font-weight: 900; color: #065F46; margin: ${s(3)}px 0 ${s(8)}px;">Autophagy</span>
+                  <div style="height: ${s(115)}px; width: ${s(34)}px; background: #D1FAE5; border-radius: ${s(12)}px; display: flex; align-items: flex-end; overflow: hidden; padding: 2px;">
+                    <div style="height: 100%; width: 100%; background: linear-gradient(180deg, #34D399, #059669); border-radius: ${s(10)}px; display: flex; align-items: center; justify-content: center; color: white; font-size: ${s(15)}px; font-weight: 900;">+6</div>
+                  </div>
+                  <span style="background: #10B981; color: white; font-size: ${s(12)}px; font-weight: 900; padding: 2px 6px; border-radius: 6px; margin-top: ${s(8)}px;">+6 Net ✓</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Dual Forces Breakdown Grid -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: ${s(12)}px;">
+              <!-- Left: Repair Forces -->
+              <div style="background: white; border: 2px solid #A7F3D0; border-radius: ${s(22)}px; padding: ${s(18)}px ${s(20)}px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: ${s(12)}px;">
+                  <span style="font-size: ${s(17)}px; font-weight: 900; color: #065F46;">🌱 REPAIR FORCES</span>
+                  <span style="background: #ECFDF5; color: #059669; font-size: ${s(15)}px; font-weight: 900; padding: 3px 9px; border-radius: 6px;">+9 Total</span>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: ${s(10)}px;">
+                  <div style="display: flex; align-items: center; justify-content: space-between; font-size: ${s(16)}px; font-weight: 800; color: #334155;">
+                    <div>
+                      <div>⚡ 16h Mitophagy Fast</div>
+                      <div style="font-size: ${s(13)}px; color: #64748B; font-weight: 600;">Autophagosomes active</div>
+                    </div>
+                    <span style="color: #059669; font-size: ${s(18)}px; font-weight: 900;">+2</span>
+                  </div>
+                  <div style="display: flex; align-items: center; justify-content: space-between; font-size: ${s(16)}px; font-weight: 800; color: #334155;">
+                    <div>
+                      <div>🥗 Polyphenol Plate</div>
+                      <div style="font-size: ${s(13)}px; color: #64748B; font-weight: 600;">Berries, amla, greens</div>
+                    </div>
+                    <span style="color: #059669; font-size: ${s(18)}px; font-weight: 900;">+2</span>
+                  </div>
+                  <div style="display: flex; align-items: center; justify-content: space-between; font-size: ${s(16)}px; font-weight: 800; color: #334155;">
+                    <div>
+                      <div>🧘 Vagal Breathwork</div>
+                      <div style="font-size: ${s(13)}px; color: #64748B; font-weight: 600;">High parasympathetic tone</div>
+                    </div>
+                    <span style="color: #059669; font-size: ${s(18)}px; font-weight: 900;">+2</span>
+                  </div>
+                  <div style="display: flex; align-items: center; justify-content: space-between; font-size: ${s(16)}px; font-weight: 800; color: #334155;">
+                    <div>
+                      <div>🌙 1h 48m Deep Sleep</div>
+                      <div style="font-size: ${s(13)}px; color: #64748B; font-weight: 600;">Glymphatic brain flush</div>
+                    </div>
+                    <span style="color: #059669; font-size: ${s(18)}px; font-weight: 900;">+3</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Right: Damage Forces Mitigated -->
+              <div style="background: white; border: 2px solid #FECDD3; border-radius: ${s(22)}px; padding: ${s(18)}px ${s(20)}px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: ${s(12)}px;">
+                  <span style="font-size: ${s(17)}px; font-weight: 900; color: #9F1239;">🛡️ STRESS SHIELD</span>
+                  <span style="background: #FFF1F2; color: #E11D48; font-size: ${s(15)}px; font-weight: 900; padding: 3px 9px; border-radius: 6px;">-3 Managed</span>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: ${s(10)}px;">
+                  <div style="display: flex; align-items: center; justify-content: space-between; font-size: ${s(16)}px; font-weight: 800; color: #334155;">
+                    <div>
+                      <div>📈 Glucose Surge</div>
+                      <div style="font-size: ${s(13)}px; color: #64748B; font-weight: 600;">Buffered via sprouted fiber</div>
+                    </div>
+                    <span style="color: #E11D48; font-size: ${s(16)}px; font-weight: 900;">Shielded ✓</span>
+                  </div>
+                  <div style="display: flex; align-items: center; justify-content: space-between; font-size: ${s(16)}px; font-weight: 800; color: #334155;">
+                    <div>
+                      <div>☕ Work Cortisol</div>
+                      <div style="font-size: ${s(13)}px; color: #64748B; font-weight: 600;">Cooled via 2m breathing</div>
+                    </div>
+                    <span style="color: #E11D48; font-size: ${s(16)}px; font-weight: 900;">Cooled ✓</span>
+                  </div>
+                  <div style="display: flex; align-items: center; justify-content: space-between; font-size: ${s(16)}px; font-weight: 800; color: #334155;">
+                    <div>
+                      <div>🚗 PM2.5 Exposure</div>
+                      <div style="font-size: ${s(13)}px; color: #64748B; font-weight: 600;">Antioxidant defense active</div>
+                    </div>
+                    <span style="color: #E11D48; font-size: ${s(16)}px; font-weight: 900;">Defended ✓</span>
+                  </div>
+                  <div style="display: flex; align-items: center; justify-content: space-between; font-size: ${s(16)}px; font-weight: 800; color: #334155;">
+                    <div>
+                      <div>🍷 Zero Alcohol</div>
+                      <div style="font-size: ${s(13)}px; color: #64748B; font-weight: 600;">Zero DNA adduct damage</div>
+                    </div>
+                    <span style="color: #059669; font-size: ${s(16)}px; font-weight: 900;">Pure ✓</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 4-Card Organ Protection & Biomarker Telemetry Grid -->
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: ${s(12)}px;">
+              <div style="background: white; border: 2px solid #E2E8F0; border-radius: ${s(20)}px; padding: ${s(14)}px ${s(18)}px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-size: ${s(14)}px; font-weight: 800; color: #64748B;">🫀 CARDIO SHIELD</span>
+                  <span style="background: #ECFDF5; color: #059669; font-size: ${s(13)}px; font-weight: 900; padding: 2px 6px; border-radius: 6px;">Optimal</span>
+                </div>
+                <div style="font-size: ${s(22)}px; font-weight: 900; color: #0F172A; margin-top: ${s(3)}px;">94% Defended</div>
+                <div style="font-size: ${s(13)}px; color: #059669; font-weight: 700; margin-top: 2px;">hs-CRP 0.4 mg/L • Elastic</div>
+              </div>
+
+              <div style="background: white; border: 2px solid #E2E8F0; border-radius: ${s(20)}px; padding: ${s(14)}px ${s(18)}px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-size: ${s(14)}px; font-weight: 800; color: #64748B;">🧠 NEURAL DEFENSE</span>
+                  <span style="background: #ECFDF5; color: #059669; font-size: ${s(13)}px; font-weight: 900; padding: 2px 6px; border-radius: 6px;">Peak</span>
+                </div>
+                <div style="font-size: ${s(22)}px; font-weight: 900; color: #0F172A; margin-top: ${s(3)}px;">96% Protected</div>
+                <div style="font-size: ${s(13)}px; color: #2563EB; font-weight: 700; margin-top: 2px;">BDNF High • Glymphatic Cleared</div>
+              </div>
+
+              <div style="background: white; border: 2px solid #E2E8F0; border-radius: ${s(20)}px; padding: ${s(14)}px ${s(18)}px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-size: ${s(14)}px; font-weight: 800; color: #64748B;">⚡ MITOCHONDRIA</span>
+                  <span style="background: #ECFDF5; color: #059669; font-size: ${s(13)}px; font-weight: 900; padding: 2px 6px; border-radius: 6px;">Active</span>
+                </div>
+                <div style="font-size: ${s(22)}px; font-weight: 900; color: #0F172A; margin-top: ${s(3)}px;">98% Rejuvenated</div>
+                <div style="font-size: ${s(13)}px; color: #D97706; font-weight: 700; margin-top: 2px;">Mitophagy Peak (+6 Forces)</div>
+              </div>
+
+              <div style="background: white; border: 2px solid #E2E8F0; border-radius: ${s(20)}px; padding: ${s(14)}px ${s(18)}px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-size: ${s(14)}px; font-weight: 800; color: #64748B;">🧬 DNA INTEGRITY</span>
+                  <span style="background: #ECFDF5; color: #059669; font-size: ${s(13)}px; font-weight: 900; padding: 2px 6px; border-radius: 6px;">Safe</span>
+                </div>
+                <div style="font-size: ${s(22)}px; font-weight: 900; color: #0F172A; margin-top: ${s(3)}px;">92% Guarded</div>
+                <div style="font-size: ${s(13)}px; color: #7C3AED; font-weight: 700; margin-top: 2px;">Zero Double-Strand Breaks</div>
+              </div>
+            </div>
+
+            <!-- 7-Day Cellular Repair Waveform Trend -->
+            <div style="background: white; border: 2px solid #E2E8F0; border-radius: ${s(22)}px; padding: ${s(16)}px ${s(20)}px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: ${s(6)}px;">
+                <span style="font-size: ${s(15)}px; font-weight: 900; color: #0F172A; text-transform: uppercase;">7-Day Net Cellular Repair Trajectory</span>
+                <span style="font-size: ${s(14)}px; font-weight: 800; color: #059669;">+31 Net Points This Week</span>
+              </div>
+              <svg viewBox="0 0 500 80" style="width: 100%; height: ${s(95)}px;">
+                <defs>
+                  <linearGradient id="repairWaveGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#10B981" stop-opacity="0.38"/>
+                    <stop offset="100%" stop-color="#10B981" stop-opacity="0.0"/>
+                  </linearGradient>
+                </defs>
+                <path d="M 0 55 Q 80 44, 160 34 T 320 24 T 500 12 L 500 80 L 0 80 Z" fill="url(#repairWaveGrad)"/>
+                <path d="M 0 55 Q 80 44, 160 34 T 320 24 T 500 12" fill="none" stroke="#10B981" stroke-width="4.5" stroke-linecap="round"/>
+                <circle cx="0" cy="55" r="4.5" fill="#10B981"/>
+                <circle cx="160" cy="34" r="4.5" fill="#10B981"/>
+                <circle cx="320" cy="24" r="4.5" fill="#10B981"/>
+                <circle cx="500" cy="12" r="7" fill="#059669" stroke="white" stroke-width="3"/>
+              </svg>
+              <div style="display: flex; justify-content: space-between; font-size: ${s(13)}px; font-weight: 800; color: #94A3B8;">
+                <span>Mon (+3)</span>
+                <span>Wed (+5)</span>
+                <span>Fri (+6)</span>
+                <span style="color: #059669; font-weight: 900;">Today (+6 Peak)</span>
+              </div>
+            </div>
+
+            <!-- AI Clinical Guidance Banner -->
+            <div style="background: #EFF6FF; border: 1.5px solid #BFDBFE; border-radius: ${s(18)}px; padding: ${s(14)}px ${s(18)}px; display: flex; align-items: center; gap: ${s(12)}px;">
+              <span style="font-size: ${s(26)}px;">💡</span>
+              <div style="font-size: ${s(15)}px; color: #1E40AF; font-weight: 700; line-height: 1.35;">
+                <strong>Mito AI Clinical Insight:</strong> Autophagy window + low glycemic lunch shifted your body into high repair (+6). Mitochondria are in peak rejuvenation.
+              </div>
+            </div>
+          </div>
+
+          <!-- Action Button -->
+          <div style="background: #10B981; color: white; padding: ${s(20)}px; border-radius: ${s(20)}px; font-size: ${s(22)}px; font-weight: 900; text-align: center; box-shadow: 0 10px 30px rgba(16,185,129,0.35); margin-top: ${s(12)}px;">
+            ⚡ View Full Cellular Repair & Forces Audit
+          </div>
+        </div>
+      `;
+    }
+  },
+
+  // 8. DECADE LONGEVITY PROTOCOL & TARGETED ORGAN DEFENSE
+  {
+    id: '08_decade_longevity_organ_defense',
+    headline: 'Decade Longevity Protocol<br>& Targeted Organ Defense',
+    accentColor: '#4F46E5',
+    bgGlow: 'radial-gradient(circle at 80% 15%, rgba(79, 70, 229, 0.28) 0%, transparent 60%), radial-gradient(circle at 20% 85%, rgba(16, 185, 129, 0.2) 0%, transparent 60%)',
+    renderScreen: (scale) => {
+      const s = (val) => Math.round(val * scale);
+      return `
+        <div style="width: 100%; height: 100%; background: #F8FAFC; display: flex; flex-direction: column; justify-content: space-between; padding: ${s(28)}px ${s(30)}px; overflow: hidden;">
+          <div style="display: flex; flex-direction: column; gap: ${s(14)}px;">
+            <!-- Hero Longevity Protocol Header Card (Matches AgeingModule.tsx exactly) -->
+            <div style="background: linear-gradient(135deg, #1D4ED8 0%, #4F46E5 50%, #7C3AED 100%); border-radius: ${s(28)}px; padding: ${s(24)}px ${s(28)}px; color: white; box-shadow: 0 14px 40px rgba(79,70,229,0.3); position: relative; overflow: hidden;">
+              <div style="position: absolute; -right: ${s(20)}px; -top: ${s(20)}px; width: ${s(130)}px; height: ${s(130)}px; background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%); pointer-events: none;"></div>
+
+              <div style="display: flex; align-items: center; gap: ${s(10)}px; margin-bottom: ${s(6)}px;">
+                <span style="font-size: ${s(22)}px;">✨</span>
+                <span style="font-size: ${s(17)}px; font-weight: 900; color: #DBEAFE; text-transform: uppercase; letter-spacing: 0.8px;">LONGEVITY PROTOCOL</span>
+              </div>
+
+              <div style="font-size: ${s(34)}px; font-weight: 900; line-height: 1.15; color: white;">
+                Healthy Ageing & Longevity
+              </div>
+              <div style="font-size: ${s(17)}px; color: #E0E7FF; font-weight: 700; margin-top: ${s(4)}px; line-height: 1.35;">
+                Decade-specific organ defense and foundational cellular longevity habits.
+              </div>
+
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-top: ${s(16)}px; padding-top: ${s(14)}px; border-top: 1.5px solid rgba(255,255,255,0.25);">
+                <div>
+                  <span style="font-size: ${s(18)}px; font-weight: 800; color: #DBEAFE;">Overall Longevity Score:</span>
+                  <div style="font-size: ${s(14)}px; color: #C7D2FE; font-weight: 600; margin-top: 2px;">Mitochondrial vitality & NAD+ primed</div>
+                </div>
+                <span style="background: rgba(255,255,255,0.22); backdrop-filter: blur(10px); border: 1.5px solid rgba(255,255,255,0.4); color: white; font-size: ${s(26)}px; font-weight: 900; padding: ${s(6)}px ${s(18)}px; border-radius: ${s(14)}px;">88% Optimal</span>
+              </div>
+            </div>
+
+            <!-- Decade Selector Tabs (30-40, 40-50 Active, 50-60, 60-70) -->
+            <div>
+              <span style="font-size: ${s(15)}px; font-weight: 900; color: #64748B; text-transform: uppercase; letter-spacing: 0.8px; display: block; margin-bottom: ${s(8)}px;">
+                SELECT YOUR DECADE:
+              </span>
+              <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: ${s(10)}px;">
+                <div style="background: white; border: 2px solid #E2E8F0; border-radius: ${s(16)}px; padding: ${s(13)}px 0; text-align: center; font-size: ${s(19)}px; font-weight: 900; color: #475569;">
+                  30-40
+                </div>
+                <div style="background: #2563EB; border: 2px solid #1D4ED8; border-radius: ${s(16)}px; padding: ${s(13)}px 0; text-align: center; font-size: ${s(19)}px; font-weight: 900; color: white; box-shadow: 0 8px 20px rgba(37,99,235,0.35); transform: translateY(-1px);">
+                  40-50 ✓
+                </div>
+                <div style="background: white; border: 2px solid #E2E8F0; border-radius: ${s(16)}px; padding: ${s(13)}px 0; text-align: center; font-size: ${s(19)}px; font-weight: 900; color: #475569;">
+                  50-60
+                </div>
+                <div style="background: white; border: 2px solid #E2E8F0; border-radius: ${s(16)}px; padding: ${s(13)}px 0; text-align: center; font-size: ${s(19)}px; font-weight: 900; color: #475569;">
+                  60-70
+                </div>
+              </div>
+            </div>
+
+            <!-- Targeted 40-50 Decade Organ Defense Factors (All 4 vital organs) -->
+            <div style="background: white; border: 2px solid #E2E8F0; border-radius: ${s(24)}px; padding: ${s(18)}px ${s(22)}px; box-shadow: 0 8px 24px rgba(0,0,0,0.04);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: ${s(12)}px;">
+                <span style="font-size: ${s(17)}px; font-weight: 900; color: #0F172A; text-transform: uppercase;">40-50 Decade Organ Defense</span>
+                <span style="background: #EEF2FF; color: #4F46E5; font-size: ${s(15)}px; font-weight: 900; padding: 3px 9px; border-radius: 6px;">Targeted Protocols</span>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: ${s(10)}px;">
+                <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; border-radius: ${s(18)}px; padding: ${s(14)}px ${s(16)}px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: ${s(24)}px;">🧠</span>
+                    <span style="background: #ECFDF5; color: #059669; font-size: ${s(14)}px; font-weight: 900; padding: 2px 7px; border-radius: 6px;">94% Shielded</span>
+                  </div>
+                  <div style="font-size: ${s(18)}px; font-weight: 900; color: #0F172A; margin-top: ${s(6)}px;">Neuro & Cognition</div>
+                  <div style="font-size: ${s(14)}px; color: #64748B; font-weight: 700; margin-top: 2px;">BDNF Stimulation • Deep Flush</div>
+                </div>
+
+                <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; border-radius: ${s(18)}px; padding: ${s(14)}px ${s(16)}px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: ${s(24)}px;">🫀</span>
+                    <span style="background: #EFF6FF; color: #2563EB; font-size: ${s(14)}px; font-weight: 900; padding: 2px 7px; border-radius: 6px;">90% Elastic</span>
+                  </div>
+                  <div style="font-size: ${s(18)}px; font-weight: 900; color: #0F172A; margin-top: ${s(6)}px;">Cardio & Endothelium</div>
+                  <div style="font-size: ${s(14)}px; color: #64748B; font-weight: 700; margin-top: 2px;">Arterial Compliance • ApoB Defended</div>
+                </div>
+
+                <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; border-radius: ${s(18)}px; padding: ${s(14)}px ${s(16)}px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: ${s(24)}px;">⚡</span>
+                    <span style="background: #FEF3C7; color: #D97706; font-size: ${s(14)}px; font-weight: 900; padding: 2px 7px; border-radius: 6px;">92% Vital</span>
+                  </div>
+                  <div style="font-size: ${s(18)}px; font-weight: 900; color: #0F172A; margin-top: ${s(6)}px;">Mitochondrial Peak</div>
+                  <div style="font-size: ${s(14)}px; color: #64748B; font-weight: 700; margin-top: 2px;">NAD+ Vitality Buffer Active</div>
+                </div>
+
+                <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; border-radius: ${s(18)}px; padding: ${s(14)}px ${s(16)}px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: ${s(24)}px;">🧬</span>
+                    <span style="background: #FAF5FF; color: #7C3AED; font-size: ${s(14)}px; font-weight: 900; padding: 2px 7px; border-radius: 6px;">88% Guarded</span>
+                  </div>
+                  <div style="font-size: ${s(18)}px; font-weight: 900; color: #0F172A; margin-top: ${s(6)}px;">DNA Telomere Guard</div>
+                  <div style="font-size: ${s(14)}px; color: #64748B; font-weight: 700; margin-top: 2px;">Sirtuin Epigenetic Activation</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Foundational Longevity Habits Checked List (6 Core Habits) -->
+            <div style="background: white; border: 2px solid #E2E8F0; border-radius: ${s(24)}px; padding: ${s(18)}px ${s(22)}px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: ${s(10)}px;">
+                <div style="display: flex; align-items: center; gap: ${s(8)}px;">
+                  <span style="font-size: ${s(18)}px;">✨</span>
+                  <span style="font-size: ${s(17)}px; font-weight: 900; color: #0F172A; text-transform: uppercase;">Foundational Longevity Habits</span>
+                </div>
+                <span style="background: #ECFDF5; color: #059669; font-size: ${s(15)}px; font-weight: 900; padding: 3px 9px; border-radius: 6px;">100% Completed</span>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: ${s(9)}px;">
+                <div style="background: #ECFDF5; border: 1.5px solid #A7F3D0; border-radius: ${s(14)}px; padding: ${s(12)}px ${s(14)}px; display: flex; justify-content: space-between; align-items: center;">
+                  <div>
+                    <div style="font-size: ${s(15)}px; font-weight: 900; color: #065F46;">🏃 Zone 2 Cardio & Strength</div>
+                    <div style="font-size: ${s(12)}px; color: #047857; margin-top: 1px;">45 mins completed</div>
+                  </div>
+                  <span style="background: #059669; color: white; width: ${s(22)}px; height: ${s(22)}px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: ${s(13)}px; font-weight: 900;">✓</span>
+                </div>
+                <div style="background: #ECFDF5; border: 1.5px solid #A7F3D0; border-radius: ${s(14)}px; padding: ${s(12)}px ${s(14)}px; display: flex; justify-content: space-between; align-items: center;">
+                  <div>
+                    <div style="font-size: ${s(15)}px; font-weight: 900; color: #065F46;">🌙 8h Restorative Sleep</div>
+                    <div style="font-size: ${s(12)}px; color: #047857; margin-top: 1px;">1h 48m deep wave</div>
+                  </div>
+                  <span style="background: #059669; color: white; width: ${s(22)}px; height: ${s(22)}px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: ${s(13)}px; font-weight: 900;">✓</span>
+                </div>
+                <div style="background: #ECFDF5; border: 1.5px solid #A7F3D0; border-radius: ${s(14)}px; padding: ${s(12)}px ${s(14)}px; display: flex; justify-content: space-between; align-items: center;">
+                  <div>
+                    <div style="font-size: ${s(15)}px; font-weight: 900; color: #065F46;">🥗 30+ Plant Polyphenols</div>
+                    <div style="font-size: ${s(12)}px; color: #047857; margin-top: 1px;">Longevity micronutrients</div>
+                  </div>
+                  <span style="background: #059669; color: white; width: ${s(22)}px; height: ${s(22)}px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: ${s(13)}px; font-weight: 900;">✓</span>
+                </div>
+                <div style="background: #ECFDF5; border: 1.5px solid #A7F3D0; border-radius: ${s(14)}px; padding: ${s(12)}px ${s(14)}px; display: flex; justify-content: space-between; align-items: center;">
+                  <div>
+                    <div style="font-size: ${s(15)}px; font-weight: 900; color: #065F46;">⚡ 15h Autophagy Fast</div>
+                    <div style="font-size: ${s(12)}px; color: #047857; margin-top: 1px;">Mitophagy activated</div>
+                  </div>
+                  <span style="background: #059669; color: white; width: ${s(22)}px; height: ${s(22)}px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: ${s(13)}px; font-weight: 900;">✓</span>
+                </div>
+                <div style="background: #ECFDF5; border: 1.5px solid #A7F3D0; border-radius: ${s(14)}px; padding: ${s(12)}px ${s(14)}px; display: flex; justify-content: space-between; align-items: center;">
+                  <div>
+                    <div style="font-size: ${s(15)}px; font-weight: 900; color: #065F46;">💧 Electrolyte Hydration</div>
+                    <div style="font-size: ${s(12)}px; color: #047857; margin-top: 1px;">2,250 ml mineral rich</div>
+                  </div>
+                  <span style="background: #059669; color: white; width: ${s(22)}px; height: ${s(22)}px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: ${s(13)}px; font-weight: 900;">✓</span>
+                </div>
+                <div style="background: #ECFDF5; border: 1.5px solid #A7F3D0; border-radius: ${s(14)}px; padding: ${s(12)}px ${s(14)}px; display: flex; justify-content: space-between; align-items: center;">
+                  <div>
+                    <div style="font-size: ${s(15)}px; font-weight: 900; color: #065F46;">🧘 Vagal Parasympathetic</div>
+                    <div style="font-size: ${s(12)}px; color: #047857; margin-top: 1px;">10 mins breathing done</div>
+                  </div>
+                  <span style="background: #059669; color: white; width: ${s(22)}px; height: ${s(22)}px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: ${s(13)}px; font-weight: 900;">✓</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Clinical Healthspan Milestone Banner -->
+            <div style="background: #F0FDF4; border: 1.5px solid #BBF7D0; border-radius: ${s(18)}px; padding: ${s(14)}px ${s(18)}px; display: flex; justify-content: space-between; align-items: center;">
+              <div style="display: flex; align-items: center; gap: ${s(10)}px;">
+                <span style="font-size: ${s(24)}px;">🏆</span>
+                <div>
+                  <div style="font-size: ${s(16)}px; font-weight: 900; color: #065F46;">40-50 Decade Clinical Trajectory: Excellent</div>
+                  <div style="font-size: ${s(13)}px; color: #047857; font-weight: 700;">On track to sustain 0.84x pace of biological aging for decade defense.</div>
+                </div>
+              </div>
+              <span style="background: #059669; color: white; font-size: ${s(14)}px; font-weight: 900; padding: 4px 10px; border-radius: 8px;">Top 3%</span>
+            </div>
+
+            <!-- Healthspan Telemetry Row -->
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: ${s(10)}px;">
+              <div style="background: white; border: 2px solid #E2E8F0; border-radius: ${s(18)}px; padding: ${s(14)}px ${s(12)}px; text-align: center;">
+                <div style="font-size: ${s(13)}px; color: #64748B; font-weight: 800;">PACE OF AGING</div>
+                <div style="font-size: ${s(22)}px; font-weight: 900; color: #2563EB; margin-top: 3px;">0.84x (Slow)</div>
+                <div style="font-size: ${s(12)}px; color: #059669; font-weight: 700; margin-top: 2px;">-3.4 Yrs Delta</div>
+              </div>
+              <div style="background: white; border: 2px solid #E2E8F0; border-radius: ${s(18)}px; padding: ${s(14)}px ${s(12)}px; text-align: center;">
+                <div style="font-size: ${s(13)}px; color: #64748B; font-weight: 800;">NAD+ STATUS</div>
+                <div style="font-size: ${s(22)}px; font-weight: 900; color: #059669; margin-top: 3px;">92 / 100</div>
+                <div style="font-size: ${s(12)}px; color: #059669; font-weight: 700; margin-top: 2px;">Vital Pool High</div>
+              </div>
+              <div style="background: white; border: 2px solid #E2E8F0; border-radius: ${s(18)}px; padding: ${s(14)}px ${s(12)}px; text-align: center;">
+                <div style="font-size: ${s(13)}px; color: #64748B; font-weight: 800;">TELOMERES</div>
+                <div style="font-size: ${s(22)}px; font-weight: 900; color: #7C3AED; margin-top: 3px;">Protected ✓</div>
+                <div style="font-size: ${s(12)}px; color: #7C3AED; font-weight: 700; margin-top: 2px;">Sirtuin Guarded</div>
+              </div>
+            </div>
+
+            <!-- AI Robot Quick-Log Helper Badge (Matches user screenshot 7) -->
+            <div style="background: #EFF6FF; border: 1.5px solid #BFDBFE; border-radius: ${s(18)}px; padding: ${s(12)}px ${s(18)}px; display: flex; justify-content: space-between; align-items: center;">
+              <div style="display: flex; align-items: center; gap: ${s(10)}px;">
+                <span style="font-size: ${s(24)}px;">🤖</span>
+                <span style="font-size: ${s(15)}px; font-weight: 800; color: #1E40AF;">Too tired to log? Let the robo do with AI Voice & Vision</span>
+              </div>
+              <span style="background: #2563EB; color: white; font-size: ${s(13)}px; font-weight: 800; padding: 4px 12px; border-radius: 8px;">1-Tap ✓</span>
+            </div>
+          </div>
+
+          <!-- Bottom Action Button -->
+          <div style="background: #059669; color: white; padding: ${s(20)}px; border-radius: ${s(20)}px; font-size: ${s(22)}px; font-weight: 900; text-align: center; box-shadow: 0 10px 30px rgba(5,150,105,0.35); margin-top: ${s(12)}px;">
+            ✓ Update Today's Longevity Entry (Saved 11:05)
+          </div>
+        </div>
+      `;
+    }
+  },
+
+  // 9. PRECISION CANCER SCREENING & AIR QUALITY DEFENSE
+  {
+    id: '09_cancer_screening_air_quality',
+    headline: 'Early Cancer Screening &<br>Live Air Quality Defense',
+    accentColor: '#0284C7',
+    bgGlow: 'radial-gradient(circle at 85% 15%, rgba(2, 132, 199, 0.28) 0%, transparent 60%), radial-gradient(circle at 15% 85%, rgba(16, 185, 129, 0.22) 0%, transparent 60%)',
+    renderScreen: (scale) => {
+      const s = (val) => Math.round(val * scale);
+      return `
+        <div style="width: 100%; height: 100%; background: #F8FAFC; display: flex; flex-direction: column; justify-content: space-between; padding: ${s(24)}px ${s(26)}px; box-sizing: border-box; overflow: hidden;">
+          <div style="display: flex; flex-direction: column; gap: ${s(12)}px;">
+            <!-- Top Hero Card: Preventive Oncology & Air Shield Live -->
+            <div style="background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%); border-radius: ${s(26)}px; padding: ${s(22)}px ${s(26)}px; color: white; box-shadow: 0 14px 40px rgba(15,23,42,0.25); position: relative; overflow: hidden;">
+              <div style="position: absolute; -right: ${s(30)}px; -bottom: ${s(30)}px; width: ${s(160)}px; height: ${s(160)}px; background: radial-gradient(circle, rgba(2,132,199,0.3) 0%, transparent 70%); pointer-events: none;"></div>
+
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: ${s(8)}px;">
+                <div style="display: flex; align-items: center; gap: ${s(10)}px;">
+                  <span style="width: ${s(12)}px; height: ${s(12)}px; border-radius: 50%; background: #38BDF8; box-shadow: 0 0 14px #38BDF8;"></span>
+                  <span style="font-size: ${s(16)}px; font-weight: 900; color: #38BDF8; text-transform: uppercase; letter-spacing: 0.8px;">PREVENTIVE ONCOLOGY & AIR SHIELD</span>
+                </div>
+                <span style="background: rgba(2,132,199,0.2); color: #7DD3FC; border: 1.5px solid #0284C7; font-size: ${s(14)}px; font-weight: 800; padding: ${s(4)}px ${s(12)}px; border-radius: ${s(10)}px;">100% Adherence</span>
+              </div>
+
+              <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: ${s(14)}px;">
+                <div>
+                  <div style="font-size: ${s(64)}px; font-weight: 900; color: #38BDF8; line-height: 1;">All Clear <span style="font-size: ${s(26)}px; color: white;">• Guarded</span></div>
+                  <div style="font-size: ${s(16)}px; color: #94A3B8; font-weight: 700; margin-top: ${s(5)}px;">NCCN v2.2025 Protocols Active • Carcinogen Shield Engaged</div>
+                </div>
+                <div style="text-align: right;">
+                  <div style="font-size: ${s(36)}px; font-weight: 900; color: #34D399;">4 of 4</div>
+                  <div style="font-size: ${s(14)}px; color: #94A3B8;">Screenings Verified</div>
+                </div>
+              </div>
+
+              <!-- Dual Split Progress Bar -->
+              <div style="width: 100%; height: ${s(14)}px; background: rgba(255,255,255,0.1); border-radius: ${s(7)}px; overflow: hidden; display: flex; gap: 3px;">
+                <div style="width: 100%; height: 100%; background: linear-gradient(90deg, #0284C7, #38BDF8, #34D399); border-radius: ${s(6)}px;"></div>
+              </div>
+              <div style="display: flex; justify-content: space-between; font-size: ${s(14)}px; font-weight: 800; margin-top: ${s(8)}px;">
+                <span style="color: #7DD3FC;">Early Detection: 100% Up to Date</span>
+                <span style="color: #34D399;">Live Air Quality: Safe (AQI 42)</span>
+              </div>
+            </div>
+
+            <!-- Personalized Risk Cohort Selector (Matches real app CancerScreeningScreen.tsx) -->
+            <div>
+              <div style="font-size: ${s(14)}px; font-weight: 900; color: #64748B; letter-spacing: 0.8px; margin-bottom: ${s(8)}px; text-transform: uppercase;">
+                SELECT RISK COHORT & AGE GROUP:
+              </div>
+              <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: ${s(8)}px;">
+                <div style="background: white; border: 2px solid #E2E8F0; border-radius: ${s(14)}px; padding: ${s(10)}px ${s(6)}px; text-align: center; font-size: ${s(14)}px; font-weight: 800; color: #64748B;">
+                  Age 20-40
+                </div>
+                <div style="background: #0284C7; color: white; border-radius: ${s(14)}px; padding: ${s(10)}px ${s(6)}px; text-align: center; font-size: ${s(14)}px; font-weight: 900; box-shadow: 0 4px 14px rgba(2,132,199,0.35);">
+                  Age 40-50 ✓
+                </div>
+                <div style="background: white; border: 2px solid #E2E8F0; border-radius: ${s(14)}px; padding: ${s(10)}px ${s(6)}px; text-align: center; font-size: ${s(14)}px; font-weight: 800; color: #64748B;">
+                  High AQI / Smoke
+                </div>
+                <div style="background: white; border: 2px solid #E2E8F0; border-radius: ${s(14)}px; padding: ${s(10)}px ${s(6)}px; text-align: center; font-size: ${s(14)}px; font-weight: 800; color: #64748B;">
+                  Age 50+
+                </div>
+              </div>
+            </div>
+
+            <!-- Live GPS Air Quality Telemetry Card (Derived from LiveAQIWidget.tsx) -->
+            <div style="background: white; border: 2px solid #E2E8F0; border-radius: ${s(22)}px; padding: ${s(16)}px ${s(20)}px; box-shadow: 0 6px 20px rgba(0,0,0,0.03);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: ${s(12)}px;">
+                <div style="display: flex; align-items: center; gap: ${s(10)}px;">
+                  <span style="font-size: ${s(22)}px;">📍</span>
+                  <div>
+                    <div style="font-size: ${s(16)}px; font-weight: 900; color: #0F172A;">LIVE GPS AIR TELEMETRY</div>
+                    <div style="font-size: ${s(13)}px; color: #64748B; font-weight: 700;">Bangalore Urban (12.97° N) • CPCB / US AQI</div>
+                  </div>
+                </div>
+                <div style="background: #ECFDF5; border: 1.5px solid #10B981; border-radius: ${s(12)}px; padding: ${s(6)}px ${s(14)}px; text-align: right;">
+                  <div style="font-size: ${s(20)}px; font-weight: 900; color: #059669; line-height: 1;">42 AQI</div>
+                  <div style="font-size: ${s(12)}px; font-weight: 800; color: #047857;">Good Air Quality</div>
+                </div>
+              </div>
+
+              <!-- 4 Pollutant Telemetry Pills -->
+              <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: ${s(8)}px; margin-bottom: ${s(12)}px;">
+                <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; border-radius: ${s(14)}px; padding: ${s(10)}px ${s(6)}px; text-align: center;">
+                  <div style="font-size: ${s(11)}px; font-weight: 800; color: #64748B;">PM2.5</div>
+                  <div style="font-size: ${s(18)}px; font-weight: 900; color: #059669; margin: 2px 0;">12 <span style="font-size: ${s(11)}px; color: #64748B;">µg/m³</span></div>
+                  <div style="font-size: ${s(10)}px; font-weight: 800; color: #059669; background: #ECFDF5; border-radius: 4px; padding: 2px 4px;">WHO Std ✓</div>
+                </div>
+                <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; border-radius: ${s(14)}px; padding: ${s(10)}px ${s(6)}px; text-align: center;">
+                  <div style="font-size: ${s(11)}px; font-weight: 800; color: #64748B;">PM10</div>
+                  <div style="font-size: ${s(18)}px; font-weight: 900; color: #059669; margin: 2px 0;">28 <span style="font-size: ${s(11)}px; color: #64748B;">µg/m³</span></div>
+                  <div style="font-size: ${s(10)}px; font-weight: 800; color: #059669; background: #ECFDF5; border-radius: 4px; padding: 2px 4px;">Lung Safe ✓</div>
+                </div>
+                <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; border-radius: ${s(14)}px; padding: ${s(10)}px ${s(6)}px; text-align: center;">
+                  <div style="font-size: ${s(11)}px; font-weight: 800; color: #64748B;">NO2</div>
+                  <div style="font-size: ${s(18)}px; font-weight: 900; color: #0284C7; margin: 2px 0;">16 <span style="font-size: ${s(11)}px; color: #64748B;">ppb</span></div>
+                  <div style="font-size: ${s(10)}px; font-weight: 800; color: #0284C7; background: #EFF6FF; border-radius: 4px; padding: 2px 4px;">Low Toxic</div>
+                </div>
+                <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; border-radius: ${s(14)}px; padding: ${s(10)}px ${s(6)}px; text-align: center;">
+                  <div style="font-size: ${s(11)}px; font-weight: 800; color: #64748B;">VOC / O3</div>
+                  <div style="font-size: ${s(18)}px; font-weight: 900; color: #059669; margin: 2px 0;">0.02 <span style="font-size: ${s(11)}px; color: #64748B;">ppm</span></div>
+                  <div style="font-size: ${s(10)}px; font-weight: 800; color: #059669; background: #ECFDF5; border-radius: 4px; padding: 2px 4px;">Minimal ✓</div>
+                </div>
+              </div>
+
+              <!-- 24-Hour Diurnal Sparkline -->
+              <div style="background: #F0FDF4; border: 1px solid #BBF7D0; border-radius: ${s(14)}px; padding: ${s(10)}px ${s(16)}px; display: flex; align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: ${s(10)}px;">
+                  <span style="font-size: ${s(18)}px;">📈</span>
+                  <div>
+                    <div style="font-size: ${s(14)}px; font-weight: 900; color: #065F46;">24h Diurnal Air Quality Curve</div>
+                    <div style="font-size: ${s(12)}px; color: #047857; font-weight: 700;">Safe outdoor exercise window: 6:00 AM – 11:00 AM</div>
+                  </div>
+                </div>
+                <span style="background: #059669; color: white; font-size: ${s(13)}px; font-weight: 900; padding: 3px 10px; border-radius: 6px;">Optimal</span>
+              </div>
+            </div>
+
+            <!-- Active Early Cancer Screening Protocols (4 clinical tests) -->
+            <div style="background: white; border: 2px solid #E2E8F0; border-radius: ${s(22)}px; padding: ${s(16)}px ${s(20)}px; box-shadow: 0 6px 20px rgba(0,0,0,0.03);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: ${s(12)}px;">
+                <span style="font-size: ${s(16)}px; font-weight: 900; color: #0F172A; text-transform: uppercase;">EARLY CANCER SCREENING ROADMAP (NCCN v2.2025)</span>
+                <span style="background: #ECFDF5; color: #059669; font-size: ${s(14)}px; font-weight: 900; padding: 3px 10px; border-radius: 6px;">4 Cleared ✓</span>
+              </div>
+
+              <div style="display: flex; flex-direction: column; gap: ${s(9)}px;">
+                <!-- Test 1: Lung LDCT -->
+                <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; border-radius: ${s(16)}px; padding: ${s(11)}px ${s(16)}px; display: flex; justify-content: space-between; align-items: center;">
+                  <div style="display: flex; align-items: center; gap: ${s(12)}px;">
+                    <span style="font-size: ${s(22)}px;">🫁</span>
+                    <div>
+                      <div style="font-size: ${s(15)}px; font-weight: 900; color: #0F172A;">Low-Dose CT (LDCT) Lung Screen</div>
+                      <div style="font-size: ${s(12)}px; color: #64748B; font-weight: 700;">Urban AQI & smoke exposure safeguard • Baseline scan clear</div>
+                    </div>
+                  </div>
+                  <span style="background: #ECFDF5; color: #059669; border: 1.5px solid #10B981; font-size: ${s(13)}px; font-weight: 900; padding: ${s(3)}px ${s(9)}px; border-radius: 6px;">Cleared ✓</span>
+                </div>
+
+                <!-- Test 2: Mammogram -->
+                <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; border-radius: ${s(16)}px; padding: ${s(11)}px ${s(16)}px; display: flex; justify-content: space-between; align-items: center;">
+                  <div style="display: flex; align-items: center; gap: ${s(12)}px;">
+                    <span style="font-size: ${s(22)}px;">🩺</span>
+                    <div>
+                      <div style="font-size: ${s(15)}px; font-weight: 900; color: #0F172A;">Digital Mammogram & Breast Ultrasound</div>
+                      <div style="font-size: ${s(12)}px; color: #64748B; font-weight: 700;">NCCN Preventive Guideline • High-resolution imaging clear</div>
+                    </div>
+                  </div>
+                  <span style="background: #ECFDF5; color: #059669; border: 1.5px solid #10B981; font-size: ${s(13)}px; font-weight: 900; padding: ${s(3)}px ${s(9)}px; border-radius: 6px;">Documented ✓</span>
+                </div>
+
+                <!-- Test 3: Cervical HPV -->
+                <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; border-radius: ${s(16)}px; padding: ${s(11)}px ${s(16)}px; display: flex; justify-content: space-between; align-items: center;">
+                  <div style="display: flex; align-items: center; gap: ${s(12)}px;">
+                    <span style="font-size: ${s(22)}px;">🔬</span>
+                    <div>
+                      <div style="font-size: ${s(15)}px; font-weight: 900; color: #0F172A;">Pap Smear & HPV Co-Testing</div>
+                      <div style="font-size: ${s(12)}px; color: #64748B; font-weight: 700;">3-Year preventive oncology cycle • Lab verified negative</div>
+                    </div>
+                  </div>
+                  <span style="background: #ECFDF5; color: #059669; border: 1.5px solid #10B981; font-size: ${s(13)}px; font-weight: 900; padding: ${s(3)}px ${s(9)}px; border-radius: 6px;">Negative ✓</span>
+                </div>
+
+                <!-- Test 4: Genetics & Biomarkers -->
+                <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; border-radius: ${s(16)}px; padding: ${s(11)}px ${s(16)}px; display: flex; justify-content: space-between; align-items: center;">
+                  <div style="display: flex; align-items: center; gap: ${s(12)}px;">
+                    <span style="font-size: ${s(22)}px;">🩸</span>
+                    <div>
+                      <div style="font-size: ${s(15)}px; font-weight: 900; color: #0F172A;">Genetic Pedigree & Tumor Markers (BRCA1/2)</div>
+                      <div style="font-size: ${s(12)}px; color: #64748B; font-weight: 700;">Lynch syndrome negative • CEA, CA-125, PSA baseline verified</div>
+                    </div>
+                  </div>
+                  <span style="background: #ECFDF5; color: #059669; border: 1.5px solid #10B981; font-size: ${s(13)}px; font-weight: 900; padding: ${s(3)}px ${s(9)}px; border-radius: 6px;">Specialist Signed ✓</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Environmental Carcinogen Shield Matrix (6 Hazards Covered - From EnvironmentalExposuresLogScreen.tsx) -->
+            <div style="background: white; border: 2px solid #E2E8F0; border-radius: ${s(22)}px; padding: ${s(16)}px ${s(20)}px; box-shadow: 0 6px 20px rgba(0,0,0,0.03);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: ${s(10)}px;">
+                <span style="font-size: ${s(16)}px; font-weight: 900; color: #0F172A; text-transform: uppercase;">ENVIRONMENTAL CARCINOGEN DEFENSE</span>
+                <span style="font-size: ${s(13)}px; font-weight: 800; color: #059669;">6 Active Shields</span>
+              </div>
+              <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: ${s(8)}px;">
+                <div style="background: #ECFDF5; border: 1.5px solid #A7F3D0; border-radius: ${s(14)}px; padding: ${s(10)}px ${s(8)}px; text-align: center;">
+                  <div style="font-size: ${s(20)}px;">🛡️</div>
+                  <div style="font-size: ${s(13)}px; font-weight: 900; color: #065F46; margin-top: 2px;">PM2.5 Lung Barrier</div>
+                  <div style="font-size: ${s(11)}px; color: #047857; font-weight: 700;">HEPA 13 Guarded</div>
+                </div>
+                <div style="background: #EFF6FF; border: 1.5px solid #BFDBFE; border-radius: ${s(14)}px; padding: ${s(10)}px ${s(8)}px; text-align: center;">
+                  <div style="font-size: ${s(20)}px;">💧</div>
+                  <div style="font-size: ${s(13)}px; font-weight: 900; color: #1E40AF; margin-top: 2px;">Pure Water</div>
+                  <div style="font-size: ${s(11)}px; color: #2563EB; font-weight: 700;">Microplastics Free</div>
+                </div>
+                <div style="background: #FEF3C7; border: 1.5px solid #FDE68A; border-radius: ${s(14)}px; padding: ${s(10)}px ${s(8)}px; text-align: center;">
+                  <div style="font-size: ${s(20)}px;">☀️</div>
+                  <div style="font-size: ${s(13)}px; font-weight: 900; color: #92400E; margin-top: 2px;">UV Shield</div>
+                  <div style="font-size: ${s(11)}px; color: #B45309; font-weight: 700;">SPF 50+ Broad</div>
+                </div>
+                <div style="background: #FDF2F8; border: 1.5px solid #FBCFE8; border-radius: ${s(14)}px; padding: ${s(10)}px ${s(8)}px; text-align: center;">
+                  <div style="font-size: ${s(20)}px;">🍳</div>
+                  <div style="font-size: ${s(13)}px; font-weight: 900; color: #9D174D; margin-top: 2px;">Clean Kitchen</div>
+                  <div style="font-size: ${s(11)}px; color: #BE185D; font-weight: 700;">Zero PFOA Non-Stick</div>
+                </div>
+                <div style="background: #F5F3FF; border: 1.5px solid #DDD6FE; border-radius: ${s(14)}px; padding: ${s(10)}px ${s(8)}px; text-align: center;">
+                  <div style="font-size: ${s(20)}px;">🚫</div>
+                  <div style="font-size: ${s(13)}px; font-weight: 900; color: #5B21B6; margin-top: 2px;">Zero VOC</div>
+                  <div style="font-size: ${s(11)}px; color: #6D28D9; font-weight: 700;">Radon & Benzene Safe</div>
+                </div>
+                <div style="background: #F0FDF4; border: 1.5px solid #BBF7D0; border-radius: ${s(14)}px; padding: ${s(10)}px ${s(8)}px; text-align: center;">
+                  <div style="font-size: ${s(20)}px;">🥬</div>
+                  <div style="font-size: ${s(13)}px; font-weight: 900; color: #166534; margin-top: 2px;">Pesticide Wash</div>
+                  <div style="font-size: ${s(11)}px; color: #15803D; font-weight: 700;">Ozone Micro-Flush</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Healthspan Telemetry Row (3 boxes) -->
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: ${s(10)}px;">
+              <div style="background: white; border: 2px solid #E2E8F0; border-radius: ${s(18)}px; padding: ${s(14)}px ${s(12)}px; text-align: center;">
+                <div style="font-size: ${s(13)}px; color: #64748B; font-weight: 800;">LUNG EPITHELIUM</div>
+                <div style="font-size: ${s(22)}px; font-weight: 900; color: #0284C7; margin-top: 3px;">96% Guarded</div>
+                <div style="font-size: ${s(12)}px; color: #059669; font-weight: 700; margin-top: 2px;">Alveolar Barrier OK</div>
+              </div>
+              <div style="background: white; border: 2px solid #E2E8F0; border-radius: ${s(18)}px; padding: ${s(14)}px ${s(12)}px; text-align: center;">
+                <div style="font-size: ${s(13)}px; color: #64748B; font-weight: 800;">TOXIC BURDEN</div>
+                <div style="font-size: ${s(22)}px; font-weight: 900; color: #059669; margin-top: 3px;">0.04 (Low)</div>
+                <div style="font-size: ${s(12)}px; color: #059669; font-weight: 700; margin-top: 2px;">Hepatic Detox High</div>
+              </div>
+              <div style="background: white; border: 2px solid #E2E8F0; border-radius: ${s(18)}px; padding: ${s(14)}px ${s(12)}px; text-align: center;">
+                <div style="font-size: ${s(13)}px; color: #64748B; font-weight: 800;">NCCN ROADMAP</div>
+                <div style="font-size: ${s(22)}px; font-weight: 900; color: #7C3AED; margin-top: 3px;">100% Current</div>
+                <div style="font-size: ${s(12)}px; color: #7C3AED; font-weight: 700; margin-top: 2px;">Next Cycle 2027</div>
+              </div>
+            </div>
+
+            <!-- AI Robot Clinical Oncology Guidance Banner -->
+            <div style="background: #EFF6FF; border: 1.5px solid #BFDBFE; border-radius: ${s(18)}px; padding: ${s(12)}px ${s(18)}px; display: flex; justify-content: space-between; align-items: center;">
+              <div style="display: flex; align-items: center; gap: ${s(10)}px;">
+                <span style="font-size: ${s(24)}px;">🤖</span>
+                <span style="font-size: ${s(15)}px; font-weight: 800; color: #1E40AF;">💡 Mito AI: AQI 42 is optimal. Cancer screenings 100% up to date. Outdoor Zone 2 window open until 11 AM.</span>
+              </div>
+              <span style="background: #0284C7; color: white; font-size: ${s(13)}px; font-weight: 800; padding: 4px 12px; border-radius: 8px;">Audited ✓</span>
+            </div>
+          </div>
+
+          <!-- Bottom Action Button -->
+          <div style="background: linear-gradient(135deg, #0284C7 0%, #0369A1 100%); color: white; padding: ${s(20)}px; border-radius: ${s(20)}px; font-size: ${s(22)}px; font-weight: 900; text-align: center; box-shadow: 0 10px 30px rgba(2,132,199,0.35); margin-top: ${s(12)}px;">
+            ✓ View Full Screening Roadmap & Air Quality Defense ›
+          </div>
+        </div>
+      `;
+    }
   }
 ];
 
@@ -891,21 +1617,30 @@ async function runGenerator() {
   console.log('🚀 RENDERING PROPORTIONALLY SCALED STORE ASSETS (V6 HARMONIZED)');
   console.log('================================================================');
 
+  const onlyNew = process.argv.includes('--only-new');
+  const targetScreens = onlyNew
+    ? screens.filter(s => s.id.startsWith('07') || s.id.startsWith('08') || s.id.startsWith('09'))
+    : screens;
+
+  console.log(`Targeting ${targetScreens.length} screens (onlyNew: ${onlyNew})`);
+
   const tempDir = path.join('/tmp', 'proportional_store_v6');
   fs.mkdirSync(tempDir, { recursive: true });
 
   // 1. Phone Screenshots: iOS Medium (1179x2556), iOS Large (1290x2796) & Android (1080x1920)
   console.log('\n📱 [1/4] Rendering Phone Screenshots (iOS Dynamic Island 1179x2556, iOS Large 1290x2796 & Android 1080x1920)...');
-  for (let i = 0; i < screens.length; i++) {
-    const s = screens[i];
-    console.log(`   📸 [${i + 1}/${screens.length}] ${s.id}...`);
+  for (let i = 0; i < targetScreens.length; i++) {
+    const s = targetScreens[i];
+    console.log(`   📸 [${i + 1}/${targetScreens.length}] ${s.id}...`);
 
     // iOS Dynamic Island Medium Display (1179x2556) - EXACT App Store Connect specification
     const iosHtml = buildPageHtml({ screen: s, width: 1179, height: 2556, platform: 'ios' });
     const iosHtmlPath = path.join(tempDir, `${s.id}_ios_1179.html`);
     const iosPngPath = path.join(iosDir, `${s.id}.png`);
+    const iosMediumPngPath = path.join(iosMediumScreensDir, `${s.id}.png`);
     fs.writeFileSync(iosHtmlPath, iosHtml, 'utf8');
     execSync(`"${CHROME_PATH}" --headless --no-sandbox --disable-gpu --user-data-dir="${path.join(tempDir, 'user-data')}" --screenshot="${iosPngPath}" --window-size=1179,2556 "${iosHtmlPath}"`, { stdio: 'pipe' });
+    fs.copyFileSync(iosPngPath, iosMediumPngPath);
 
     // iOS Large Display (1290x2796) - For iPhone 6.7" / 6.9" display
     const iosLargeHtml = buildPageHtml({ screen: s, width: 1290, height: 2796, platform: 'ios_large' });
@@ -924,9 +1659,9 @@ async function runGenerator() {
 
   // 2. Tablet Screenshots: Android Tablet (1600x2560) & iPad Pro (2048x2732)
   console.log('\n📟 [2/4] Rendering Tablet Screenshots (iPad Pro 1.42x & Android Tablet 1.33x)...');
-  for (let i = 0; i < screens.length; i++) {
-    const s = screens[i];
-    console.log(`   📸 [${i + 1}/${screens.length}] Tablet: ${s.id}...`);
+  for (let i = 0; i < targetScreens.length; i++) {
+    const s = targetScreens[i];
+    console.log(`   📸 [${i + 1}/${targetScreens.length}] Tablet: ${s.id}...`);
 
     // Android Tablet (1600x2560)
     const tabletAndroidHtml = buildPageHtml({ screen: s, width: 1600, height: 2560, platform: 'tablet_android' });
@@ -939,14 +1674,17 @@ async function runGenerator() {
     const tabletIosHtml = buildPageHtml({ screen: s, width: 2048, height: 2732, platform: 'tablet_ios' });
     const tabletIosHtmlPath = path.join(tempDir, `${s.id}_tablet_ios.html`);
     const tabletIosPngPath = path.join(tabletIosDir, `${s.id}.png`);
+    const ipad13PngPath = path.join(ipad13Dir, `${s.id}.png`);
     fs.writeFileSync(tabletIosHtmlPath, tabletIosHtml, 'utf8');
     execSync(`"${CHROME_PATH}" --headless --no-sandbox --disable-gpu --user-data-dir="${path.join(tempDir, 'user-data')}" --screenshot="${tabletIosPngPath}" --window-size=2048,2732 "${tabletIosHtmlPath}"`, { stdio: 'pipe' });
+    fs.copyFileSync(tabletIosPngPath, ipad13PngPath);
   }
 
   // 3. Desktop / Web Screenshots: 1920x1080
   console.log('\n💻 [3/4] Rendering Desktop Showcase Screenshots (1920x1080)...');
-  for (let i = 0; i < 3; i++) {
-    const s = screens[i];
+  const desktopScreens = onlyNew ? targetScreens : screens.slice(0, 3);
+  for (let i = 0; i < desktopScreens.length; i++) {
+    const s = desktopScreens[i];
     const desktopHtml = buildPageHtml({ screen: s, width: 1920, height: 1080, platform: 'desktop' });
     const desktopHtmlPath = path.join(tempDir, `${s.id}_desktop.html`);
     const desktopPngPath = path.join(desktopDir, `${s.id}.png`);
@@ -954,8 +1692,9 @@ async function runGenerator() {
     execSync(`"${CHROME_PATH}" --headless --no-sandbox --disable-gpu --user-data-dir="${path.join(tempDir, 'user-data')}" --screenshot="${desktopPngPath}" --window-size=1920,1080 "${desktopHtmlPath}"`, { stdio: 'pipe' });
   }
 
-  // 4. Feature Graphic: Google Play 1024x500
-  console.log('\n🎨 [4/4] Rendering Play Store Feature Graphic (1024x500)...');
+  // 4. Feature Graphic: Google Play 1024x500 (only when rendering all)
+  if (!onlyNew) {
+    console.log('\n🎨 [4/4] Rendering Play Store Feature Graphic (1024x500)...');
   const fgHtml = `<!DOCTYPE html>
 <html>
 <head>
@@ -1082,6 +1821,7 @@ async function runGenerator() {
   const fgPngPath = path.join(featureGraphicDir, 'feature_graphic.png');
   fs.writeFileSync(fgHtmlPath, fgHtml, 'utf8');
   execSync(`"${CHROME_PATH}" --headless --no-sandbox --disable-gpu --user-data-dir="${path.join(tempDir, 'user-data')}" --screenshot="${fgPngPath}" --window-size=1024,500 "${fgHtmlPath}"`, { stdio: 'pipe' });
+  }
 
   console.log('\n🎉 ALL STORE ASSETS GENERATED WITH BALANCED PROPORTIONS & ZERO EMPTY SPACE!');
 }
