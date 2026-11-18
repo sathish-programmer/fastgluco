@@ -1325,6 +1325,61 @@ export class EmailService {
       console.error(err);
     }
 
+    // Send to Doctor (if booked)
+    if (type === 'booked' && appt.doctorId?.email) {
+      const docHtml = generateEmailTemplate('New Appointment Booking Request', `
+        <p>Hi Dr. ${appt.doctorId.name},</p>
+        <p>You have received a new consultation appointment booking from patient <strong>${appt.userId?.name || 'Patient'}</strong>.</p>
+        <p><strong>Date:</strong> ${appt.date}</p>
+        <p><strong>Time:</strong> ${appt.time}</p>
+        <p><strong>Type:</strong> ${appt.type === 'online' ? 'Online Video Consultation' : 'In-Person / Clinic Visit'}</p>
+        <p><strong>Consultation Fee:</strong> ₹${appt.consultationFee || 0} (${appt.paymentStatus === 'waived' ? 'Waived / Free' : (appt.paymentStatus === 'paid' ? 'Paid' : 'Pending')})</p>
+        <p><strong>Reason:</strong> ${appt.reason || 'General Consultation'}</p>
+        ${appt.patientNotes ? `<p><strong>Patient Notes:</strong> ${appt.patientNotes}</p>` : ''}
+        ${appt.userId?.mobileNumber ? `<p><strong>Patient Mobile:</strong> ${appt.userId.mobileNumber}</p>` : ''}
+        <p>Please log in to your Doctor Portal to review, confirm, or manage this appointment.</p>
+      `, appName, appTagline);
+
+      try {
+        await transporter.sendMail({
+          from: `"${appName} Appointments" <support@mitoreboot.in>`,
+          to: appt.doctorId.email,
+          subject: `[${appName}] New Appointment Booking: ${appt.userId?.name || 'Patient'} (${appt.date} at ${appt.time})`,
+          html: docHtml
+        });
+      } catch (err) {
+        console.error('[EmailService] Error sending appointment email to doctor:', err);
+      }
+    }
+
+    // Send to Admin (if booked)
+    if (type === 'booked') {
+      const adminEmail = process.env.ADMIN_EMAIL || 'support@mitoreboot.in';
+      const adminHtml = generateEmailTemplate('New Appointment Booked (Admin Alert)', `
+        <p>Hello Admin,</p>
+        <p>A new appointment has been booked on the platform:</p>
+        <p><strong>Patient:</strong> ${appt.userId?.name || 'Patient'} (${appt.userId?.email || 'N/A'}${appt.userId?.mobileNumber ? ` | ${appt.userId.mobileNumber}` : ''})</p>
+        <p><strong>Doctor:</strong> Dr. ${appt.doctorId?.name || 'Doctor'} (${appt.doctorId?.email || 'N/A'})</p>
+        <p><strong>Date:</strong> ${appt.date}</p>
+        <p><strong>Time:</strong> ${appt.time}</p>
+        <p><strong>Type:</strong> ${appt.type === 'online' ? 'Online' : 'Offline'}</p>
+        <p><strong>Consultation Fee:</strong> ₹${appt.consultationFee || 0} (${appt.paymentStatus})</p>
+        <p><strong>Reason:</strong> ${appt.reason || 'General'}</p>
+        ${appt.patientNotes ? `<p><strong>Patient Notes:</strong> ${appt.patientNotes}</p>` : ''}
+      `, appName, appTagline);
+
+      try {
+        await transporter.sendMail({
+          from: `"${appName} Appointments" <support@mitoreboot.in>`,
+          to: adminEmail,
+          subject: `[${appName} Admin] New Appointment Booked: ${appt.userId?.name || 'Patient'} with Dr. ${appt.doctorId?.name || 'Doctor'}`,
+          html: adminHtml
+        });
+      } catch (err) {
+        console.error('[EmailService] Error sending appointment alert to admin:', err);
+      }
+    }
+
     // Send to Doctor (if confirmed)
     if (type === 'confirmed' && appt.doctorId?.email) {
       const docHtml = generateEmailTemplate('Confirmed Appointment with Patient', `

@@ -376,7 +376,7 @@ export class DoctorController {
         doctorId,
         $or: [
           { type: 'offline' },
-          { type: 'online', paymentStatus: 'paid' }
+          { type: 'online', paymentStatus: { $in: ['paid', 'waived'] } }
         ]
       })
         .populate('userId', 'name email mobileNumber')
@@ -788,10 +788,10 @@ export class DoctorController {
       const onlineAppts = appointments.filter(a => a.type === 'online');
       const offlineAppts = appointments.filter(a => a.type === 'offline');
       
-      const validAppts = appointments.filter(a => (a.type === 'online' && a.paymentStatus === 'paid' && a.status !== 'cancelled') || (a.type === 'offline' && a.status === 'completed'));
+      const validAppts = appointments.filter(a => (a.type === 'online' && (a.paymentStatus === 'paid' || a.paymentStatus === 'waived') && a.status !== 'cancelled') || (a.type === 'offline' && a.status === 'completed'));
 
       const onlineRevenue = onlineAppts
-        .filter(a => a.paymentStatus === 'paid' && a.status !== 'cancelled')
+        .filter(a => (a.paymentStatus === 'paid' || a.paymentStatus === 'waived') && a.status !== 'cancelled')
         .reduce((sum, a) => sum + (a.consultationFee || 0), 0);
       
       const offlineRevenue = offlineAppts

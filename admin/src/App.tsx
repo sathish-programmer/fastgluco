@@ -61,7 +61,9 @@ import {
   ExternalLink,
   ArrowUpRight,
   RotateCcw,
-  Compass
+  Compass,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import {
   BarChart, Bar, PieChart, Pie, Cell,
@@ -534,6 +536,82 @@ const AdminPanelContent: React.FC = () => {
   const [allAppointments, setAllAppointments] = useState<any[]>([]);
   const [appointmentsLoading, setAppointmentsLoading] = useState(false);
   const [calendarTab, setCalendarTab] = useState<'month' | 'week' | 'day'>('month');
+  const [calendarCurrentDate, setCalendarCurrentDate] = useState<Date>(new Date());
+
+  const handleCalendarNav = (direction: 'prev' | 'next' | 'today') => {
+    if (direction === 'today') {
+      setCalendarCurrentDate(new Date());
+      return;
+    }
+    const d = new Date(calendarCurrentDate);
+    const step = direction === 'next' ? 1 : -1;
+    if (calendarTab === 'month') {
+      d.setMonth(d.getMonth() + step);
+    } else if (calendarTab === 'week') {
+      d.setDate(d.getDate() + (step * 7));
+    } else {
+      d.setDate(d.getDate() + step);
+    }
+    setCalendarCurrentDate(d);
+  };
+
+  const calendarMonthDays = useMemo(() => {
+    const year = calendarCurrentDate.getFullYear();
+    const month = calendarCurrentDate.getMonth();
+    const firstDay = new Date(year, month, 1).getDay(); // 0 is Sun
+    const totalDays = new Date(year, month + 1, 0).getDate();
+    const days: { dayNum: number; dateStr: string; isCurrentMonth: boolean }[] = [];
+    
+    // Previous month padding
+    const prevMonthDays = new Date(year, month, 0).getDate();
+    for (let i = firstDay - 1; i >= 0; i--) {
+      const pDay = prevMonthDays - i;
+      const prevMonth = month === 0 ? 11 : month - 1;
+      const prevYear = month === 0 ? year - 1 : year;
+      const dateStr = `${prevYear}-${String(prevMonth + 1).padStart(2, '0')}-${String(pDay).padStart(2, '0')}`;
+      days.push({ dayNum: pDay, dateStr, isCurrentMonth: false });
+    }
+    
+    // Current month days
+    for (let d = 1; d <= totalDays; d++) {
+      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      days.push({ dayNum: d, dateStr, isCurrentMonth: true });
+    }
+    
+    // Next month padding to fill complete weeks
+    const remaining = (7 - (days.length % 7)) % 7;
+    for (let i = 1; i <= remaining; i++) {
+      const nextMonth = month === 11 ? 0 : month + 1;
+      const nextYear = month === 11 ? year + 1 : year;
+      const dateStr = `${nextYear}-${String(nextMonth + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+      days.push({ dayNum: i, dateStr, isCurrentMonth: false });
+    }
+    
+    return days;
+  }, [calendarCurrentDate]);
+
+  const calendarWeekDays = useMemo(() => {
+    const curr = new Date(calendarCurrentDate);
+    const dayOfWeek = curr.getDay();
+    const diff = (dayOfWeek === 0 ? -6 : 1) - dayOfWeek; // Monday
+    const monday = new Date(curr);
+    monday.setDate(curr.getDate() + diff);
+
+    return Array.from({ length: 7 }).map((_, i) => {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      const label = d.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' });
+      return { dateStr, label, isToday: d.toDateString() === new Date().toDateString() };
+    });
+  }, [calendarCurrentDate]);
+
+  const calendarDayStr = useMemo(() => {
+    const y = calendarCurrentDate.getFullYear();
+    const m = String(calendarCurrentDate.getMonth() + 1).padStart(2, '0');
+    const d = String(calendarCurrentDate.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }, [calendarCurrentDate]);
   const [globalSearchQuery, setGlobalSearchQuery] = useState('');
   const [globalSearchResults, setGlobalSearchResults] = useState<any>(null);
   const [globalSearchLoading, setGlobalSearchLoading] = useState(false);
@@ -5222,29 +5300,58 @@ const getPlatformLabel = (url: string) => {
           {/* APPOINTMENTS CALENDAR VIEW */}
           {activeView === 'appointments-calendar' && (
             <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-6">
-              <div className="flex justify-between items-center">
+              <div className="flex flex-wrap justify-between items-center gap-4">
                 <div>
                   <h2 className="text-base font-bold text-slate-800">Clinical Bookings Calendar</h2>
                   <p className="text-xs text-slate-400 mt-0.5">Visual scheduler tracker (Monthly, Weekly, Daily)</p>
                 </div>
-                <div className="flex gap-2 bg-slate-100 p-1 rounded-xl border border-slate-200">
-                  {(['month', 'week', 'day'] as const).map(tab => (
-                    <button
-                      key={tab}
-                      onClick={() => setCalendarTab(tab)}
-                      className={`px-3 py-1 rounded-lg text-xs font-bold capitalize transition-all ${calendarTab === tab ? 'bg-primary text-white shadow' : 'text-slate-500 hover:text-slate-800'
-                        }`}
-                    >
-                      {tab}
-                    </button>
-                  ))}
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleCalendarNav('prev')}
+                    className="p-1.5 rounded-xl hover:bg-slate-100 border border-slate-200 text-slate-600 transition-all shadow-sm"
+                    title="Previous"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => handleCalendarNav('today')}
+                    className="px-3 py-1.5 text-xs font-bold rounded-xl hover:bg-slate-100 border border-slate-200 text-slate-700 transition-all shadow-sm"
+                  >
+                    Today
+                  </button>
+                  <button
+                    onClick={() => handleCalendarNav('next')}
+                    className="p-1.5 rounded-xl hover:bg-slate-100 border border-slate-200 text-slate-600 transition-all shadow-sm"
+                    title="Next"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                  <span className="text-xs font-bold text-slate-700 ml-1">
+                    {calendarTab === 'month' && calendarCurrentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                    {calendarTab === 'week' && `Week of ${calendarWeekDays[0]?.label || ''} - ${calendarWeekDays[6]?.label || ''}, ${calendarCurrentDate.getFullYear()}`}
+                    {calendarTab === 'day' && calendarCurrentDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' })}
+                  </span>
                 </div>
-                <button
-                  onClick={() => exportToCSV(allAppointments, 'appointments_calendar')}
-                  className="px-3 py-1.5 bg-slate-900 text-white rounded-xl text-xs font-bold transition-all shadow-sm hover:bg-slate-800"
-                >
-                  Export CSV
-                </button>
+                <div className="flex items-center gap-3">
+                  <div className="flex gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
+                    {(['month', 'week', 'day'] as const).map(tab => (
+                      <button
+                        key={tab}
+                        onClick={() => setCalendarTab(tab)}
+                        className={`px-3 py-1 rounded-lg text-xs font-bold capitalize transition-all ${calendarTab === tab ? 'bg-primary text-white shadow' : 'text-slate-500 hover:text-slate-800'
+                          }`}
+                      >
+                        {tab}
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    onClick={() => exportToCSV(allAppointments, 'appointments_calendar')}
+                    className="px-3 py-1.5 bg-slate-900 text-white rounded-xl text-xs font-bold transition-all shadow-sm hover:bg-slate-800"
+                  >
+                    Export CSV
+                  </button>
+                </div>
               </div>
 
               {/* MONTH VIEW */}
@@ -5256,13 +5363,30 @@ const getPlatformLabel = (url: string) => {
                     ))}
                   </div>
                   <div className="grid grid-cols-7 gap-2">
-                    {Array.from({ length: 35 }).map((_, idx) => {
-                      const dayNum = (idx % 31) + 1;
-                      const dateStr = `2026-07-${dayNum < 10 ? '0' + dayNum : dayNum}`;
-                      const dayAppts = allAppointments.filter(a => a.date === dateStr);
+                    {calendarMonthDays.map((cell, idx) => {
+                      const dayAppts = allAppointments.filter(a => a.date === cell.dateStr);
+                      const isToday = cell.dateStr === new Date().toISOString().split('T')[0];
                       return (
-                        <div key={idx} className="border border-slate-100 rounded-2xl p-2.5 min-h-[95px] bg-slate-50/50 flex flex-col justify-between hover:border-slate-350 transition-all">
-                          <span className="text-[10px] font-black text-slate-400 self-start">{dayNum}</span>
+                        <div
+                          key={idx}
+                          className={`border rounded-2xl p-2.5 min-h-[95px] flex flex-col justify-between transition-all ${
+                            cell.isCurrentMonth
+                              ? isToday
+                                ? 'bg-primary/5 border-primary/40 shadow-sm'
+                                : 'bg-slate-50/50 border-slate-100 hover:border-slate-350'
+                              : 'bg-slate-100/30 border-dashed border-slate-200 opacity-50'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className={`text-[10px] font-black ${isToday ? 'text-primary' : 'text-slate-400'}`}>
+                              {cell.dayNum}
+                            </span>
+                            {isToday && (
+                              <span className="text-[8px] bg-primary text-white px-1.5 py-0.2 rounded-full font-bold">
+                                Today
+                              </span>
+                            )}
+                          </div>
                           <div className="space-y-1 overflow-y-auto max-h-[55px] scrollbar-none">
                             {dayAppts.map(appt => (
                               <div
@@ -5287,12 +5411,19 @@ const getPlatformLabel = (url: string) => {
               {/* WEEK VIEW */}
               {calendarTab === 'week' && (
                 <div className="grid grid-cols-7 gap-4">
-                  {['Mon 13', 'Tue 14', 'Wed 15', 'Thu 16', 'Fri 17', 'Sat 18', 'Sun 19'].map((day, idx) => {
-                    const dateStr = `2026-07-${13 + idx}`;
-                    const dayAppts = allAppointments.filter(a => a.date === dateStr);
+                  {calendarWeekDays.map(col => {
+                    const dayAppts = allAppointments.filter(a => a.date === col.dateStr);
                     return (
-                      <div key={day} className="border border-slate-200 rounded-2xl p-4 bg-slate-50/40 min-h-[300px] flex flex-col gap-2">
-                        <span className="text-xs font-bold text-slate-800 text-center pb-2 border-b border-slate-100">{day}</span>
+                      <div
+                        key={col.dateStr}
+                        className={`border rounded-2xl p-4 min-h-[300px] flex flex-col gap-2 transition-all ${
+                          col.isToday ? 'border-primary/40 bg-primary/5 shadow-sm' : 'border-slate-200 bg-slate-50/40'
+                        }`}
+                      >
+                        <div className="flex flex-col items-center pb-2 border-b border-slate-100">
+                          <span className={`text-xs font-bold ${col.isToday ? 'text-primary' : 'text-slate-800'}`}>{col.label}</span>
+                          {col.isToday && <span className="text-[9px] text-primary font-bold">Today</span>}
+                        </div>
                         <div className="flex-1 space-y-2 overflow-y-auto max-h-[250px] scrollbar-none">
                           {dayAppts.map(appt => (
                             <div
@@ -5318,8 +5449,9 @@ const getPlatformLabel = (url: string) => {
               {/* DAY VIEW */}
               {calendarTab === 'day' && (
                 <div className="space-y-2 border border-slate-100 rounded-3xl p-4 bg-slate-50/20 max-h-[400px] overflow-y-auto">
-                  {['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00'].map(hour => {
-                    const hourAppts = allAppointments.filter(a => a.date === '2026-07-15' && a.time.startsWith(hour.split(':')[0]));
+                  {['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00'].map(hour => {
+                    const hourPrefix = hour.split(':')[0];
+                    const hourAppts = allAppointments.filter(a => a.date === calendarDayStr && a.time && a.time.startsWith(hourPrefix));
                     return (
                       <div key={hour} className="flex gap-4 items-center py-2.5 border-b border-slate-100">
                         <span className="text-xs font-bold text-slate-400 w-16">{hour}</span>

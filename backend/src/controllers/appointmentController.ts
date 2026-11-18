@@ -91,7 +91,7 @@ export class AppointmentController {
         status: { $ne: 'cancelled' },
         $or: [
           { type: 'offline' },
-          { type: 'online', paymentStatus: 'paid' }
+          { type: 'online', paymentStatus: { $in: ['paid', 'waived'] } }
         ]
       }).select('time');
 
@@ -153,7 +153,7 @@ export class AppointmentController {
         status: { $ne: 'cancelled' },
         $or: [
           { type: 'offline' },
-          { type: 'online', paymentStatus: 'paid' }
+          { type: 'online', paymentStatus: { $in: ['paid', 'waived'] } }
         ]
       });
       
@@ -356,7 +356,7 @@ export class AppointmentController {
         userId,
         $or: [
           { type: 'offline' },
-          { type: 'online', paymentStatus: 'paid' }
+          { type: 'online', paymentStatus: { $in: ['paid', 'waived'] } }
         ]
       })
         .populate('doctorId', 'name specialty description avatar')
