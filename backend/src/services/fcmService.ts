@@ -126,8 +126,8 @@ export class FCMService {
           priority: 'high',
           notification: {
             channelId: 'mitoreboot_notifications',
-            sound: 'default',
-            defaultSound: true,
+            sound: 'health_bell',
+            defaultSound: false,
             defaultVibrateTimings: true,
             icon: 'ic_stat_notification',
             color: '#0D9488'
@@ -139,7 +139,7 @@ export class FCMService {
           },
           payload: {
             aps: {
-              sound: 'default',
+              sound: 'health_bell.wav',
               badge: unreadCount
             }
           }
@@ -272,14 +272,14 @@ export class FCMService {
             priority: 'high',
             notification: {
               channelId: 'mitoreboot_notifications',
-              sound: 'default',
+              sound: 'health_bell',
               icon: 'ic_stat_notification',
               color: '#0D9488'
             }
           },
           apns: {
             headers: { 'apns-priority': '10' },
-            payload: { aps: { sound: 'default' } }
+            payload: { aps: { sound: 'health_bell.wav' } }
           }
         };
 

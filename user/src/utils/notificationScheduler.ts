@@ -27,38 +27,91 @@ let webIntervalChecker: any = null;
 const MIN_GAP_BETWEEN_ANY_NOTIFICATIONS_MS = 2 * 60 * 60 * 1000;
 
 /**
- * Play a pleasant audio chime using Web Audio API
+ * Play a soothing, non-disturbing health check-in chime (528 Hz Healing Solfeggio / Zen Singing Bowl)
  */
-export const playNotificationChime = () => {
+export const playNotificationChime = (forcePlay = false) => {
+  try {
+    const isMuted = localStorage.getItem('mito_alarm_sound_enabled') === 'false';
+    if (isMuted && !forcePlay) {
+      return;
+    }
+
+    // Attempt HTML5 audio first using bundled health_bell.wav
+    if (!forcePlay && typeof Audio !== 'undefined') {
+      const audio = new Audio('/sounds/health_bell.wav');
+      audio.volume = 0.65;
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            // Audio played successfully from asset
+          })
+          .catch(() => {
+            // Fallback gracefully to Web Audio API synthesis
+            synthesizeZenBowlChime();
+          });
+        return;
+      }
+    }
+  } catch (err) {
+    // Fallback to Web Audio synthesis
+  }
+
+  synthesizeZenBowlChime();
+};
+
+/**
+ * Synthesizes a calming 528 Hz Zen Singing Bowl tone with harmonic fifth and octave overtones
+ */
+export const synthesizeZenBowlChime = () => {
   try {
     const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
     if (!AudioContextClass) return;
     const ctx = new AudioContextClass();
     const now = ctx.currentTime;
 
+    const masterGain = ctx.createGain();
+    masterGain.gain.setValueAtTime(0.4, now);
+    masterGain.connect(ctx.destination);
+
+    // Fundamental: 528 Hz (Known for cellular wellness and deep relaxation)
     const osc1 = ctx.createOscillator();
     const gain1 = ctx.createGain();
     osc1.type = 'sine';
-    osc1.frequency.setValueAtTime(587.33, now); // D5
-    osc1.frequency.exponentialRampToValueAtTime(880, now + 0.15); // A5
-    gain1.gain.setValueAtTime(0.35, now);
-    gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+    osc1.frequency.setValueAtTime(528, now);
+    gain1.gain.setValueAtTime(0.001, now);
+    gain1.gain.exponentialRampToValueAtTime(0.5, now + 0.04);
+    gain1.gain.exponentialRampToValueAtTime(0.001, now + 2.5);
     osc1.connect(gain1);
-    gain1.connect(ctx.destination);
+    gain1.connect(masterGain);
     osc1.start(now);
-    osc1.stop(now + 0.6);
+    osc1.stop(now + 2.5);
 
+    // Harmonic fifth overtone: 792 Hz
     const osc2 = ctx.createOscillator();
     const gain2 = ctx.createGain();
     osc2.type = 'sine';
-    osc2.frequency.setValueAtTime(880, now + 0.18); // A5
-    osc2.frequency.exponentialRampToValueAtTime(1174.66, now + 0.35); // D6
-    gain2.gain.setValueAtTime(0.35, now + 0.18);
-    gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+    osc2.frequency.setValueAtTime(792, now);
+    gain2.gain.setValueAtTime(0.001, now);
+    gain2.gain.exponentialRampToValueAtTime(0.25, now + 0.05);
+    gain2.gain.exponentialRampToValueAtTime(0.001, now + 2.0);
     osc2.connect(gain2);
-    gain2.connect(ctx.destination);
-    osc2.start(now + 0.18);
-    osc2.stop(now + 0.8);
+    gain2.connect(masterGain);
+    osc2.start(now);
+    osc2.stop(now + 2.0);
+
+    // Warm sub-harmonic: 264 Hz
+    const osc3 = ctx.createOscillator();
+    const gain3 = ctx.createGain();
+    osc3.type = 'sine';
+    osc3.frequency.setValueAtTime(264, now);
+    gain3.gain.setValueAtTime(0.001, now);
+    gain3.gain.exponentialRampToValueAtTime(0.2, now + 0.06);
+    gain3.gain.exponentialRampToValueAtTime(0.001, now + 2.2);
+    osc3.connect(gain3);
+    gain3.connect(masterGain);
+    osc3.start(now);
+    osc3.stop(now + 2.2);
   } catch (e) {
     console.warn('Audio chime notice:', e);
   }
@@ -74,9 +127,10 @@ export const ensureNotificationChannel = async () => {
         id: CHECKIN_CHANNEL_ID,
         name: 'Daily Health Check-in Reminders',
         description: 'Scheduled reminders for your daily metabolic & habit check-in',
-        importance: 4,
+        importance: 5, // High priority heads-up
         visibility: 1,
         vibration: true,
+        sound: 'health_bell.wav',
         lights: true,
         lightColor: '#3B82F6'
       });
@@ -88,6 +142,7 @@ export const ensureNotificationChannel = async () => {
         importance: 3,
         visibility: 1,
         vibration: true,
+        sound: 'health_bell.wav',
         lights: true,
         lightColor: '#10B981'
       });
@@ -96,9 +151,10 @@ export const ensureNotificationChannel = async () => {
         id: HEALTH_HABITS_CHANNEL_ID,
         name: 'Preventive Health & Habit Alerts',
         description: 'Scheduled reminders for personalized habits, stillness, and breathwork',
-        importance: 3,
+        importance: 4,
         visibility: 1,
         vibration: true,
+        sound: 'health_bell.wav',
         lights: true,
         lightColor: '#8B5CF6'
       });
@@ -110,6 +166,7 @@ export const ensureNotificationChannel = async () => {
         importance: 4,
         visibility: 1,
         vibration: true,
+        sound: 'health_bell.wav',
         lights: true,
         lightColor: '#059669'
       });
@@ -310,6 +367,7 @@ export const triggerTestNotification = async () => {
             body: 'Your notification system is working perfectly!',
             schedule: { at: new Date(Date.now() + 500), allowWhileIdle: true },
             channelId: CHECKIN_CHANNEL_ID,
+            sound: 'health_bell.wav',
             extra: {
               type: 'DAILY_CHECKIN'
             }
@@ -464,6 +522,7 @@ export const scheduleDailyCheckinReminder = async (timeStr: string): Promise<boo
               allowWhileIdle: true
             },
             channelId: CHECKIN_CHANNEL_ID,
+            sound: 'health_bell.wav',
             extra: {
               type: 'DAILY_CHECKIN',
               timeStr

@@ -1,5 +1,6 @@
 import { Capacitor } from '@capacitor/core';
 import { FirebaseMessaging } from '@capacitor-firebase/messaging';
+import { playNotificationChime } from '../utils/notificationScheduler';
 
 class PushNotificationService {
   private isInitialized = false;
@@ -45,7 +46,7 @@ class PushNotificationService {
             description: 'Appointments, orders, and personalized health guidance',
             importance: 4, // High
             visibility: 1, // Public
-            sound: 'default',
+            sound: 'health_bell',
             vibration: true
           });
           console.log('[FCM] Android notification channel "mitoreboot_notifications" configured.');
@@ -79,6 +80,11 @@ class PushNotificationService {
       // 5. Handle foreground notifications
       const notifReceivedSub = await FirebaseMessaging.addListener('notificationReceived', (event) => {
         console.log('[FCM] Foreground notification received:', event.notification);
+        try {
+          playNotificationChime();
+        } catch (e) {
+          // Safe audio fallback
+        }
         // Dispatch local event so NotificationBell and in-app toasts can update immediately
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new CustomEvent('fcm_notification_received', {

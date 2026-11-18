@@ -25,7 +25,8 @@ import {
   Mail,
   MessageSquare,
   Smartphone,
-  Volume2
+  Volume2,
+  Music
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { CURRENT_APP_VERSION } from '../components/WhatsNewModal';
@@ -33,7 +34,7 @@ import { Educational } from './Educational'; // import the sub-view
 import { Subscription } from './Subscription';
 import { FounderNoteModal } from '../components/FounderNoteModal';
 import { Capacitor } from '@capacitor/core';
-import { triggerTestNotification, scheduleDailyCheckinReminder, cancelDailyCheckinReminder, scheduleReportUploadReminders } from '../utils/notificationScheduler';
+import { triggerTestNotification, scheduleDailyCheckinReminder, cancelDailyCheckinReminder, scheduleReportUploadReminders, playNotificationChime } from '../utils/notificationScheduler';
 
 const defaultNotifPrefs: UserNotificationPreferences = {
   push: {
@@ -117,6 +118,21 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
   const [dailyMotivationTime, setDailyMotivationTime] = useState<string>(() => {
     return (user as any)?.dailyMotivationTime || (user?.notificationPreferences as any)?.dailyMotivationTime || localStorage.getItem('mito_daily_motivation_time') || '08:00';
   });
+  const [habitsReminderTime, setHabitsReminderTime] = useState<string>(() => {
+    return (user as any)?.habitsReminderTime || (user?.notificationPreferences as any)?.habitsReminderTime || localStorage.getItem('mito_habits_reminder_time') || '07:30';
+  });
+  const [biomarkersReminderTime, setBiomarkersReminderTime] = useState<string>(() => {
+    return (user as any)?.biomarkersReminderTime || (user?.notificationPreferences as any)?.biomarkersReminderTime || localStorage.getItem('mito_biomarkers_reminder_time') || '14:00';
+  });
+  const [reportUploadReminderTime, setReportUploadReminderTime] = useState<string>(() => {
+    return (user as any)?.reportUploadReminderTime || (user?.notificationPreferences as any)?.reportUploadReminderTime || localStorage.getItem('mito_report_reminder_time') || '10:00';
+  });
+  const [alarmSoundEnabled, setAlarmSoundEnabled] = useState<boolean>(() => {
+    const local = localStorage.getItem('mito_alarm_sound_enabled');
+    if (local !== null) return local === 'true';
+    return (user?.notificationPreferences as any)?.alarmSoundEnabled !== false;
+  });
+  const [isPlayingChime, setIsPlayingChime] = useState(false);
   const [isTestingNotif, setIsTestingNotif] = useState(false);
 
   // Sync notification preferences whenever user profile updates/loads
@@ -135,6 +151,22 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
     const userMotivationTime = (user as any)?.dailyMotivationTime || (user?.notificationPreferences as any)?.dailyMotivationTime;
     if (userMotivationTime) {
       setDailyMotivationTime(userMotivationTime);
+    }
+    const userHabitsTime = (user as any)?.habitsReminderTime || (user?.notificationPreferences as any)?.habitsReminderTime;
+    if (userHabitsTime) {
+      setHabitsReminderTime(userHabitsTime);
+    }
+    const userBiomarkersTime = (user as any)?.biomarkersReminderTime || (user?.notificationPreferences as any)?.biomarkersReminderTime;
+    if (userBiomarkersTime) {
+      setBiomarkersReminderTime(userBiomarkersTime);
+    }
+    const userReportsTime = (user as any)?.reportUploadReminderTime || (user?.notificationPreferences as any)?.reportUploadReminderTime;
+    if (userReportsTime) {
+      setReportUploadReminderTime(userReportsTime);
+    }
+    const userAlarmSound = (user?.notificationPreferences as any)?.alarmSoundEnabled;
+    if (userAlarmSound !== undefined) {
+      setAlarmSoundEnabled(userAlarmSound !== false);
     }
   }, [user]);
 
@@ -515,6 +547,54 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
           </div>
         </div>
 
+        {/* Zen Health Chime (528 Hz Healing Tone) Card */}
+        <div className="bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-cyan-500/10 dark:from-emerald-950/30 dark:via-teal-950/20 dark:to-cyan-950/30 rounded-3xl p-5 border border-emerald-500/20 dark:border-emerald-500/30 shadow-soft mb-5 transition-colors">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="p-2 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+                  <Volume2 className="w-4 h-4" />
+                </span>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                  <span>Zen Health Check-in Chime (528 Hz)</span>
+                  <span className="text-[10px] bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-extrabold px-2 py-0.5 rounded-full">
+                    Mindful Sound
+                  </span>
+                </h3>
+              </div>
+              <p className="text-xs text-slate-600 dark:text-slate-350 max-w-xl leading-relaxed">
+                A soothing 528 Hz Tibetan singing bowl tone. Designed to alert you gently for daily check-ins so you never miss logging habits, without loud or startling alarm noises.
+              </p>
+            </div>
+            <div className="flex items-center gap-3 self-start sm:self-center">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsPlayingChime(true);
+                  playNotificationChime(true);
+                  setTimeout(() => setIsPlayingChime(false), 2600);
+                }}
+                className="px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-emerald-200 dark:border-emerald-800/60 hover:bg-emerald-50 dark:hover:bg-slate-700 text-emerald-700 dark:text-emerald-400 text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all cursor-pointer active:scale-95"
+              >
+                <Music className={`w-3.5 h-3.5 ${isPlayingChime ? 'animate-bounce text-emerald-500' : ''}`} />
+                <span>{isPlayingChime ? 'Playing Tone...' : 'Preview Sound 🔔'}</span>
+              </button>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={alarmSoundEnabled}
+                  onChange={(e) => {
+                    setAlarmSoundEnabled(e.target.checked);
+                    localStorage.setItem('mito_alarm_sound_enabled', e.target.checked ? 'true' : 'false');
+                  }}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-emerald-500"></div>
+              </label>
+            </div>
+          </div>
+        </div>
+
         {/* Matrix Table Card */}
         <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200/80 dark:border-slate-800 shadow-soft mb-5 space-y-4 transition-colors">
           <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
@@ -584,6 +664,11 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
                     onChange={(e) => setCheckinReminderTime(e.target.value)}
                     className="px-2 py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono font-bold text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-primary focus:outline-none"
                   />
+                  {alarmSoundEnabled && (
+                    <span className="text-[9px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                      <span>🔔 Zen Chime</span>
+                    </span>
+                  )}
                 </div>
               </div>
               <div className="col-span-2 sm:col-span-2 flex justify-center">
@@ -666,6 +751,15 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight mt-0.5">
                   Fasting windows, Box Breathing & stillness reminders
                 </p>
+                <div className="flex items-center gap-2 mt-2">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wide">{t('profile.timeLabel', 'Time:')}</span>
+                  <input
+                    type="time"
+                    value={habitsReminderTime}
+                    onChange={(e) => setHabitsReminderTime(e.target.value)}
+                    className="px-2 py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono font-bold text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-primary focus:outline-none"
+                  />
+                </div>
               </div>
               <div className="col-span-2 sm:col-span-2 flex justify-center">
                 <input
@@ -702,6 +796,15 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight mt-0.5">
                   Glucose curve spikes, blood pressure & cycle alerts
                 </p>
+                <div className="flex items-center gap-2 mt-2">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wide">{t('profile.timeLabel', 'Time:')}</span>
+                  <input
+                    type="time"
+                    value={biomarkersReminderTime}
+                    onChange={(e) => setBiomarkersReminderTime(e.target.value)}
+                    className="px-2 py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono font-bold text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-primary focus:outline-none"
+                  />
+                </div>
               </div>
               <div className="col-span-2 sm:col-span-2 flex justify-center">
                 <input
@@ -738,6 +841,15 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight mt-0.5">
                   Prompts to upload new blood tests & diagnostic records
                 </p>
+                <div className="flex items-center gap-2 mt-2">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wide">{t('profile.timeLabel', 'Time:')}</span>
+                  <input
+                    type="time"
+                    value={reportUploadReminderTime}
+                    onChange={(e) => setReportUploadReminderTime(e.target.value)}
+                    className="px-2 py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono font-bold text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-primary focus:outline-none"
+                  />
+                </div>
               </div>
               <div className="col-span-2 sm:col-span-2 flex justify-center">
                 <input
@@ -811,6 +923,10 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
               localStorage.setItem('mito_checkin_reminder_enabled', notifPrefs.push.dailyCheckin ? 'true' : 'false');
               localStorage.setItem('mito_checkin_reminder_time', checkinReminderTime);
               localStorage.setItem('mito_daily_motivation_time', dailyMotivationTime);
+              localStorage.setItem('mito_habits_reminder_time', habitsReminderTime);
+              localStorage.setItem('mito_biomarkers_reminder_time', biomarkersReminderTime);
+              localStorage.setItem('mito_report_reminder_time', reportUploadReminderTime);
+              localStorage.setItem('mito_alarm_sound_enabled', alarmSoundEnabled ? 'true' : 'false');
               localStorage.setItem('mito_report_reminder_enabled', notifPrefs.push.reportUpload ? 'true' : 'false');
 
               if (notifPrefs.push.dailyCheckin) {
@@ -826,7 +942,11 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
                 notificationPreferences: {
                   ...notifPrefs,
                   checkinReminderTime,
-                  dailyMotivationTime
+                  dailyMotivationTime,
+                  habitsReminderTime,
+                  biomarkersReminderTime,
+                  reportUploadReminderTime,
+                  alarmSoundEnabled
                 },
                 checkinReminderTime,
                 dailyMotivationTime,
