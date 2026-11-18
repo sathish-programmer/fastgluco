@@ -25,3 +25,6 @@ user/miti-reboot-firebase-adminsdk-fbsvc-84ac44eeb3.json
 # Local store listing screenshots - keep local only
 app_store_screenshots/
 
+# Database local backup archives - keep local only
+db_backups/
+
