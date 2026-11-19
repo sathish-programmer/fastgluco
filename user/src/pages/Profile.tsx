@@ -547,7 +547,7 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
           </div>
         </div>
 
-        {/* 🔔 Zen Chime Notification Sound Card */}
+        {/* 🔔 Gentle Reminder Sound Card */}
         <div className="bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-cyan-500/10 dark:from-emerald-950/30 dark:via-teal-950/20 dark:to-cyan-950/30 rounded-3xl p-5 border border-emerald-500/20 dark:border-emerald-500/30 shadow-soft mb-5 transition-colors">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="space-y-1">
@@ -556,14 +556,14 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
                   <Volume2 className="w-4 h-4" />
                 </span>
                 <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                  <span>🔔 Zen Chime</span>
+                  <span>🔔 Gentle Reminder Sound</span>
                   <span className="text-[10px] bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-extrabold px-2.5 py-0.5 rounded-full">
-                    Notification Sound
+                    Alert Tone
                   </span>
                 </h3>
               </div>
               <p className="text-xs text-slate-600 dark:text-slate-350 max-w-xl leading-relaxed">
-                A calm, peaceful bell sound for your daily check-ins and health reminders. Mindfully alerts you so you never forget to log, without loud or stressful alarm noises.
+                A soft, pleasant bell sound for your daily check-in alerts and reminders. Rings gently so you never forget to log, without loud or disturbing alarm noise.
               </p>
             </div>
             <div className="flex items-center gap-3 self-start sm:self-center">
@@ -666,7 +666,7 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
                   />
                   {alarmSoundEnabled && (
                     <span className="text-[9px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-                      <span>🔔 Zen Chime</span>
+                      <span>🔔 Gentle Sound</span>
                     </span>
                   )}
                 </div>
