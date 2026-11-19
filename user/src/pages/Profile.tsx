@@ -547,7 +547,7 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
           </div>
         </div>
 
-        {/* Zen Health Chime (528 Hz Healing Tone) Card */}
+        {/* 🔔 Zen Chime Notification Sound Card */}
         <div className="bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-cyan-500/10 dark:from-emerald-950/30 dark:via-teal-950/20 dark:to-cyan-950/30 rounded-3xl p-5 border border-emerald-500/20 dark:border-emerald-500/30 shadow-soft mb-5 transition-colors">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="space-y-1">
@@ -555,15 +555,15 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
                 <span className="p-2 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
                   <Volume2 className="w-4 h-4" />
                 </span>
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                  <span>Zen Health Check-in Chime (528 Hz)</span>
-                  <span className="text-[10px] bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-extrabold px-2 py-0.5 rounded-full">
-                    Mindful Sound
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <span>🔔 Zen Chime</span>
+                  <span className="text-[10px] bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-extrabold px-2.5 py-0.5 rounded-full">
+                    Notification Sound
                   </span>
                 </h3>
               </div>
               <p className="text-xs text-slate-600 dark:text-slate-350 max-w-xl leading-relaxed">
-                A soothing 528 Hz Tibetan singing bowl tone. Designed to alert you gently for daily check-ins so you never miss logging habits, without loud or startling alarm noises.
+                A calm, peaceful bell sound for your daily check-ins and health reminders. Mindfully alerts you so you never forget to log, without loud or stressful alarm noises.
               </p>
             </div>
             <div className="flex items-center gap-3 self-start sm:self-center">
@@ -572,12 +572,12 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
                 onClick={() => {
                   setIsPlayingChime(true);
                   playNotificationChime(true);
-                  setTimeout(() => setIsPlayingChime(false), 2600);
+                  setTimeout(() => setIsPlayingChime(false), 1600);
                 }}
                 className="px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-emerald-200 dark:border-emerald-800/60 hover:bg-emerald-50 dark:hover:bg-slate-700 text-emerald-700 dark:text-emerald-400 text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all cursor-pointer active:scale-95"
               >
                 <Music className={`w-3.5 h-3.5 ${isPlayingChime ? 'animate-bounce text-emerald-500' : ''}`} />
-                <span>{isPlayingChime ? 'Playing Tone...' : 'Preview Sound 🔔'}</span>
+                <span>{isPlayingChime ? 'Playing...' : 'Preview Sound 🔔'}</span>
               </button>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input

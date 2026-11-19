@@ -61,7 +61,7 @@ export const playNotificationChime = (forcePlay = false) => {
 };
 
 /**
- * Synthesizes a calming 528 Hz Zen Singing Bowl tone with harmonic fifth and octave overtones
+ * Synthesizes a calming 2-tone Zen Chime notification tone (528 Hz -> 792 Hz ascending chime)
  */
 export const synthesizeZenBowlChime = () => {
   try {
@@ -71,47 +71,61 @@ export const synthesizeZenBowlChime = () => {
     const now = ctx.currentTime;
 
     const masterGain = ctx.createGain();
-    masterGain.gain.setValueAtTime(0.4, now);
+    masterGain.gain.setValueAtTime(0.45, now);
     masterGain.connect(ctx.destination);
 
-    // Fundamental: 528 Hz (Known for cellular wellness and deep relaxation)
+    // Note 1: 528 Hz (Starts immediately, soft bell attack)
     const osc1 = ctx.createOscillator();
     const gain1 = ctx.createGain();
     osc1.type = 'sine';
     osc1.frequency.setValueAtTime(528, now);
     gain1.gain.setValueAtTime(0.001, now);
-    gain1.gain.exponentialRampToValueAtTime(0.5, now + 0.04);
-    gain1.gain.exponentialRampToValueAtTime(0.001, now + 2.5);
+    gain1.gain.exponentialRampToValueAtTime(0.45, now + 0.02);
+    gain1.gain.exponentialRampToValueAtTime(0.001, now + 1.4);
     osc1.connect(gain1);
     gain1.connect(masterGain);
     osc1.start(now);
-    osc1.stop(now + 2.5);
+    osc1.stop(now + 1.4);
 
-    // Harmonic fifth overtone: 792 Hz
+    // Harmonic shimmer for Note 1 (1056 Hz)
+    const osc1b = ctx.createOscillator();
+    const gain1b = ctx.createGain();
+    osc1b.type = 'sine';
+    osc1b.frequency.setValueAtTime(1056, now);
+    gain1b.gain.setValueAtTime(0.001, now);
+    gain1b.gain.exponentialRampToValueAtTime(0.12, now + 0.02);
+    gain1b.gain.exponentialRampToValueAtTime(0.001, now + 1.0);
+    osc1b.connect(gain1b);
+    gain1b.connect(masterGain);
+    osc1b.start(now);
+    osc1b.stop(now + 1.0);
+
+    // Note 2: 792 Hz (Ascending melodious chime at t + 0.22s)
+    const t2 = now + 0.22;
     const osc2 = ctx.createOscillator();
     const gain2 = ctx.createGain();
     osc2.type = 'sine';
-    osc2.frequency.setValueAtTime(792, now);
-    gain2.gain.setValueAtTime(0.001, now);
-    gain2.gain.exponentialRampToValueAtTime(0.25, now + 0.05);
-    gain2.gain.exponentialRampToValueAtTime(0.001, now + 2.0);
+    osc2.frequency.setValueAtTime(792, t2);
+    gain2.gain.setValueAtTime(0.001, t2);
+    gain2.gain.exponentialRampToValueAtTime(0.55, t2 + 0.02);
+    gain2.gain.exponentialRampToValueAtTime(0.001, t2 + 1.35);
     osc2.connect(gain2);
     gain2.connect(masterGain);
-    osc2.start(now);
-    osc2.stop(now + 2.0);
+    osc2.start(t2);
+    osc2.stop(t2 + 1.35);
 
-    // Warm sub-harmonic: 264 Hz
-    const osc3 = ctx.createOscillator();
-    const gain3 = ctx.createGain();
-    osc3.type = 'sine';
-    osc3.frequency.setValueAtTime(264, now);
-    gain3.gain.setValueAtTime(0.001, now);
-    gain3.gain.exponentialRampToValueAtTime(0.2, now + 0.06);
-    gain3.gain.exponentialRampToValueAtTime(0.001, now + 2.2);
-    osc3.connect(gain3);
-    gain3.connect(masterGain);
-    osc3.start(now);
-    osc3.stop(now + 2.2);
+    // Harmonic shimmer for Note 2 (1584 Hz)
+    const osc2b = ctx.createOscillator();
+    const gain2b = ctx.createGain();
+    osc2b.type = 'sine';
+    osc2b.frequency.setValueAtTime(1584, t2);
+    gain2b.gain.setValueAtTime(0.001, t2);
+    gain2b.gain.exponentialRampToValueAtTime(0.15, t2 + 0.02);
+    gain2b.gain.exponentialRampToValueAtTime(0.001, t2 + 0.9);
+    osc2b.connect(gain2b);
+    gain2b.connect(masterGain);
+    osc2b.start(t2);
+    osc2b.stop(t2 + 0.9);
   } catch (e) {
     console.warn('Audio chime notice:', e);
   }
