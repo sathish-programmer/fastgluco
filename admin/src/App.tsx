@@ -1073,7 +1073,10 @@ const AdminPanelContent: React.FC = () => {
   // User activity modal states
   const [selectedUserActivity, setSelectedUserActivity] = useState<any>(null);
   const [showUserModal, setShowUserModal] = useState<boolean>(false);
-  const [userModalTab, setUserModalTab] = useState<'overview' | 'food' | 'glucose' | 'reports' | 'coaching' | 'notify' | 'habits' | 'subscription'>('overview');
+  const [userModalTab, setUserModalTab] = useState<'feed' | 'overview' | 'food' | 'glucose' | 'reports' | 'coaching' | 'notify' | 'habits' | 'subscription' | 'appointments' | 'orders' | 'telemetry' | 'support'>('feed');
+  const [activityCategoryFilter, setActivityCategoryFilter] = useState<string>('all');
+  const [activityFilterSearch, setActivityFilterSearch] = useState<string>('');
+  const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
   const [coachingSessions, setCoachingSessions] = useState<any[]>([]);
   const [userModalNotify, setUserModalNotify] = useState({ title: '', body: '' });
 
@@ -1725,11 +1728,14 @@ const AdminPanelContent: React.FC = () => {
     }
   };
 
-  const fetchUserActivity = async (userId: string) => {
+  const fetchUserActivity = async (userId: string, defaultTab: 'feed' | 'overview' | 'food' | 'glucose' | 'reports' | 'coaching' | 'notify' | 'habits' | 'subscription' | 'appointments' | 'orders' | 'telemetry' | 'support' = 'feed') => {
     try {
-      setUserModalTab('overview');
+      setUserModalTab(defaultTab);
       setSelectedUserActivity(null);
       setCoachingSessions([]);
+      setActivityCategoryFilter('all');
+      setActivityFilterSearch('');
+      setExpandedLogId(null);
       setActiveView('patient-details');
       const res = await fetch(`${apiUrl}/admin/users/${userId}/activity`, {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -4537,23 +4543,22 @@ const getPlatformLabel = (url: string) => {
                 </div>
               </div>
 
-              {/* Table */}
+              {/* Modernized Patient Directory Table */}
               <div className="bg-white rounded-2xl border border-slate-200 shadow-soft overflow-x-auto">
                 <table className="min-w-full divide-y divide-slate-200">
                   <thead className="bg-slate-50 text-slate-400 text-xs font-bold uppercase tracking-wider text-left">
                     <tr>
-                      <th className="px-5 py-3.5">Name &amp; Contact</th>
-                      <th className="px-5 py-3.5">Account Status</th>
-                      <th className="px-5 py-3.5">Subscription Status</th>
-                      <th className="px-5 py-3.5">Daily Target</th>
-                      <th className="px-5 py-3.5">Goal</th>
-                      <th className="px-5 py-3.5 text-center">Action</th>
+                      <th className="px-5 py-3.5">Patient &amp; Device</th>
+                      <th className="px-5 py-3.5">Status &amp; Subscription</th>
+                      <th className="px-5 py-3.5">Live Activity &amp; Telemetry</th>
+                      <th className="px-5 py-3.5">Health Target</th>
+                      <th className="px-5 py-3.5 text-center">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 text-xs font-semibold text-slate-700">
                     {users.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="text-center py-12 text-slate-400">
+                        <td colSpan={5} className="text-center py-12 text-slate-400">
                           <Users className="w-8 h-8 mx-auto mb-2 text-slate-300" />
                           <p className="font-bold">No patients found matching query or filters.</p>
                           <p className="text-[11px] text-slate-400 mt-0.5">Try clearing your search or selecting 'All Subscriptions'.</p>
@@ -4562,108 +4567,120 @@ const getPlatformLabel = (url: string) => {
                     ) : (
                       users.map((u) => {
                         const subSummary = u.subscriptionSummary || { status: 'none', statusLabel: 'Free User', remainingText: '' };
+                        const act = u.activitySummary || { mealsCount: 0, habitsCount: 0, appointmentsCount: 0, ordersCount: 0, totalLogsCount: 0 };
                         return (
-                          <tr key={u._id} className="hover:bg-slate-50/60 transition-colors">
+                          <tr key={u._id} className="hover:bg-slate-50/70 transition-colors">
                             <td className="px-5 py-3.5">
-                              <button
-                                onClick={() => fetchUserActivity(u._id)}
-                                className="hover:underline hover:text-primary text-left font-bold text-slate-900 block"
-                              >
-                                {u.name || 'Unnamed Patient'}
-                              </button>
-                              <span className="text-[11px] text-slate-400 block font-normal">{u.email}</span>
-                              {(u.mobileNumber || u.phoneNumber) && (
-                                <span className="text-[10px] text-slate-400 block font-normal">{u.mobileNumber || u.phoneNumber}</span>
-                              )}
-                            </td>
-                            <td className="px-5 py-3.5">
-                              {u.isDeleted ? (
-                                <div className="inline-flex flex-col items-start gap-0.5">
-                                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-rose-50 text-rose-700 border border-rose-200">
-                                    Deleted (30d Grace)
-                                  </span>
-                                  {u.deletionScheduledFor && (
-                                    <span className="text-[10px] text-slate-400 font-medium">
-                                      {Math.max(0, Math.ceil((new Date(u.deletionScheduledFor).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))}d left
-                                    </span>
-                                  )}
+                              <div className="flex items-center gap-3">
+                                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-indigo-500/10 via-purple-500/10 to-primary/10 border border-indigo-200/50 text-indigo-700 font-black text-sm flex items-center justify-center shrink-0 shadow-2xs">
+                                  {(u.name || 'U').charAt(0).toUpperCase()}
                                 </div>
-                              ) : u.isBlocked ? (
-                                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-rose-50 text-danger border border-rose-100">
-                                  Blocked
-                                </span>
-                              ) : (
-                                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-50 text-success border border-emerald-100">
-                                  Active
-                                </span>
-                              )}
+                                <div>
+                                  <button
+                                    onClick={() => fetchUserActivity(u._id, 'feed')}
+                                    className="hover:underline hover:text-primary text-left font-bold text-slate-900 block"
+                                  >
+                                    {u.name || 'Unnamed Patient'}
+                                  </button>
+                                  <span className="text-[11px] text-slate-400 block font-normal">{u.email}</span>
+                                  <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                                    {(u.mobileNumber || u.phoneNumber) && (
+                                      <span className="text-[10px] text-slate-400 font-mono">{u.mobileNumber || u.phoneNumber}</span>
+                                    )}
+                                    {act.platform && (
+                                      <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[9px] font-bold bg-slate-100 text-slate-600 border border-slate-200/80">
+                                        <Smartphone className="w-2.5 h-2.5 text-slate-500" />
+                                        <span>{act.platform === 'android' ? 'Android' : act.platform === 'ios' ? 'iOS' : 'Web'}{act.appVersion ? ` v${act.appVersion}` : ''}</span>
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
                             </td>
                             <td className="px-5 py-3.5">
-                              {subSummary.status === 'active' ? (
-                                <div className="inline-flex flex-col items-start gap-0.5">
+                              <div className="flex flex-col items-start gap-1">
+                                {u.isDeleted ? (
+                                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-rose-50 text-rose-700 border border-rose-200">
+                                    Deleted ({Math.max(0, Math.ceil((new Date(u.deletionScheduledFor || Date.now()).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))}d grace)
+                                  </span>
+                                ) : u.isBlocked ? (
+                                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-rose-50 text-danger border border-rose-100">
+                                    Blocked
+                                  </span>
+                                ) : (
+                                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-50 text-success border border-emerald-100">
+                                    Active Account
+                                  </span>
+                                )}
+
+                                {subSummary.status === 'active' ? (
                                   <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-50 text-emerald-700 border border-emerald-200">
                                     <Crown className="w-3 h-3 text-amber-500 fill-amber-400" />
-                                    <span>Active Paid</span>
+                                    <span>Active Paid ({subSummary.remainingText || 'Annual'})</span>
                                   </span>
-                                  <span className="text-[10px] text-slate-400 font-medium">
-                                    {subSummary.remainingText ? subSummary.remainingText : 'Annual Plan'}
-                                  </span>
-                                </div>
-                              ) : subSummary.status === 'trialing' ? (
-                                <div className="inline-flex flex-col items-start gap-0.5">
+                                ) : subSummary.status === 'trialing' ? (
                                   <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-50 text-amber-800 border border-amber-200">
                                     <Sparkles className="w-3 h-3 text-amber-500" />
-                                    <span>Free Trial</span>
+                                    <span>Free Trial ({subSummary.remainingText || '48h'})</span>
                                   </span>
-                                  <span className="text-[10px] text-amber-600 font-semibold">
-                                    {subSummary.remainingText || '48h Trial'}
-                                  </span>
-                                </div>
-                              ) : subSummary.status === 'trial_expired' ? (
-                                <div className="inline-flex flex-col items-start gap-0.5">
+                                ) : subSummary.status === 'trial_expired' ? (
                                   <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-orange-50 text-orange-700 border border-orange-200">
                                     <Clock className="w-3 h-3 text-orange-500" />
                                     <span>Trial Expired</span>
                                   </span>
-                                  <span className="text-[10px] text-slate-400 font-medium">No active plan</span>
-                                </div>
-                              ) : subSummary.status === 'cancelled_active' || subSummary.status === 'cancelled' ? (
-                                <div className="inline-flex flex-col items-start gap-0.5">
+                                ) : subSummary.status === 'cancelled_active' || subSummary.status === 'cancelled' ? (
                                   <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-rose-50 text-rose-700 border border-rose-200">
                                     <AlertTriangle className="w-3 h-3 text-rose-500" />
                                     <span>Cancelled</span>
                                   </span>
-                                  {subSummary.remainingText && (
-                                    <span className="text-[10px] text-slate-400 font-medium">
-                                      Active until {subSummary.remainingText}
-                                    </span>
-                                  )}
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 text-slate-500 border border-slate-200">
+                                    Free User
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="px-5 py-3.5">
+                              <div className="space-y-1.5">
+                                <div className="flex items-center gap-1.5 text-[11px] text-slate-500 font-medium">
+                                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                  <span>Last Active: {act.lastActiveAt ? new Date(act.lastActiveAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Never'}</span>
                                 </div>
-                              ) : subSummary.status === 'expired' ? (
-                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-500 border border-slate-200">
-                                  Expired
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 text-slate-400 border border-slate-200">
-                                  Free User
-                                </span>
-                              )}
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold bg-orange-50 text-orange-700 border border-orange-200/80" title="Meals Logged">
+                                    <Utensils className="w-2.5 h-2.5 text-orange-600" />
+                                    <span>{act.mealsCount || 0} meals</span>
+                                  </span>
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/80" title="Habits Logged">
+                                    <Activity className="w-2.5 h-2.5 text-emerald-600" />
+                                    <span>{act.habitsCount || 0} habits</span>
+                                  </span>
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200/80" title="Doctor Appointments">
+                                    <Stethoscope className="w-2.5 h-2.5 text-blue-600" />
+                                    <span>{act.appointmentsCount || 0} doctor</span>
+                                  </span>
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200/80" title="Shop Orders">
+                                    <ShoppingCart className="w-2.5 h-2.5 text-purple-600" />
+                                    <span>{act.ordersCount || 0} orders</span>
+                                  </span>
+                                </div>
+                              </div>
                             </td>
-                            <td className="px-5 py-3.5 text-slate-600">
-                              {u.dailyCalorieTarget ? `${u.dailyCalorieTarget} kcal` : '--'}
-                            </td>
-                            <td className="px-5 py-3.5 font-medium text-slate-500">
-                              {u.goal ? u.goal.replace('-', ' ') : '--'}
+                            <td className="px-5 py-3.5">
+                              <div className="space-y-0.5 text-xs text-slate-600">
+                                <div><span className="text-[10px] uppercase font-bold text-slate-400">Target:</span> {u.dailyCalorieTarget ? `${u.dailyCalorieTarget} kcal` : '--'}</div>
+                                <div className="text-[11px] font-semibold text-slate-500 capitalize">{u.goal ? u.goal.replace('-', ' ') : 'General Health'}</div>
+                              </div>
                             </td>
                             <td className="px-5 py-3.5 text-center">
                               <div className="flex justify-center items-center gap-1.5 flex-wrap">
                                 <button
-                                  onClick={() => fetchUserActivity(u._id)}
-                                  className="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all flex items-center space-x-1"
-                                  title="View Patient Details & Logs"
+                                  onClick={() => fetchUserActivity(u._id, 'feed')}
+                                  className="px-3 py-1.5 rounded-xl text-xs font-black bg-gradient-to-r from-primary to-indigo-600 hover:from-primary-dark hover:to-indigo-700 text-white shadow-xs flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+                                  title="View Live User Activity Timeline & Logs"
                                 >
                                   <Activity className="h-3.5 w-3.5" />
-                                  <span>Details</span>
+                                  <span>Activity Logs</span>
                                 </button>
                                 <button
                                   onClick={() => {
@@ -4676,7 +4693,7 @@ const getPlatformLabel = (url: string) => {
                                     setSubCancelReason('');
                                     if (plans.length === 0) fetchPlans();
                                   }}
-                                  className="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200/80 transition-all flex items-center space-x-1"
+                                  className="px-2.5 py-1.5 rounded-xl text-xs font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200/80 transition-all flex items-center space-x-1"
                                   title="Manage or Grant Subscription"
                                 >
                                   <CreditCard className="h-3.5 w-3.5 text-indigo-600" />
@@ -4684,7 +4701,7 @@ const getPlatformLabel = (url: string) => {
                                 </button>
                                 <button
                                   onClick={() => handleToggleUserBlock(u._id, u.isBlocked)}
-                                  className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center space-x-1 ${u.isBlocked
+                                  className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-1 ${u.isBlocked
                                     ? 'bg-green-50 hover:bg-green-100 text-success border border-green-200'
                                     : 'bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200'
                                     }`}
@@ -4704,7 +4721,7 @@ const getPlatformLabel = (url: string) => {
                                 {u.isDeleted && (
                                   <button
                                     onClick={() => handleRestoreUser(u._id, u.name || u.email)}
-                                    className="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 transition-all flex items-center space-x-1"
+                                    className="px-2.5 py-1.5 rounded-xl text-xs font-bold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 transition-all flex items-center space-x-1"
                                     title="Revoke Deletion & Restore Patient Account"
                                   >
                                     <RotateCcw className="h-3.5 w-3.5" />
@@ -4713,7 +4730,7 @@ const getPlatformLabel = (url: string) => {
                                 )}
                                 <button
                                   onClick={() => handleDeleteUser(u._id)}
-                                  className="px-2 py-1.5 rounded-lg text-xs font-bold transition-all text-red-600 hover:bg-red-50"
+                                  className="p-1.5 rounded-xl text-xs font-bold transition-all text-red-600 hover:bg-red-50"
                                   title="Delete User"
                                 >
                                   <Trash2 className="h-3.5 w-3.5" />
@@ -9505,45 +9522,56 @@ const getPlatformLabel = (url: string) => {
                   </div>
 
                   {/* STAT CARDS ROW */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
                     {[
-                      { label: 'Meals Logged', value: selectedUserActivity.foodLogs?.length ?? 0, icon: <Utensils className="h-5 w-5" />, gradient: 'from-orange-400 to-amber-500', text: 'text-amber-600' },
-                      { label: 'Glucose Readings', value: selectedUserActivity.glucoseReadings?.length ?? 0, icon: <Activity className="h-5 w-5" />, gradient: 'from-blue-400 to-indigo-500', text: 'text-blue-600' },
-                      { label: 'CGM Reports', value: selectedUserActivity.cgmReports?.length ?? 0, icon: <FileUp className="h-5 w-5" />, gradient: 'from-purple-400 to-violet-500', text: 'text-purple-600' },
-                      { label: 'AI Sessions', value: coachingSessions.length ?? 0, icon: <Bot className="h-5 w-5" />, gradient: 'from-green-400 to-emerald-500', text: 'text-green-600' },
+                      { label: 'Meals Logged', value: selectedUserActivity.foodLogs?.length ?? 0, icon: <Utensils className="h-4 w-4" />, gradient: 'from-orange-400 to-amber-500', text: 'text-amber-600', tab: 'food' },
+                      { label: 'Habit Logs', value: selectedUserActivity.habitLogs?.length ?? 0, icon: <Activity className="h-4 w-4" />, gradient: 'from-emerald-400 to-teal-500', text: 'text-emerald-600', tab: 'habits' },
+                      { label: 'Doctor Visits', value: selectedUserActivity.appointments?.length ?? 0, icon: <Stethoscope className="h-4 w-4" />, gradient: 'from-blue-400 to-indigo-500', text: 'text-blue-600', tab: 'appointments' },
+                      { label: 'Store Orders', value: selectedUserActivity.shopOrders?.length ?? 0, icon: <ShoppingCart className="h-4 w-4" />, gradient: 'from-purple-400 to-violet-500', text: 'text-purple-600', tab: 'orders' },
+                      { label: 'Glucose Readings', value: selectedUserActivity.glucoseReadings?.length ?? 0, icon: <BarChart3 className="h-4 w-4" />, gradient: 'from-cyan-400 to-sky-500', text: 'text-cyan-600', tab: 'glucose' },
+                      { label: 'AI & Coaching', value: (selectedUserActivity.askMitoQueries?.length ?? 0) + coachingSessions.length, icon: <Bot className="h-4 w-4" />, gradient: 'from-pink-400 to-rose-500', text: 'text-rose-600', tab: 'coaching' },
                     ].map((card: any) => (
-                      <div key={card.label} className="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm flex items-center space-x-3">
-                        <div className={`h-11 w-11 rounded-xl bg-gradient-to-br ${card.gradient} flex items-center justify-center text-white shadow-md shrink-0`}>
+                      <button
+                        key={card.label}
+                        type="button"
+                        onClick={() => setUserModalTab(card.tab)}
+                        className="bg-white rounded-2xl border border-slate-100 p-3.5 shadow-sm flex items-center space-x-3 text-left hover:border-primary/40 hover:shadow-md transition-all cursor-pointer group"
+                      >
+                        <div className={`h-9 w-9 rounded-xl bg-gradient-to-br ${card.gradient} flex items-center justify-center text-white shadow-xs shrink-0 group-hover:scale-105 transition-transform`}>
                           {card.icon}
                         </div>
-                        <div>
-                          <span className="block text-[10px] font-bold uppercase text-slate-400">{card.label}</span>
-                          <span className={`block text-2xl font-black ${card.text}`}>{card.value}</span>
+                        <div className="min-w-0">
+                          <span className="block text-[9px] font-bold uppercase text-slate-400 truncate">{card.label}</span>
+                          <span className={`block text-xl font-black ${card.text}`}>{card.value}</span>
                         </div>
-                      </div>
+                      </button>
                     ))}
                   </div>
 
                   {/* TABBED CONTENT CARD */}
                   <div className="bg-white rounded-3xl border border-slate-100 shadow-soft overflow-hidden">
                     {/* Tab Bar */}
-                    <div className="flex border-b border-slate-100 overflow-x-auto">
+                    <div className="flex border-b border-slate-100 overflow-x-auto no-scrollbar bg-slate-50/60">
                       {[
-                        { key: 'overview', label: '📋 Overview' },
-                        { key: 'habits', label: '🌱 Habits' },
-                        { key: 'food', label: '🍽 Food Logs' },
-                        { key: 'glucose', label: '📈 Glucose' },
-                        { key: 'reports', label: '📄 CGM Reports' },
-                        { key: 'coaching', label: '🤖 AI Coaching' },
-                        { key: 'notify', label: '🔔 Send Alert' },
+                        { key: 'feed', label: `⚡ Live Activity Feed (${selectedUserActivity.unifiedTimeline?.length ?? 0})` },
+                        { key: 'overview', label: '📋 Health Profile' },
+                        { key: 'habits', label: `🌿 Habits (${selectedUserActivity.habitLogs?.length ?? 0})` },
+                        { key: 'food', label: `🍽 Food Logs (${selectedUserActivity.foodLogs?.length ?? 0})` },
+                        { key: 'appointments', label: `🩺 Doctor Visits (${selectedUserActivity.appointments?.length ?? 0})` },
+                        { key: 'orders', label: `🛍️ Store Orders (${selectedUserActivity.shopOrders?.length ?? 0})` },
+                        { key: 'glucose', label: `📈 Glucose (${selectedUserActivity.glucoseReadings?.length ?? 0})` },
+                        { key: 'reports', label: `📄 Reports (${(selectedUserActivity.cgmReports?.length ?? 0) + (selectedUserActivity.labBookings?.length ?? 0)})` },
+                        { key: 'coaching', label: `🤖 AI Coaching (${coachingSessions.length})` },
+                        { key: 'telemetry', label: `📱 Device & Logins (${selectedUserActivity.telemetrySessions?.length ?? 0})` },
                         { key: 'subscription', label: '💳 Subscription & Billing' },
+                        { key: 'notify', label: '🔔 Send Push Alert' },
                       ].map((tab) => (
                         <button
                           key={tab.key}
                           onClick={() => setUserModalTab(tab.key as any)}
-                          className={`px-5 py-3.5 text-[11px] font-bold whitespace-nowrap transition-all border-b-2 ${userModalTab === tab.key
-                            ? 'border-primary text-primary bg-primary/5'
-                            : 'border-transparent text-slate-400 hover:text-slate-700 hover:bg-slate-50'
+                          className={`px-4 py-3.5 text-[11px] font-bold whitespace-nowrap transition-all border-b-2 flex items-center gap-1.5 cursor-pointer ${userModalTab === tab.key
+                            ? 'border-primary text-primary bg-primary/5 font-black'
+                            : 'border-transparent text-slate-400 hover:text-slate-700 hover:bg-slate-100/60'
                             }`}
                         >
                           {tab.label}
@@ -9552,6 +9580,182 @@ const getPlatformLabel = (url: string) => {
                     </div>
 
                     <div className="p-6">
+
+                      {/* ⚡ TAB 1: LIVE UNIFIED ACTIVITY FEED */}
+                      {userModalTab === 'feed' && (
+                        <div className="space-y-5">
+                          {/* Top Controls: Filter Pills & Search */}
+                          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-slate-50/80 p-3.5 rounded-2xl border border-slate-200/80">
+                            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+                              {[
+                                { key: 'all', label: 'All Activities' },
+                                { key: 'meal', label: '🍽️ Meals' },
+                                { key: 'habit', label: '🌿 Habits' },
+                                { key: 'appointment', label: '🩺 Doctor' },
+                                { key: 'shop', label: '🛍️ Orders' },
+                                { key: 'glucose', label: '📈 Glucose' },
+                                { key: 'ai_chat', label: '🤖 AI Queries' },
+                                { key: 'telemetry', label: '📱 Logins' },
+                                { key: 'notification', label: '🔔 Alerts' },
+                                { key: 'payment', label: '💳 Payments' },
+                              ].map(f => (
+                                <button
+                                  key={f.key}
+                                  type="button"
+                                  onClick={() => setActivityCategoryFilter(f.key)}
+                                  className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+                                    activityCategoryFilter === f.key
+                                      ? 'bg-primary text-white shadow-xs font-black'
+                                      : 'bg-white hover:bg-slate-100 text-slate-600 border border-slate-200/80'
+                                  }`}
+                                >
+                                  {f.label}
+                                </button>
+                              ))}
+                            </div>
+
+                            <div className="relative w-full md:w-64">
+                              <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 pointer-events-none">
+                                <Search className="w-3.5 h-3.5" />
+                              </span>
+                              <input
+                                type="text"
+                                value={activityFilterSearch}
+                                onChange={(e) => setActivityFilterSearch(e.target.value)}
+                                placeholder="Search user activity logs..."
+                                className="w-full pl-8 pr-7 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-1 focus:ring-primary"
+                              />
+                              {activityFilterSearch && (
+                                <button
+                                  type="button"
+                                  onClick={() => setActivityFilterSearch('')}
+                                  className="absolute right-2 top-2 text-slate-400 hover:text-slate-600"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Chronological Activity Feed Stream */}
+                          {(() => {
+                            const timeline = selectedUserActivity.unifiedTimeline || [];
+                            const filtered = timeline.filter((item: any) => {
+                              if (activityCategoryFilter !== 'all' && item.category !== activityCategoryFilter) return false;
+                              if (activityFilterSearch) {
+                                const term = activityFilterSearch.toLowerCase();
+                                const matchTitle = (item.title || '').toLowerCase().includes(term);
+                                const matchSub = (item.subtitle || '').toLowerCase().includes(term);
+                                const matchBadge = (item.badge || '').toLowerCase().includes(term);
+                                if (!matchTitle && !matchSub && !matchBadge) return false;
+                              }
+                              return true;
+                            });
+
+                            if (filtered.length === 0) {
+                              return (
+                                <div className="text-center py-16 bg-slate-50/50 rounded-2xl border-2 border-dashed border-slate-200/80">
+                                  <Activity className="w-8 h-8 mx-auto text-slate-300 mb-2" />
+                                  <p className="text-sm font-bold text-slate-600">No activity events found.</p>
+                                  <p className="text-xs text-slate-400 mt-1">
+                                    {activityFilterSearch ? 'Try a different search term or clear the filter.' : 'This patient has not performed activities in this category yet.'}
+                                  </p>
+                                </div>
+                              );
+                            }
+
+                            return (
+                              <div className="space-y-3">
+                                <div className="flex items-center justify-between text-[11px] text-slate-400 font-bold px-1">
+                                  <span>Showing {filtered.length} of {timeline.length} total logged actions</span>
+                                  <span>Chronological (Newest First)</span>
+                                </div>
+
+                                <div className="divide-y divide-slate-100 rounded-2xl border border-slate-200/80 bg-white overflow-hidden shadow-2xs">
+                                  {filtered.map((item: any, idx: number) => {
+                                    const isExpanded = expandedLogId === String(item.id || idx);
+                                    const eventDate = item.timestamp ? new Date(item.timestamp) : new Date();
+                                    return (
+                                      <div key={item.id ? `${item.id}-${idx}` : idx} className="p-4 hover:bg-slate-50/70 transition-colors">
+                                        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2.5">
+                                          <div className="flex items-start gap-3 min-w-0">
+                                            <span className={`inline-flex items-center px-2.5 py-1 rounded-xl text-[11px] font-black border shrink-0 ${item.badgeColor || 'bg-slate-100 text-slate-700 border-slate-200'}`}>
+                                              {item.badge}
+                                            </span>
+                                            <div className="min-w-0">
+                                              <h4 className="text-xs font-black text-slate-800 flex items-center gap-2 flex-wrap">
+                                                <span>{item.title}</span>
+                                              </h4>
+                                              <p className="text-xs text-slate-600 font-medium mt-0.5 leading-relaxed break-words">
+                                                {item.subtitle}
+                                              </p>
+
+                                              {/* Meal nutrition chips if applicable */}
+                                              {item.category === 'meal' && item.data && (
+                                                <div className="flex items-center gap-2 mt-2 flex-wrap">
+                                                  {item.data.calories !== undefined && (
+                                                    <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-lg bg-orange-50 text-orange-700 border border-orange-200/80">
+                                                      🔥 {item.data.calories} kcal
+                                                    </span>
+                                                  )}
+                                                  {item.data.protein !== undefined && (
+                                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200/80">
+                                                      🥩 {item.data.protein}g protein
+                                                    </span>
+                                                  )}
+                                                  {item.data.carbs !== undefined && (
+                                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-blue-50 text-blue-700 border border-blue-200/80">
+                                                      🌾 {item.data.carbs}g carbs
+                                                    </span>
+                                                  )}
+                                                  {item.data.imageUrl && (
+                                                    <a
+                                                      href={item.data.imageUrl}
+                                                      target="_blank"
+                                                      rel="noreferrer"
+                                                      className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-slate-100 text-primary border border-slate-200 hover:underline flex items-center gap-1"
+                                                    >
+                                                      <Eye className="w-2.5 h-2.5" />
+                                                      <span>View Photo</span>
+                                                    </a>
+                                                  )}
+                                                </div>
+                                              )}
+                                            </div>
+                                          </div>
+
+                                          <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-1 shrink-0">
+                                            <span className="text-[11px] font-mono font-bold text-slate-700">
+                                              {eventDate.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                            </span>
+                                            <span className="text-[10px] text-slate-400 font-mono">
+                                              {eventDate.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                                            </span>
+                                            <button
+                                              type="button"
+                                              onClick={() => setExpandedLogId(isExpanded ? null : String(item.id || idx))}
+                                              className="text-[10px] text-primary hover:text-primary-dark font-bold underline mt-1 cursor-pointer"
+                                            >
+                                              {isExpanded ? 'Hide Details' : 'Inspect'}
+                                            </button>
+                                          </div>
+                                        </div>
+
+                                        {/* Detailed payload viewer */}
+                                        {isExpanded && item.data && (
+                                          <div className="mt-3 p-3 bg-slate-900 rounded-xl text-slate-200 font-mono text-[11px] overflow-x-auto shadow-inner">
+                                            <pre>{JSON.stringify(item.data, null, 2)}</pre>
+                                          </div>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      )}
 
                       {/* OVERVIEW TAB */}
                       {userModalTab === 'overview' && (
@@ -9691,6 +9895,167 @@ const getPlatformLabel = (url: string) => {
                                         ) : <span className="text-slate-300">—</span>}
                                       </td>
                                       <td className="px-4 py-3 text-slate-400 font-medium whitespace-nowrap">{log.loggedAt ? new Date(log.loggedAt).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '--'}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* 🩺 DOCTOR APPOINTMENTS TAB */}
+                      {userModalTab === 'appointments' && (
+                        <div className="space-y-3">
+                          <h4 className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Clinical Consultations &amp; Appointments ({selectedUserActivity.appointments?.length ?? 0})</h4>
+                          {!selectedUserActivity.appointments || selectedUserActivity.appointments.length === 0 ? (
+                            <div className="text-center py-12 text-slate-400 font-semibold text-xs border-2 border-dashed border-slate-100 rounded-2xl">No doctor appointments booked by this patient yet.</div>
+                          ) : (
+                            <div className="overflow-x-auto rounded-2xl border border-slate-100">
+                              <table className="w-full text-xs">
+                                <thead className="bg-slate-50">
+                                  <tr>
+                                    {['Doctor', 'Consultation Date', 'Mode & Reason', 'Status', 'Payment', 'Prescription / Notes'].map(h => (
+                                      <th key={h} className="px-4 py-3 text-left font-extrabold text-slate-500 uppercase text-[10px] whitespace-nowrap">{h}</th>
+                                    ))}
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-50">
+                                  {selectedUserActivity.appointments.map((appt: any) => (
+                                    <tr key={appt._id} className="hover:bg-slate-50/60 transition-colors">
+                                      <td className="px-4 py-3">
+                                        <div className="font-bold text-slate-900">{appt.doctorId?.name ? `Dr. ${appt.doctorId.name}` : 'Assigned Doctor'}</div>
+                                        <div className="text-[10px] text-slate-400">{appt.doctorId?.specialty || appt.doctorId?.department || 'General Physician'}</div>
+                                      </td>
+                                      <td className="px-4 py-3 whitespace-nowrap">
+                                        <div className="font-mono font-bold text-slate-800">{appt.date}</div>
+                                        <div className="text-[10px] text-slate-400 font-mono">{appt.time || '--:--'}</div>
+                                      </td>
+                                      <td className="px-4 py-3">
+                                        <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200/80 mr-1.5 uppercase">
+                                          {appt.consultationMode || 'Video'}
+                                        </span>
+                                        <span className="text-slate-600 font-medium">{appt.reason || 'General Consultation'}</span>
+                                      </td>
+                                      <td className="px-4 py-3 whitespace-nowrap">
+                                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase ${
+                                          appt.status === 'confirmed' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' :
+                                          appt.status === 'completed' ? 'bg-blue-100 text-blue-800 border border-blue-200' :
+                                          appt.status === 'cancelled' ? 'bg-rose-100 text-rose-800 border border-rose-200' :
+                                          'bg-amber-100 text-amber-800 border border-amber-200'
+                                        }`}>
+                                          {appt.status}
+                                        </span>
+                                      </td>
+                                      <td className="px-4 py-3 whitespace-nowrap">
+                                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                          appt.paymentStatus === 'paid' ? 'bg-green-50 text-green-700' :
+                                          appt.paymentStatus === 'waived' ? 'bg-purple-50 text-purple-700' :
+                                          'bg-amber-50 text-amber-700'
+                                        }`}>
+                                          {appt.paymentStatus?.toUpperCase() || 'PAID'} (₹{appt.fee ?? 0})
+                                        </span>
+                                      </td>
+                                      <td className="px-4 py-3 text-slate-500 max-w-xs truncate">
+                                        {appt.diagnosis || appt.notes || appt.meetingLink || '—'}
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* 🛍️ STORE ORDERS TAB */}
+                      {userModalTab === 'orders' && (
+                        <div className="space-y-3">
+                          <h4 className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Store Purchases &amp; Orders ({selectedUserActivity.shopOrders?.length ?? 0})</h4>
+                          {!selectedUserActivity.shopOrders || selectedUserActivity.shopOrders.length === 0 ? (
+                            <div className="text-center py-12 text-slate-400 font-semibold text-xs border-2 border-dashed border-slate-100 rounded-2xl">No store orders placed yet.</div>
+                          ) : (
+                            <div className="overflow-x-auto rounded-2xl border border-slate-100">
+                              <table className="w-full text-xs">
+                                <thead className="bg-slate-50">
+                                  <tr>
+                                    {['Order ID', 'Date', 'Items & Products', 'Amount', 'Payment', 'Delivery Status'].map(h => (
+                                      <th key={h} className="px-4 py-3 text-left font-extrabold text-slate-500 uppercase text-[10px] whitespace-nowrap">{h}</th>
+                                    ))}
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-50">
+                                  {selectedUserActivity.shopOrders.map((order: any) => (
+                                    <tr key={order._id} className="hover:bg-slate-50/60 transition-colors">
+                                      <td className="px-4 py-3 font-mono font-bold text-primary">
+                                        #{order._id.toString().slice(-6).toUpperCase()}
+                                      </td>
+                                      <td className="px-4 py-3 whitespace-nowrap text-slate-500 font-mono text-[11px]">
+                                        {order.createdAt ? new Date(order.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '--'}
+                                      </td>
+                                      <td className="px-4 py-3 max-w-xs">
+                                        <div className="font-semibold text-slate-800">
+                                          {order.products?.map((p: any) => `${p.name} (x${p.qty || 1})`).join(', ') || 'Health Products'}
+                                        </div>
+                                      </td>
+                                      <td className="px-4 py-3 font-bold text-slate-900 font-mono whitespace-nowrap">
+                                        ₹{order.totalAmount}
+                                      </td>
+                                      <td className="px-4 py-3 whitespace-nowrap">
+                                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${order.status === 'completed' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
+                                          {order.status?.toUpperCase() || 'COMPLETED'}
+                                        </span>
+                                      </td>
+                                      <td className="px-4 py-3 whitespace-nowrap">
+                                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase ${
+                                          order.deliveryStatus === 'delivered' ? 'bg-emerald-100 text-emerald-800' :
+                                          order.deliveryStatus === 'shipped' ? 'bg-blue-100 text-blue-800' :
+                                          'bg-slate-100 text-slate-700'
+                                        }`}>
+                                          {order.deliveryStatus || 'Processing'}
+                                        </span>
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* 📱 DEVICE & TELEMETRY TAB */}
+                      {userModalTab === 'telemetry' && (
+                        <div className="space-y-3">
+                          <h4 className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Device Logins &amp; Telemetry Sessions ({selectedUserActivity.telemetrySessions?.length ?? 0})</h4>
+                          {!selectedUserActivity.telemetrySessions || selectedUserActivity.telemetrySessions.length === 0 ? (
+                            <div className="text-center py-12 text-slate-400 font-semibold text-xs border-2 border-dashed border-slate-100 rounded-2xl">No device sessions recorded yet.</div>
+                          ) : (
+                            <div className="overflow-x-auto rounded-2xl border border-slate-100">
+                              <table className="w-full text-xs">
+                                <thead className="bg-slate-50">
+                                  <tr>
+                                    {['Platform', 'Device Model', 'App Version', 'OS Version', 'API Activity Count', 'Last Active Time'].map(h => (
+                                      <th key={h} className="px-4 py-3 text-left font-extrabold text-slate-500 uppercase text-[10px] whitespace-nowrap">{h}</th>
+                                    ))}
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-50">
+                                  {selectedUserActivity.telemetrySessions.map((s: any) => (
+                                    <tr key={s._id} className="hover:bg-slate-50/60 transition-colors">
+                                      <td className="px-4 py-3 whitespace-nowrap">
+                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-slate-100 text-slate-800 border border-slate-200">
+                                          <Smartphone className="w-3 h-3 text-slate-500" />
+                                          <span>{s.platform || 'MOBILE'}</span>
+                                        </span>
+                                      </td>
+                                      <td className="px-4 py-3 font-bold text-slate-800">{s.deviceModel || 'Mobile Device'}</td>
+                                      <td className="px-4 py-3 font-mono font-bold text-primary">v{s.appVersion || '6.3.6'}</td>
+                                      <td className="px-4 py-3 text-slate-500">{s.osVersion || 'Unknown'}</td>
+                                      <td className="px-4 py-3 font-mono text-slate-700">{s.requestCount || 1} API requests</td>
+                                      <td className="px-4 py-3 text-slate-500 font-mono whitespace-nowrap">
+                                        {s.lastActiveAt ? new Date(s.lastActiveAt).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '--'}
+                                      </td>
                                     </tr>
                                   ))}
                                 </tbody>

@@ -447,10 +447,31 @@ export class AdminController {
 
       // Attach populated subscription details for each listed user
       const userIds = users.map(u => u._id);
-      const subscriptions = await UserSubscription.find({
-        userId: { $in: userIds },
-        isDeleted: false
-      }).populate('planId', 'name yearlyPrice code trialHours trialDays badge color').sort({ createdAt: -1 });
+      const [subscriptions, foodCounts, habitCounts, apptCounts, orderCounts, telemetryDocs] = await Promise.all([
+        UserSubscription.find({
+          userId: { $in: userIds },
+          isDeleted: false
+        }).populate('planId', 'name yearlyPrice code trialHours trialDays badge color').sort({ createdAt: -1 }),
+        FoodLog.aggregate([
+          { $match: { userId: { $in: userIds } } },
+          { $group: { _id: '$userId', count: { $sum: 1 } } }
+        ]).catch(() => []),
+        mongoose.model('HabitLog').aggregate([
+          { $match: { userId: { $in: userIds } } },
+          { $group: { _id: '$userId', count: { $sum: 1 } } }
+        ]).catch(() => []),
+        Appointment.aggregate([
+          { $match: { userId: { $in: userIds } } },
+          { $group: { _id: '$userId', count: { $sum: 1 } } }
+        ]).catch(() => []),
+        ShopOrder.aggregate([
+          { $match: { userId: { $in: userIds } } },
+          { $group: { _id: '$userId', count: { $sum: 1 } } }
+        ]).catch(() => []),
+        mongoose.model('AppTelemetrySession').find({
+          userId: { $in: userIds }
+        }).sort({ lastActiveAt: -1 }).limit(100).catch(() => [])
+      ]);
 
       const subMap = new Map();
       for (const sub of subscriptions) {
@@ -458,6 +479,22 @@ export class AdminController {
           subMap.set(sub.userId.toString(), sub);
         }
       }
+
+      const foodMap = new Map();
+      foodCounts.forEach((f: any) => foodMap.set(f._id?.toString(), f.count));
+      const habitMap = new Map();
+      habitCounts.forEach((h: any) => habitMap.set(h._id?.toString(), h.count));
+      const apptMap = new Map();
+      apptCounts.forEach((a: any) => apptMap.set(a._id?.toString(), a.count));
+      const orderMap = new Map();
+      orderCounts.forEach((o: any) => orderMap.set(o._id?.toString(), o.count));
+      const telemetryMap = new Map();
+      telemetryDocs.forEach((t: any) => {
+        const uId = t.userId?.toString();
+        if (uId && !telemetryMap.has(uId)) {
+          telemetryMap.set(uId, t);
+        }
+      });
 
       const usersWithSub = users.map(u => {
         const sub: any = subMap.get(u._id.toString());
@@ -494,6 +531,14 @@ export class AdminController {
           }
         }
 
+        const idStr = u._id.toString();
+        const latestTelemetry: any = telemetryMap.get(idStr);
+        const mealsCount = foodMap.get(idStr) || 0;
+        const habitsCount = habitMap.get(idStr) || 0;
+        const appointmentsCount = apptMap.get(idStr) || 0;
+        const ordersCount = orderMap.get(idStr) || 0;
+        const totalLogsCount = mealsCount + habitsCount;
+
         return {
           ...uObj,
           subscription: sub ? {
@@ -513,6 +558,17 @@ export class AdminController {
             statusLabel,
             remainingText,
             planName: sub?.planId?.name || (status === 'none' ? 'None' : 'Standard')
+          },
+          activitySummary: {
+            mealsCount,
+            habitsCount,
+            appointmentsCount,
+            ordersCount,
+            totalLogsCount,
+            platform: latestTelemetry?.platform || null,
+            appVersion: latestTelemetry?.appVersion || null,
+            deviceModel: latestTelemetry?.deviceModel || null,
+            lastActiveAt: latestTelemetry?.lastActiveAt || u.updatedAt || u.createdAt
           }
         };
       });
@@ -1506,7 +1562,7 @@ export class AdminController {
   }
 
   /**
-   * Get User Activity Details (Admin)
+   * Get Comprehensive User Activity & Clinical Event Timeline (Admin)
    */
   public static async getUserActivity(req: AuthRequest, res: Response) {
     try {
@@ -1517,13 +1573,30 @@ export class AdminController {
         return res.status(404).json({ message: 'User not found.' });
       }
 
-      const [foodLogs, glucoseReadings, cgmReports, habitLogs, subscriptions, paymentTransactions, invoices] = await Promise.all([
+      const [
+        foodLogs,
+        glucoseReadings,
+        cgmReports,
+        habitLogs,
+        subscriptions,
+        paymentTransactions,
+        invoices,
+        appointments,
+        shopOrders,
+        supportTickets,
+        askMitoQueries,
+        labBookings,
+        coachingSessions,
+        telemetrySessions,
+        physicalActivities,
+        notifications
+      ] = await Promise.all([
         FoodLog.find({ userId: id }).sort({ loggedAt: -1 }).limit(100),
         mongoose.model('GlucoseReading').find({ userId: id }).sort({ timestamp: -1 }).limit(100),
-        mongoose.model('CGMReport').find({ userId: id }).sort({ createdAt: -1 }).limit(10),
-        mongoose.model('HabitLog').find({ userId: id }).sort({ timestamp: -1 }).limit(100),
+        mongoose.model('CGMReport').find({ userId: id }).sort({ createdAt: -1 }).limit(25),
+        mongoose.model('HabitLog').find({ userId: id }).sort({ timestamp: -1 }).limit(150),
         UserSubscription.find({ userId: id, isDeleted: false })
-          .populate('planId', 'name yearlyPrice code trialHours trialDays')
+          .populate('planId', 'name yearlyPrice code trialHours trialDays badge color')
           .sort({ createdAt: -1 }),
         PaymentTransaction.find({ userId: id, isDeleted: false })
           .populate('planId', 'name yearlyPrice code')
@@ -1532,8 +1605,220 @@ export class AdminController {
         Invoice.find({ userId: id, isDeleted: false })
           .populate('planId', 'name code')
           .sort({ createdAt: -1 })
+          .limit(50),
+        Appointment.find({ userId: id })
+          .populate('doctorId', 'name specialty department avatar fee email mobile')
+          .sort({ date: -1, time: -1 })
+          .limit(50),
+        ShopOrder.find({ userId: id }).sort({ createdAt: -1 }).limit(50),
+        SupportTicket.find({ $or: [{ userId: id }, { email: user.email }] }).sort({ createdAt: -1 }).limit(50),
+        mongoose.model('AskMitoQuery').find({ userId: id }).sort({ createdAt: -1 }).limit(50).catch(() => []),
+        mongoose.model('LabBooking').find({ userId: id })
+          .populate('laboratoryId', 'name address')
+          .populate('labTestId', 'name category price')
+          .sort({ createdAt: -1 })
           .limit(50)
+          .catch(() => []),
+        mongoose.model('CoachingSession').find({ userId: id }).sort({ createdAt: -1 }).limit(50).catch(() => []),
+        mongoose.model('AppTelemetrySession').find({ userId: id }).sort({ lastActiveAt: -1 }).limit(30).catch(() => []),
+        mongoose.model('ActivityLog').find({ userId: id }).sort({ loggedAt: -1 }).limit(50).catch(() => []),
+        Notification.find({ userId: id }).sort({ createdAt: -1 }).limit(50)
       ]);
+
+      // Build unified, chronological activity events timeline
+      const unifiedTimeline: any[] = [];
+
+      // 1. Food Logs
+      foodLogs.forEach((f: any) => {
+        unifiedTimeline.push({
+          id: f._id,
+          category: 'meal',
+          title: `Meal: ${f.mealType || 'Meal Log'}`,
+          subtitle: f.items && f.items.length > 0
+            ? f.items.map((i: any) => i.name || i.foodName).filter(Boolean).join(', ')
+            : (f.description || f.notes || 'Logged meal calories & nutrients'),
+          timestamp: f.loggedAt || f.createdAt,
+          badge: '🍽️ Meal',
+          badgeColor: 'bg-orange-50 text-orange-700 border-orange-200',
+          data: {
+            mealType: f.mealType,
+            calories: f.totalCalories,
+            protein: f.totalProtein,
+            carbs: f.totalCarbs,
+            fat: f.totalFat,
+            imageUrl: f.imageUrl,
+            items: f.items,
+            loggedAt: f.loggedAt
+          }
+        });
+      });
+
+      // 2. Habit Logs
+      habitLogs.forEach((h: any) => {
+        const hType = h.type || 'Habit';
+        let detailText = '';
+        if (typeof h.value === 'object' && h.value !== null) {
+          const keys = Object.keys(h.value).slice(0, 3);
+          detailText = keys.map(k => `${k}: ${h.value[k]}`).join(' | ');
+        } else if (h.value !== undefined) {
+          detailText = String(h.value);
+        }
+        unifiedTimeline.push({
+          id: h._id,
+          category: 'habit',
+          title: `Habit: ${hType}`,
+          subtitle: detailText || h.notes || 'Completed habit activity',
+          timestamp: h.timestamp || h.createdAt,
+          badge: '🌿 Habit',
+          badgeColor: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+          data: h
+        });
+      });
+
+      // 3. Appointments
+      appointments.forEach((a: any) => {
+        const docName = a.doctorId?.name ? `Dr. ${a.doctorId.name}` : 'Doctor';
+        unifiedTimeline.push({
+          id: a._id,
+          category: 'appointment',
+          title: `Doctor Consultation (${a.status?.toUpperCase() || 'BOOKED'})`,
+          subtitle: `${docName} • Date: ${a.date} at ${a.time || '--'} • Reason: ${a.reason || 'General'}`,
+          timestamp: a.createdAt || new Date(`${a.date}T${a.time || '10:00'}:00Z`),
+          badge: '🩺 Appointment',
+          badgeColor: 'bg-blue-50 text-blue-700 border-blue-200',
+          data: a
+        });
+      });
+
+      // 4. Shop Orders
+      shopOrders.forEach((o: any) => {
+        const itemCount = o.products?.reduce((acc: number, p: any) => acc + (p.qty || 1), 0) || o.products?.length || 0;
+        unifiedTimeline.push({
+          id: o._id,
+          category: 'shop',
+          title: `Store Order #${o._id.toString().slice(-6).toUpperCase()}`,
+          subtitle: `${itemCount} items • Total: ₹${o.totalAmount} • Delivery: ${o.deliveryStatus || o.status}`,
+          timestamp: o.createdAt,
+          badge: '🛍️ Order',
+          badgeColor: 'bg-purple-50 text-purple-700 border-purple-200',
+          data: o
+        });
+      });
+
+      // 5. Glucose Readings
+      glucoseReadings.forEach((g: any) => {
+        unifiedTimeline.push({
+          id: g._id,
+          category: 'glucose',
+          title: `Glucose: ${g.value} mg/dL`,
+          subtitle: g.isSpike ? '⚠️ Glucose Spike Detected' : (g.notes || 'Normal metabolic range'),
+          timestamp: g.timestamp || g.createdAt,
+          badge: '📈 Glucose',
+          badgeColor: g.isSpike ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-cyan-50 text-cyan-700 border-cyan-200',
+          data: g
+        });
+      });
+
+      // 6. Ask Mito AI Queries
+      askMitoQueries.forEach((q: any) => {
+        unifiedTimeline.push({
+          id: q._id,
+          category: 'ai_chat',
+          title: `Ask Mito Query: ${q.subject || q.category || 'Clinical Question'}`,
+          subtitle: q.question ? (q.question.length > 80 ? q.question.slice(0, 80) + '...' : q.question) : 'Asked Mito AI assistant',
+          timestamp: q.createdAt,
+          badge: '🤖 AI Chat',
+          badgeColor: 'bg-teal-50 text-teal-700 border-teal-200',
+          data: q
+        });
+      });
+
+      // 7. Support Tickets
+      supportTickets.forEach((t: any) => {
+        unifiedTimeline.push({
+          id: t._id,
+          category: 'support',
+          title: `Support Ticket #${t.ticketId || t._id.toString().slice(-5).toUpperCase()}`,
+          subtitle: `${t.subject || t.question || 'Help Request'} • Status: ${t.status}`,
+          timestamp: t.createdAt,
+          badge: '🎫 Support',
+          badgeColor: 'bg-amber-50 text-amber-700 border-amber-200',
+          data: t
+        });
+      });
+
+      // 8. Telemetry & Logins
+      telemetrySessions.forEach((s: any) => {
+        unifiedTimeline.push({
+          id: s._id,
+          category: 'telemetry',
+          title: `App Active: ${s.platform?.toUpperCase() || 'DEVICE'} (v${s.appVersion || '6.3'})`,
+          subtitle: `Model: ${s.deviceModel || 'Mobile'} • OS: ${s.osVersion || 'Unknown'} • ${s.requestCount || 1} API requests`,
+          timestamp: s.lastActiveAt || s.createdAt,
+          badge: '📱 Session',
+          badgeColor: 'bg-slate-100 text-slate-700 border-slate-200',
+          data: s
+        });
+      });
+
+      // 9. Notifications
+      notifications.forEach((n: any) => {
+        unifiedTimeline.push({
+          id: n._id,
+          category: 'notification',
+          title: `Notification: ${n.title || n.type}`,
+          subtitle: n.body || 'Alert delivered to patient',
+          timestamp: n.createdAt,
+          badge: '🔔 Alert',
+          badgeColor: 'bg-sky-50 text-sky-700 border-sky-200',
+          data: n
+        });
+      });
+
+      // 10. Lab Bookings
+      labBookings.forEach((l: any) => {
+        unifiedTimeline.push({
+          id: l._id,
+          category: 'lab',
+          title: `Lab Test: ${l.labTestId?.name || 'Diagnostic Test'}`,
+          subtitle: `Status: ${l.status} • Total: ₹${l.totalAmount} • Lab: ${l.laboratoryId?.name || 'Partner Lab'}`,
+          timestamp: l.createdAt,
+          badge: '🧪 Lab Test',
+          badgeColor: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+          data: l
+        });
+      });
+
+      // 11. Payment Transactions
+      paymentTransactions.forEach((p: any) => {
+        unifiedTimeline.push({
+          id: p._id,
+          category: 'payment',
+          title: `Payment ${p.status?.toUpperCase() || 'SUCCESS'}: ₹${p.amount}`,
+          subtitle: `Plan: ${p.planId?.name || 'Subscription'} • Ref: ${p.transactionId || p.razorpayPaymentId || '--'}`,
+          timestamp: p.createdAt,
+          badge: '💳 Payment',
+          badgeColor: p.status === 'success' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-700 border-slate-200',
+          data: p
+        });
+      });
+
+      // 12. Physical Exercise Activities
+      physicalActivities.forEach((act: any) => {
+        unifiedTimeline.push({
+          id: act._id,
+          category: 'exercise',
+          title: `Workout: ${act.type || 'Physical Activity'} (${act.durationMinutes || 0}m)`,
+          subtitle: `${act.steps ? `${act.steps} steps • ` : ''}${act.caloriesBurned ? `${act.caloriesBurned} kcal • ` : ''}Source: ${act.source || 'Manual'}`,
+          timestamp: act.loggedAt || act.createdAt,
+          badge: '🏃 Workout',
+          badgeColor: 'bg-lime-50 text-lime-700 border-lime-200',
+          data: act
+        });
+      });
+
+      // Sort timeline newest first
+      unifiedTimeline.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
       return res.status(200).json({
         user,
@@ -1543,7 +1828,17 @@ export class AdminController {
         habitLogs,
         subscriptions,
         paymentTransactions,
-        invoices
+        invoices,
+        appointments,
+        shopOrders,
+        supportTickets,
+        askMitoQueries,
+        labBookings,
+        coachingSessions,
+        telemetrySessions,
+        physicalActivities,
+        notifications,
+        unifiedTimeline
       });
     } catch (error: any) {
       return res.status(500).json({ message: error.message || 'Error fetching user activity details.' });
