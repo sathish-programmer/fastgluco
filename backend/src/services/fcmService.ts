@@ -48,12 +48,16 @@ export class FCMService {
       // Check user push notification preferences
       if (user.notificationPreferences?.push) {
         const pushPrefs = user.notificationPreferences.push;
-        if (type === 'SpikeAlert' && pushPrefs.healthInsights === false) {
+        if (type === 'SpikeAlert' && (pushPrefs.healthInsights === false || pushPrefs.biomarkersSpikes === false)) {
           console.log(`[FCM] Suppressed SpikeAlert push for user ${userId} per notification preferences.`);
           return false;
         }
         if (type === 'LogReminder' && pushPrefs.dailyCheckin === false) {
           console.log(`[FCM] Suppressed LogReminder push for user ${userId} per notification preferences.`);
+          return false;
+        }
+        if (['HabitReminder', 'BreathworkReminder'].includes(type) && pushPrefs.habitsBreathwork === false) {
+          console.log(`[FCM] Suppressed ${type} push for user ${userId} per habitsBreathwork preference.`);
           return false;
         }
         if (type === 'ReportProcessed' && pushPrefs.reportUpload === false) {
@@ -115,6 +119,8 @@ export class FCMService {
         }
       });
 
+      const isSoundEnabled = user.notificationPreferences?.alarmSoundEnabled !== false;
+
       const message: admin.messaging.MulticastMessage = {
         tokens,
         notification: {
@@ -126,7 +132,7 @@ export class FCMService {
           priority: 'high',
           notification: {
             channelId: 'mitoreboot_notifications',
-            sound: 'health_bell',
+            sound: isSoundEnabled ? 'health_bell' : undefined,
             defaultSound: false,
             defaultVibrateTimings: true,
             icon: 'ic_stat_notification',
@@ -139,7 +145,7 @@ export class FCMService {
           },
           payload: {
             aps: {
-              sound: 'health_bell.wav',
+              sound: isSoundEnabled ? 'health_bell.wav' : undefined,
               badge: unreadCount
             }
           }

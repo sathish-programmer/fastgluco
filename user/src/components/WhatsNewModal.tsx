@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import type { SupportedLanguage } from '../i18n/types';
 
-export const CURRENT_APP_VERSION = 'v6.3.6';
+export const CURRENT_APP_VERSION = 'v6.3.7';
 
 interface WhatsNewModalProps {
   isOpen?: boolean;
@@ -46,16 +46,25 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({
 
   if (!isOpen && !shouldShow) return null;
 
-  // v6.3.4 Current Release Features
+  // v6.3.7 Release Features
   const features = [
+    {
+      key: 'gentle_sound',
+      badge: 'AUDIO & TIMING',
+      badgeColor: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30',
+      title: t('whatsNew.gentleSound.title', 'Gentle Reminder Sound & Custom Alert Times'),
+      description: t('whatsNew.gentleSound.desc', 'Customize your preferred alert times for daily check-ins, morning motivation, and habits, accompanied by a soothing meditation bell chime.'),
+      icon: <Bell className="h-5 w-5 text-emerald-500" />,
+      bg: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+    },
     {
       key: 'prescription',
       badge: 'CLINICAL',
-      badgeColor: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30',
+      badgeColor: 'bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/30',
       title: t('whatsNew.prescription.title', 'Digital Medical Prescriptions'),
       description: t('whatsNew.prescription.desc', 'View and download official medical prescriptions with detailed medicine timings, dosages, and doctor advice directly in your appointment history.'),
-      icon: <Pill className="h-5 w-5 text-emerald-500" />,
-      bg: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+      icon: <Pill className="h-5 w-5 text-blue-500" />,
+      bg: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
     },
     {
       key: 'rating',
@@ -65,15 +74,6 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({
       description: t('whatsNew.rating.desc', 'Browse verified patient star ratings and consultation reviews when choosing your specialist physician.'),
       icon: <Star className="h-5 w-5 text-amber-500" />,
       bg: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
-    },
-    {
-      key: 'notifications',
-      badge: 'ALERTS',
-      badgeColor: 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-indigo-500/30',
-      title: t('whatsNew.notifications.title', 'Instant Push Notification Navigation'),
-      description: t('whatsNew.notifications.desc', 'Seamlessly open appointments, clinical advice, or orders directly when tapping mobile notifications.'),
-      icon: <Bell className="h-5 w-5 text-indigo-500" />,
-      bg: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20'
     },
     {
       key: 'streak',

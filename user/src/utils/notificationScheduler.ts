@@ -144,7 +144,7 @@ export const ensureNotificationChannel = async () => {
         importance: 5, // High priority heads-up
         visibility: 1,
         vibration: true,
-        sound: 'health_bell.wav',
+        sound: 'health_bell',
         lights: true,
         lightColor: '#3B82F6'
       });
@@ -156,7 +156,7 @@ export const ensureNotificationChannel = async () => {
         importance: 3,
         visibility: 1,
         vibration: true,
-        sound: 'health_bell.wav',
+        sound: 'health_bell',
         lights: true,
         lightColor: '#10B981'
       });
@@ -168,7 +168,7 @@ export const ensureNotificationChannel = async () => {
         importance: 4,
         visibility: 1,
         vibration: true,
-        sound: 'health_bell.wav',
+        sound: 'health_bell',
         lights: true,
         lightColor: '#8B5CF6'
       });
@@ -180,7 +180,7 @@ export const ensureNotificationChannel = async () => {
         importance: 4,
         visibility: 1,
         vibration: true,
-        sound: 'health_bell.wav',
+        sound: 'health_bell',
         lights: true,
         lightColor: '#059669'
       });
@@ -373,6 +373,8 @@ export const triggerTestNotification = async () => {
   if (Capacitor.isNativePlatform()) {
     try {
       await ensureNotificationChannel();
+      const isMuted = localStorage.getItem('mito_alarm_sound_enabled') === 'false';
+      const soundFile = isMuted ? undefined : (Capacitor.getPlatform() === 'android' ? 'health_bell' : 'health_bell.wav');
       await LocalNotifications.schedule({
         notifications: [
           {
@@ -381,7 +383,7 @@ export const triggerTestNotification = async () => {
             body: 'Your notification system is working perfectly!',
             schedule: { at: new Date(Date.now() + 500), allowWhileIdle: true },
             channelId: CHECKIN_CHANNEL_ID,
-            sound: 'health_bell.wav',
+            sound: soundFile,
             extra: {
               type: 'DAILY_CHECKIN'
             }
@@ -523,6 +525,8 @@ export const scheduleDailyCheckinReminder = async (timeStr: string): Promise<boo
         scheduledDate.setDate(scheduledDate.getDate() + 1);
       }
 
+      const isMuted = localStorage.getItem('mito_alarm_sound_enabled') === 'false';
+      const soundFile = isMuted ? undefined : (Capacitor.getPlatform() === 'android' ? 'health_bell' : 'health_bell.wav');
       await LocalNotifications.schedule({
         notifications: [
           {
@@ -536,7 +540,7 @@ export const scheduleDailyCheckinReminder = async (timeStr: string): Promise<boo
               allowWhileIdle: true
             },
             channelId: CHECKIN_CHANNEL_ID,
-            sound: 'health_bell.wav',
+            sound: soundFile,
             extra: {
               type: 'DAILY_CHECKIN',
               timeStr
