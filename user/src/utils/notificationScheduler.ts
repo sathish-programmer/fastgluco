@@ -19,6 +19,15 @@ export const REPORTS_CHANNEL_ID = 'mito_reports_channel';
 export const HEALTH_HABITS_CHANNEL_ID = 'mito_health_habits_channel';
 export const SYMPTOM_CHECKIN_CHANNEL_ID = 'mito_symptom_checkin_channel';
 
+/**
+ * Returns the platform-appropriate sound filename for native local notifications
+ */
+export const getNotificationSoundFile = (): string | undefined => {
+  const isMuted = localStorage.getItem('mito_alarm_sound_enabled') === 'false';
+  if (isMuted) return undefined;
+  return Capacitor.getPlatform() === 'android' ? 'health_bell' : 'health_bell.wav';
+};
+
 // Web timer references
 let webCheckinTimer: any = null;
 let webIntervalChecker: any = null;
@@ -37,7 +46,7 @@ export const playNotificationChime = (forcePlay = false) => {
     }
 
     // Attempt HTML5 audio first using bundled health_bell.wav
-    if (!forcePlay && typeof Audio !== 'undefined') {
+    if (typeof Audio !== 'undefined') {
       const audio = new Audio('/sounds/health_bell.wav');
       audio.volume = 0.65;
       const playPromise = audio.play();
@@ -373,8 +382,7 @@ export const triggerTestNotification = async () => {
   if (Capacitor.isNativePlatform()) {
     try {
       await ensureNotificationChannel();
-      const isMuted = localStorage.getItem('mito_alarm_sound_enabled') === 'false';
-      const soundFile = isMuted ? undefined : (Capacitor.getPlatform() === 'android' ? 'health_bell' : 'health_bell.wav');
+      const soundFile = getNotificationSoundFile();
       await LocalNotifications.schedule({
         notifications: [
           {
@@ -479,6 +487,7 @@ export const triggerHealthInsightNotification = async (payload: HealthInsightPay
             body,
             schedule: { at: new Date(Date.now() + 600), allowWhileIdle: true },
             channelId,
+            sound: getNotificationSoundFile(),
             extra: {
               type: payload.category
             }
@@ -525,8 +534,7 @@ export const scheduleDailyCheckinReminder = async (timeStr: string): Promise<boo
         scheduledDate.setDate(scheduledDate.getDate() + 1);
       }
 
-      const isMuted = localStorage.getItem('mito_alarm_sound_enabled') === 'false';
-      const soundFile = isMuted ? undefined : (Capacitor.getPlatform() === 'android' ? 'health_bell' : 'health_bell.wav');
+      const soundFile = getNotificationSoundFile();
       await LocalNotifications.schedule({
         notifications: [
           {
@@ -630,6 +638,7 @@ export const scheduleSymptomCheckinReminder = async (targetDate?: Date): Promise
               allowWhileIdle: true
             },
             channelId: SYMPTOM_CHECKIN_CHANNEL_ID,
+            sound: getNotificationSoundFile(),
             extra: {
               type: 'SYMPTOM_CHECKIN'
             }
@@ -693,6 +702,7 @@ export const scheduleReportUploadReminders = async (): Promise<boolean> => {
               allowWhileIdle: true
             },
             channelId: REPORTS_CHANNEL_ID,
+            sound: getNotificationSoundFile(),
             extra: {
               type: 'REPORT_UPLOAD'
             }
@@ -749,6 +759,7 @@ export const scheduleHabitReminder = async (
               allowWhileIdle: true
             },
             channelId: HEALTH_HABITS_CHANNEL_ID,
+            sound: getNotificationSoundFile(),
             extra: {
               type: 'HABIT_REMINDER',
               timeStr

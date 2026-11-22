@@ -35,6 +35,9 @@ public class MainActivity extends BridgeActivity {
         } catch (Exception e) {
             e.printStackTrace();
         }
+
+        // Initialize notification channels with custom gentle bell sound
+        createNotificationChannels();
         
         try {
             Bridge bridge = getBridge();
@@ -257,6 +260,104 @@ public class MainActivity extends BridgeActivity {
             }
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+
+    private void createNotificationChannels() {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            android.app.NotificationManager notificationManager = getSystemService(android.app.NotificationManager.class);
+            if (notificationManager == null) return;
+
+            android.media.AudioAttributes audioAttributes = new android.media.AudioAttributes.Builder()
+                .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                .setUsage(android.media.AudioAttributes.USAGE_NOTIFICATION)
+                .build();
+
+            android.net.Uri soundUri = android.net.Uri.parse(
+                android.content.ContentResolver.SCHEME_ANDROID_RESOURCE + "://" + getPackageName() + "/raw/health_bell"
+            );
+
+            // 1. Primary FCM Channel (used by backend pushes)
+            createOrUpdateChannel(
+                notificationManager,
+                "mitoreboot_notifications",
+                "Mito Reboot Notifications",
+                "Appointments, orders, and personalized health guidance",
+                android.app.NotificationManager.IMPORTANCE_HIGH,
+                soundUri,
+                audioAttributes
+            );
+
+            // 2. Daily Check-in Channel
+            createOrUpdateChannel(
+                notificationManager,
+                "mito_daily_checkin_channel",
+                "Daily Health Check-in Reminders",
+                "Scheduled reminders for your daily metabolic & habit check-in",
+                android.app.NotificationManager.IMPORTANCE_HIGH,
+                soundUri,
+                audioAttributes
+            );
+
+            // 3. Reports Channel
+            createOrUpdateChannel(
+                notificationManager,
+                "mito_reports_channel",
+                "Lab & Medical Report Reminders",
+                "Optional reminders to upload new blood test or diagnostic reports",
+                android.app.NotificationManager.IMPORTANCE_DEFAULT,
+                soundUri,
+                audioAttributes
+            );
+
+            // 4. Health Habits Channel
+            createOrUpdateChannel(
+                notificationManager,
+                "mito_health_habits_channel",
+                "Preventive Health & Habit Alerts",
+                "Scheduled reminders for personalized habits, stillness, and breathwork",
+                android.app.NotificationManager.IMPORTANCE_HIGH,
+                soundUri,
+                audioAttributes
+            );
+
+            // 5. Symptom Screening Channel
+            createOrUpdateChannel(
+                notificationManager,
+                "mito_symptom_checkin_channel",
+                "3-Weekly Symptom Screening",
+                "Reminders for your 3-weekly early warning symptom check-in",
+                android.app.NotificationManager.IMPORTANCE_HIGH,
+                soundUri,
+                audioAttributes
+            );
+        }
+    }
+
+    private void createOrUpdateChannel(
+        android.app.NotificationManager notificationManager,
+        String channelId,
+        String name,
+        String description,
+        int importance,
+        android.net.Uri soundUri,
+        android.media.AudioAttributes audioAttributes
+    ) {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            android.app.NotificationChannel existing = notificationManager.getNotificationChannel(channelId);
+            // If channel doesn't exist OR was created without sound, recreate it with custom sound
+            if (existing == null || existing.getSound() == null) {
+                if (existing != null) {
+                    notificationManager.deleteNotificationChannel(channelId);
+                }
+                android.app.NotificationChannel channel = new android.app.NotificationChannel(channelId, name, importance);
+                channel.setDescription(description);
+                channel.setSound(soundUri, audioAttributes);
+                channel.enableVibration(true);
+                channel.enableLights(true);
+                channel.setLightColor(0xFF0D9488);
+                notificationManager.createNotificationChannel(channel);
+            }
         }
     }
 }

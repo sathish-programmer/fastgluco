@@ -656,16 +656,18 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight mt-0.5">
                   Scheduled prompts for daily oncology & metabolic habit logging
                 </p>
-                <div className="flex items-center gap-2 mt-2">
-                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wide">{t('profile.timeLabel', 'Time:')}</span>
-                  <input
-                    type="time"
-                    value={checkinReminderTime}
-                    onChange={(e) => setCheckinReminderTime(e.target.value)}
-                    className="px-2 py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono font-bold text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-primary focus:outline-none"
-                  />
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 mt-2">
+                  <div className="inline-flex items-center gap-1.5">
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wide">{t('profile.timeLabel', 'Time:')}</span>
+                    <input
+                      type="time"
+                      value={checkinReminderTime}
+                      onChange={(e) => setCheckinReminderTime(e.target.value)}
+                      className="px-2 py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono font-bold text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-primary focus:outline-none"
+                    />
+                  </div>
                   {alarmSoundEnabled && (
-                    <span className="text-[9px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <span className="inline-flex items-center gap-1 text-[10px] bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 font-bold px-2.5 py-0.5 rounded-full border border-emerald-200/60 dark:border-emerald-800/40 whitespace-nowrap shadow-xs">
                       <span>🔔 Gentle Sound</span>
                     </span>
                   )}

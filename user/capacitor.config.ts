@@ -32,6 +32,14 @@ const config: CapacitorConfig = {
       presentationOptions: ["badge", "sound", "alert"],
       iconColor: "#0D9488"
     },
+    FirebaseMessaging: {
+      presentationOptions: ["badge", "sound", "alert"]
+    },
+    LocalNotifications: {
+      smallIcon: "ic_stat_notification",
+      iconColor: "#0D9488",
+      sound: "health_bell.wav"
+    },
     FirebaseAuthentication: {
       skipNativeAuth: false,
       providers: ['phone']
