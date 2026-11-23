@@ -665,6 +665,10 @@ export const scheduleSymptomCheckinReminder = async (targetDate?: Date): Promise
  */
 export const scheduleReportUploadReminders = async (): Promise<boolean> => {
   const isEnabled = localStorage.getItem('mito_report_reminder_enabled') === 'true';
+  const timeStr = localStorage.getItem('mito_report_reminder_time') || '10:00';
+  const [hours, minutes] = timeStr.split(':').map(Number);
+  const validHours = isNaN(hours) ? 10 : hours;
+  const validMinutes = isNaN(minutes) ? 0 : minutes;
 
   if (Capacitor.isNativePlatform()) {
     try {
@@ -681,14 +685,6 @@ export const scheduleReportUploadReminders = async (): Promise<boolean> => {
       }
 
       await ensureNotificationChannel();
-      const now = new Date();
-
-      // 5:00 PM Evening Reminder only if enabled
-      const pmDate = new Date();
-      pmDate.setHours(17, 0, 0, 0);
-      if (pmDate.getTime() <= now.getTime()) {
-        pmDate.setDate(pmDate.getDate() + 1);
-      }
 
       await LocalNotifications.schedule({
         notifications: [
@@ -697,15 +693,17 @@ export const scheduleReportUploadReminders = async (): Promise<boolean> => {
             title: 'Health Report Reminder',
             body: 'Have new diagnostic reports? Upload them to sync AI biomarker analytics.',
             schedule: {
-              at: pmDate,
-              repeats: true,
-              every: 'week',
+              on: {
+                hour: validHours,
+                minute: validMinutes
+              },
               allowWhileIdle: true
             },
             channelId: REPORTS_CHANNEL_ID,
             sound: getNotificationSoundFile(),
             extra: {
-              type: 'REPORT_UPLOAD'
+              type: 'REPORT_UPLOAD',
+              timeStr
             }
           }
         ]
@@ -807,6 +805,30 @@ export const cancelDailyCheckinReminder = async (): Promise<boolean> => {
 };
 
 /**
+ * Cancel user-configured habit reminders (e.g. Breathwork & Stillness)
+ */
+export const cancelHabitReminder = async (): Promise<boolean> => {
+  localStorage.setItem('mito_habits_reminder_enabled', 'false');
+
+  if (Capacitor.isNativePlatform()) {
+    try {
+      await LocalNotifications.cancel({
+        notifications: [
+          { id: BREATHWORK_NOTIFICATION_ID },
+          { id: STILLNESS_NOTIFICATION_ID }
+        ]
+      });
+      console.log('[NotificationScheduler] Native habit notifications cancelled');
+      return true;
+    } catch (err) {
+      console.warn('[NotificationScheduler] Failed to cancel habit notifications:', err);
+      return false;
+    }
+  }
+  return true;
+};
+
+/**
  * Initialize and verify active reminders upon app startup
  * Automatically cleans up any obsolete/spam background alarms
  */
@@ -892,6 +914,20 @@ export const initNotificationScheduler = async () => {
         const hasReportReminder = pending.notifications.some(n => n.id === REPORT_UPLOAD_PM_NOTIFICATION_ID);
         if (!hasReportReminder) {
           await scheduleReportUploadReminders();
+        }
+      }
+
+      // Check habit reminders schedule on startup
+      if (localStorage.getItem('mito_habits_reminder_enabled') === 'true') {
+        const savedHabitTime = localStorage.getItem('mito_habits_reminder_time') || '07:30';
+        const hasHabit = pending.notifications.some(n => n.id === BREATHWORK_NOTIFICATION_ID);
+        if (!hasHabit) {
+          await scheduleHabitReminder(
+            BREATHWORK_NOTIFICATION_ID,
+            'Mito Reboot • Habits & Breathwork',
+            'Time for your mindful stillness and breathwork session to refresh your energy.',
+            savedHabitTime
+          );
         }
       }
 

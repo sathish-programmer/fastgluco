@@ -56,12 +56,12 @@ export class FCMService {
           console.log(`[FCM] Suppressed LogReminder push for user ${userId} per notification preferences.`);
           return false;
         }
-        if (['HabitReminder', 'BreathworkReminder'].includes(type) && pushPrefs.habitsBreathwork === false) {
-          console.log(`[FCM] Suppressed ${type} push for user ${userId} per habitsBreathwork preference.`);
+        if (['HabitReminder', 'BreathworkReminder'].includes(type) && (pushPrefs.habitsBreathwork === false || pushPrefs.habitReminders === false)) {
+          console.log(`[FCM] Suppressed ${type} push for user ${userId} per habits reminder preference.`);
           return false;
         }
-        if (type === 'ReportProcessed' && pushPrefs.reportUpload === false) {
-          console.log(`[FCM] Suppressed ReportProcessed push for user ${userId} per notification preferences.`);
+        if (['ReportProcessed', 'ReportUploadReminder'].includes(type) && pushPrefs.reportUpload === false) {
+          console.log(`[FCM] Suppressed ${type} push for user ${userId} per notification preferences.`);
           return false;
         }
         if (type === 'DailyMotivation' && (pushPrefs.dailyMotivation === false || user.dailyMotivationEnabled === false)) {

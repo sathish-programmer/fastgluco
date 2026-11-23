@@ -33,7 +33,15 @@ import { Educational } from './Educational'; // import the sub-view
 import { Subscription } from './Subscription';
 import { FounderNoteModal } from '../components/FounderNoteModal';
 import { Capacitor } from '@capacitor/core';
-import { triggerTestNotification, scheduleDailyCheckinReminder, cancelDailyCheckinReminder, scheduleReportUploadReminders } from '../utils/notificationScheduler';
+import {
+  triggerTestNotification,
+  scheduleDailyCheckinReminder,
+  cancelDailyCheckinReminder,
+  scheduleReportUploadReminders,
+  scheduleHabitReminder,
+  cancelHabitReminder,
+  BREATHWORK_NOTIFICATION_ID
+} from '../utils/notificationScheduler';
 import { MotivationService } from '../services/motivationService';
 
 const defaultNotifPrefs: UserNotificationPreferences = {
@@ -873,6 +881,11 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
               </div>
             </div>
 
+            {/* Explanatory channel note */}
+            <div className="pt-2 text-[11px] text-slate-400 dark:text-slate-500 leading-relaxed border-t border-slate-100 dark:border-slate-800">
+              <span>* <strong>Push</strong> &amp; <strong>Email</strong> alerts trigger actively based on your configured timings. <strong>SMS</strong> options are saved to your preferences (SMS is currently strictly reserved for login OTPs to prevent carrier spam; no promotional SMS is sent).</span>
+            </div>
+
           </div>
 
           {/* Dedicated Save Button */}
@@ -883,6 +896,7 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
               localStorage.setItem('mito_checkin_reminder_enabled', notifPrefs.push.dailyCheckin ? 'true' : 'false');
               localStorage.setItem('mito_checkin_reminder_time', checkinReminderTime);
               localStorage.setItem('mito_daily_motivation_time', dailyMotivationTime);
+              localStorage.setItem('mito_habits_reminder_enabled', notifPrefs.push.habitReminders ? 'true' : 'false');
               localStorage.setItem('mito_habits_reminder_time', habitsReminderTime);
               localStorage.setItem('mito_biomarkers_reminder_time', biomarkersReminderTime);
               localStorage.setItem('mito_report_reminder_time', reportUploadReminderTime);
@@ -893,6 +907,18 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
                 scheduleDailyCheckinReminder(checkinReminderTime);
               } else {
                 cancelDailyCheckinReminder();
+              }
+
+              // Synchronize habit reminders schedule
+              if (notifPrefs.push.habitReminders) {
+                scheduleHabitReminder(
+                  BREATHWORK_NOTIFICATION_ID,
+                  'Mito Reboot • Habits & Breathwork',
+                  'Time for your mindful stillness and breathwork session to refresh your energy.',
+                  habitsReminderTime
+                );
+              } else {
+                cancelHabitReminder();
               }
 
               // Synchronize report upload reminders schedule
