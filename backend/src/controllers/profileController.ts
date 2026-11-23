@@ -35,7 +35,9 @@ export class ProfileController {
         libreEmail, librePassword, libreRegion, libreActive,
         cancerJourney, cancerDisclaimerAccepted, cancerDisclaimerAcceptedAt,
         addressLine1, addressCity, addressState, addressPinCode,
-        notificationPreferences, checkinReminderTime
+        notificationPreferences, checkinReminderTime,
+        dailyMotivationTime, dailyMotivationEnabled,
+        habitsReminderTime, biomarkersReminderTime, reportUploadReminderTime
       } = req.body;
 
       const user = await User.findById(userId);
@@ -82,10 +84,22 @@ export class ProfileController {
       if (addressCity !== undefined) user.addressCity = addressCity;
       if (addressState !== undefined) user.addressState = addressState;
       if (checkinReminderTime !== undefined) user.checkinReminderTime = checkinReminderTime;
+      if (dailyMotivationTime !== undefined) user.dailyMotivationTime = dailyMotivationTime;
+      if (dailyMotivationEnabled !== undefined) user.dailyMotivationEnabled = dailyMotivationEnabled;
+      if (habitsReminderTime !== undefined) (user as any).habitsReminderTime = habitsReminderTime;
+      if (biomarkersReminderTime !== undefined) (user as any).biomarkersReminderTime = biomarkersReminderTime;
+      if (reportUploadReminderTime !== undefined) (user as any).reportUploadReminderTime = reportUploadReminderTime;
+
       if (notificationPreferences !== undefined) {
         user.notificationPreferences = notificationPreferences;
         if (notificationPreferences.checkinReminderTime) {
           user.checkinReminderTime = notificationPreferences.checkinReminderTime;
+        }
+        if (notificationPreferences.dailyMotivationTime) {
+          user.dailyMotivationTime = notificationPreferences.dailyMotivationTime;
+        }
+        if (notificationPreferences.dailyMotivationEnabled !== undefined) {
+          user.dailyMotivationEnabled = notificationPreferences.dailyMotivationEnabled;
         }
         user.markModified('notificationPreferences');
       }

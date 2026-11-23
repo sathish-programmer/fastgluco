@@ -345,8 +345,16 @@ public class MainActivity extends BridgeActivity {
     ) {
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
             android.app.NotificationChannel existing = notificationManager.getNotificationChannel(channelId);
-            // If channel doesn't exist OR was created without sound, recreate it with custom sound
-            if (existing == null || existing.getSound() == null) {
+            boolean needsRecreate = false;
+            if (existing == null) {
+                needsRecreate = true;
+            } else {
+                android.net.Uri currentSound = existing.getSound();
+                if (currentSound == null || !currentSound.toString().contains("health_bell")) {
+                    needsRecreate = true;
+                }
+            }
+            if (needsRecreate) {
                 if (existing != null) {
                     notificationManager.deleteNotificationChannel(channelId);
                 }

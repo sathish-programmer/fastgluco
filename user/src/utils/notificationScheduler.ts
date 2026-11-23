@@ -542,9 +542,10 @@ export const scheduleDailyCheckinReminder = async (timeStr: string): Promise<boo
             title: 'Mito Reboot • Daily Health Check-in',
             body: 'Time for your daily metabolic check-in! Log your habits to keep your cellular defense active.',
             schedule: {
-              at: scheduledDate,
-              repeats: true,
-              every: 'day',
+              on: {
+                hour: hours,
+                minute: minutes
+              },
               allowWhileIdle: true
             },
             channelId: CHECKIN_CHANNEL_ID,
@@ -753,9 +754,10 @@ export const scheduleHabitReminder = async (
             title,
             body,
             schedule: {
-              at: scheduledDate,
-              repeats: true,
-              every: 'day',
+              on: {
+                hour: hours,
+                minute: minutes
+              },
               allowWhileIdle: true
             },
             channelId: HEALTH_HABITS_CHANNEL_ID,

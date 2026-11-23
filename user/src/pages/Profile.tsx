@@ -25,8 +25,7 @@ import {
   Mail,
   MessageSquare,
   Smartphone,
-  Volume2,
-  Music
+  Volume2
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { CURRENT_APP_VERSION } from '../components/WhatsNewModal';
@@ -34,7 +33,8 @@ import { Educational } from './Educational'; // import the sub-view
 import { Subscription } from './Subscription';
 import { FounderNoteModal } from '../components/FounderNoteModal';
 import { Capacitor } from '@capacitor/core';
-import { triggerTestNotification, scheduleDailyCheckinReminder, cancelDailyCheckinReminder, scheduleReportUploadReminders, playNotificationChime } from '../utils/notificationScheduler';
+import { triggerTestNotification, scheduleDailyCheckinReminder, cancelDailyCheckinReminder, scheduleReportUploadReminders } from '../utils/notificationScheduler';
+import { MotivationService } from '../services/motivationService';
 
 const defaultNotifPrefs: UserNotificationPreferences = {
   push: {
@@ -132,7 +132,6 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
     if (local !== null) return local === 'true';
     return (user?.notificationPreferences as any)?.alarmSoundEnabled !== false;
   });
-  const [isPlayingChime, setIsPlayingChime] = useState(false);
   const [isTestingNotif, setIsTestingNotif] = useState(false);
 
   // Sync notification preferences whenever user profile updates/loads
@@ -340,9 +339,23 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
       cancerJourney,
       cancerDisclaimerAccepted: disclaimerAccepted,
       cancerDisclaimerAcceptedAt: disclaimerAccepted ? new Date().toISOString() : undefined,
-      notificationPreferences: notifPrefs,
+      notificationPreferences: {
+        ...notifPrefs,
+        checkinReminderTime,
+        dailyMotivationTime,
+        habitsReminderTime,
+        biomarkersReminderTime,
+        reportUploadReminderTime,
+        alarmSoundEnabled
+      },
+      checkinReminderTime,
+      dailyMotivationTime,
+      dailyMotivationEnabled: notifPrefs.push.dailyMotivation !== false,
+      habitsReminderTime,
+      biomarkersReminderTime,
+      reportUploadReminderTime,
       language
-    });
+    } as any);
     if (success) {
       if (setActiveMode) {
         await setActiveMode(cancerJourney);
@@ -547,54 +560,6 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
           </div>
         </div>
 
-        {/* 🔔 Gentle Reminder Sound Card */}
-        <div className="bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-cyan-500/10 dark:from-emerald-950/30 dark:via-teal-950/20 dark:to-cyan-950/30 rounded-3xl p-5 border border-emerald-500/20 dark:border-emerald-500/30 shadow-soft mb-5 transition-colors">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <span className="p-2 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
-                  <Volume2 className="w-4 h-4" />
-                </span>
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                  <span>🔔 Gentle Reminder Sound</span>
-                  <span className="text-[10px] bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-extrabold px-2.5 py-0.5 rounded-full">
-                    Alert Tone
-                  </span>
-                </h3>
-              </div>
-              <p className="text-xs text-slate-600 dark:text-slate-350 max-w-xl leading-relaxed">
-                A soft, pleasant bell sound for your daily check-in alerts and reminders. Rings gently so you never forget to log, without loud or disturbing alarm noise.
-              </p>
-            </div>
-            <div className="flex items-center gap-3 self-start sm:self-center">
-              <button
-                type="button"
-                onClick={() => {
-                  setIsPlayingChime(true);
-                  playNotificationChime(true);
-                  setTimeout(() => setIsPlayingChime(false), 1600);
-                }}
-                className="px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-emerald-200 dark:border-emerald-800/60 hover:bg-emerald-50 dark:hover:bg-slate-700 text-emerald-700 dark:text-emerald-400 text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all cursor-pointer active:scale-95"
-              >
-                <Music className={`w-3.5 h-3.5 ${isPlayingChime ? 'animate-bounce text-emerald-500' : ''}`} />
-                <span>{isPlayingChime ? 'Playing...' : 'Preview Sound 🔔'}</span>
-              </button>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={alarmSoundEnabled}
-                  onChange={(e) => {
-                    setAlarmSoundEnabled(e.target.checked);
-                    localStorage.setItem('mito_alarm_sound_enabled', e.target.checked ? 'true' : 'false');
-                  }}
-                  className="sr-only peer"
-                />
-                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-emerald-500"></div>
-              </label>
-            </div>
-          </div>
-        </div>
-
         {/* Matrix Table Card */}
         <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200/80 dark:border-slate-800 shadow-soft mb-5 space-y-4 transition-colors">
           <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
@@ -656,21 +621,14 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight mt-0.5">
                   Scheduled prompts for daily oncology & metabolic habit logging
                 </p>
-                <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 mt-2">
-                  <div className="inline-flex items-center gap-1.5">
-                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wide">{t('profile.timeLabel', 'Time:')}</span>
-                    <input
-                      type="time"
-                      value={checkinReminderTime}
-                      onChange={(e) => setCheckinReminderTime(e.target.value)}
-                      className="px-2 py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono font-bold text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-primary focus:outline-none"
-                    />
-                  </div>
-                  {alarmSoundEnabled && (
-                    <span className="inline-flex items-center gap-1 text-[10px] bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 font-bold px-2.5 py-0.5 rounded-full border border-emerald-200/60 dark:border-emerald-800/40 whitespace-nowrap shadow-xs">
-                      <span>🔔 Gentle Sound</span>
-                    </span>
-                  )}
+                <div className="flex items-center gap-2 mt-2">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wide">{t('profile.timeLabel', 'Time:')}</span>
+                  <input
+                    type="time"
+                    value={checkinReminderTime}
+                    onChange={(e) => setCheckinReminderTime(e.target.value)}
+                    className="px-2 py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono font-bold text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-primary focus:outline-none"
+                  />
                 </div>
               </div>
               <div className="col-span-2 sm:col-span-2 flex justify-center">
@@ -940,6 +898,13 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
               // Synchronize report upload reminders schedule
               scheduleReportUploadReminders();
 
+              if (token) {
+                MotivationService.updatePreferences(apiUrl, token, {
+                  dailyMotivationTime,
+                  dailyMotivationEnabled: notifPrefs.push.dailyMotivation !== false
+                }).catch(() => {});
+              }
+
               const success = await updateProfile({
                 notificationPreferences: {
                   ...notifPrefs,
@@ -952,7 +917,10 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
                 },
                 checkinReminderTime,
                 dailyMotivationTime,
-                dailyMotivationEnabled: notifPrefs.push.dailyMotivation !== false
+                dailyMotivationEnabled: notifPrefs.push.dailyMotivation !== false,
+                habitsReminderTime,
+                biomarkersReminderTime,
+                reportUploadReminderTime
               } as any);
 
               if (success) {

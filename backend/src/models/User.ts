@@ -53,6 +53,9 @@ export interface IUser extends Document {
   lastCheckinReminderSentAt?: Date;
   dailyMotivationTime?: string;
   dailyMotivationEnabled?: boolean;
+  habitsReminderTime?: string;
+  biomarkersReminderTime?: string;
+  reportUploadReminderTime?: string;
   lastDailyMotivationSentAt?: Date;
   lastDailyMotivationViewedAt?: Date;
   dailyMotivationDayOffset?: number;
@@ -130,6 +133,9 @@ const userSchema = new Schema<IUser>(
     lastCheckinReminderSentAt: { type: Date },
     dailyMotivationTime: { type: String, default: '08:00' },
     dailyMotivationEnabled: { type: Boolean, default: true },
+    habitsReminderTime: { type: String, default: '07:30' },
+    biomarkersReminderTime: { type: String, default: '14:00' },
+    reportUploadReminderTime: { type: String, default: '10:00' },
     lastDailyMotivationSentAt: { type: Date },
     lastDailyMotivationViewedAt: { type: Date },
     dailyMotivationDayOffset: { type: Number, default: 0 },
