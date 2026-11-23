@@ -23,22 +23,22 @@ export class AppHealthSyncService {
         googleStatus: 'AUTHENTICATED',
         appleStatus: 'AUTHENTICATED',
         androidVersionRules: {
-          latestReleasedVersion: '5.29.0',
-          latestBuildNumber: '93',
+          latestReleasedVersion: '6.3.9',
+          latestBuildNumber: '131',
           minSupportedVersion: '5.20.0',
-          recommendedVersion: '5.29.0',
+          recommendedVersion: '6.3.9',
           forceUpdate: false,
           updateUrl: 'https://play.google.com/store/apps/details?id=com.mitoreboot.app',
-          releaseNotes: 'Stability updates, clinical coaching, and doctor consultation features'
+          releaseNotes: 'Gentle reminder alerts, customizable check-in timings, habit notification enhancements, and performance optimizations.'
         },
         iosVersionRules: {
-          latestReleasedVersion: '5.29.0',
-          latestBuildNumber: '95',
+          latestReleasedVersion: '6.3.9',
+          latestBuildNumber: '131',
           minSupportedVersion: '5.20.0',
-          recommendedVersion: '5.29.0',
+          recommendedVersion: '6.3.9',
           forceUpdate: false,
           updateUrl: 'https://apps.apple.com/app/mitoreboot/id6783705985',
-          releaseNotes: 'Stability updates, clinical coaching, and doctor consultation features'
+          releaseNotes: 'Gentle reminder alerts, customizable check-in timings, habit notification enhancements, and performance optimizations.'
         }
       });
     }

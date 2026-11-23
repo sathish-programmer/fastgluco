@@ -55,7 +55,7 @@ const versionRuleSchema = new Schema<IVersionRule>(
     recommendedVersion: { type: String, default: '5.28.0' },
     forceUpdate: { type: Boolean, default: false },
     updateUrl: { type: String, default: 'https://play.google.com/store/apps/details?id=com.mitoreboot.app' },
-    releaseNotes: { type: String, default: 'Performance improvements, metabolic telemetry, and stability updates.' },
+    releaseNotes: { type: String, default: 'Gentle reminder alerts, customizable check-in timings, habit notification enhancements, and performance optimizations.' },
     lastReleaseDate: { type: Date, default: Date.now }
   },
   { _id: false }
@@ -96,25 +96,25 @@ const appHealthConfigSchema = new Schema<IAppHealthConfig>(
     androidVersionRules: {
       type: versionRuleSchema,
       default: () => ({
-        latestReleasedVersion: '5.29.0',
-        latestBuildNumber: '93',
+        latestReleasedVersion: '6.3.9',
+        latestBuildNumber: '131',
         minSupportedVersion: '5.20.0',
-        recommendedVersion: '5.29.0',
+        recommendedVersion: '6.3.9',
         forceUpdate: false,
         updateUrl: 'https://play.google.com/store/apps/details?id=com.mitoreboot.app',
-        releaseNotes: 'Stability updates, clinical coaching, and doctor consultation features'
+        releaseNotes: 'Gentle reminder alerts, customizable check-in timings, habit notification enhancements, and performance optimizations.'
       })
     },
     iosVersionRules: {
       type: versionRuleSchema,
       default: () => ({
-        latestReleasedVersion: '5.29.0',
-        latestBuildNumber: '95',
+        latestReleasedVersion: '6.3.9',
+        latestBuildNumber: '131',
         minSupportedVersion: '5.20.0',
-        recommendedVersion: '5.29.0',
+        recommendedVersion: '6.3.9',
         forceUpdate: false,
         updateUrl: 'https://apps.apple.com/app/mitoreboot/id6783705985',
-        releaseNotes: 'Stability updates, clinical coaching, and doctor consultation features'
+        releaseNotes: 'Gentle reminder alerts, customizable check-in timings, habit notification enhancements, and performance optimizations.'
       })
     },
 
