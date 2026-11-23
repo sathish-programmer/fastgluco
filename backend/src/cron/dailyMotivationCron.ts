@@ -1,5 +1,6 @@
 import { User } from '../models/User';
 import { FCMService } from '../services/fcmService';
+import { EmailService } from '../services/emailService';
 import { getDailyMotivationForUser } from '../data/dailyMotivationData';
 
 export class DailyMotivationCron {
@@ -26,7 +27,7 @@ export class DailyMotivationCron {
         isDeleted: false,
         dailyMotivationEnabled: { $ne: false }
       }).select(
-        '_id name createdAt notificationPreferences dailyMotivationTime dailyMotivationEnabled ' +
+        '_id name email createdAt notificationPreferences dailyMotivationTime dailyMotivationEnabled ' +
         'lastDailyMotivationSentAt lastDailyMotivationViewedAt dailyMotivationDayOffset dailyMotivationStartDate'
       );
 
@@ -87,23 +88,36 @@ export class DailyMotivationCron {
             user.dailyMotivationDayOffset || 0
           );
 
-          // 4. Send rich FCM Push Notification
-          const sent = await FCMService.sendNotificationToUser(user._id.toString(), {
-            title: `Mito Reboot • Day ${dayNumber}`,
-            body: text,
-            type: 'DailyMotivation',
-            data: {
-              route: 'DailyMotivation',
-              notificationType: 'DailyMotivation',
-              dayNumber: String(dayNumber),
-              message: text
-            }
-          });
+          let didSend = false;
 
-          if (sent) {
+          // 4. Send rich FCM Push Notification
+          if (pushPrefs?.dailyMotivation !== false) {
+            const sent = await FCMService.sendNotificationToUser(user._id.toString(), {
+              title: `Mito Reboot • Day ${dayNumber}`,
+              body: text,
+              type: 'DailyMotivation',
+              data: {
+                route: 'DailyMotivation',
+                notificationType: 'DailyMotivation',
+                dayNumber: String(dayNumber),
+                message: text
+              }
+            });
+            if (sent) didSend = true;
+          }
+
+          // 5. Send Email if user enabled Email or SMS
+          const prefs = user.notificationPreferences || {};
+          const emailOrSmsEnabled = prefs.email?.dailyMotivation === true || prefs.sms?.dailyMotivation === true;
+          if (emailOrSmsEnabled && user.email) {
+            EmailService.sendDailyMotivationEmail(user.email, user.name || 'Valued Member', dayNumber, text).catch(console.error);
+            didSend = true;
+          }
+
+          if (didSend) {
             user.lastDailyMotivationSentAt = now;
             await user.save();
-            console.log(`[DailyMotivationCron] Sent Day ${dayNumber} motivation push to user ${user._id}`);
+            console.log(`[DailyMotivationCron] Sent Day ${dayNumber} motivation alert to user ${user._id}`);
           }
         } catch (userErr) {
           console.error(`[DailyMotivationCron] Error processing user ${user._id}:`, userErr);

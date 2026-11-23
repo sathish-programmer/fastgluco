@@ -881,11 +881,6 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
               </div>
             </div>
 
-            {/* Explanatory channel note */}
-            <div className="pt-2 text-[11px] text-slate-400 dark:text-slate-500 leading-relaxed border-t border-slate-100 dark:border-slate-800">
-              <span>* <strong>Push</strong> &amp; <strong>Email</strong> alerts trigger actively based on your configured timings. <strong>SMS</strong> options are saved to your preferences (SMS is currently strictly reserved for login OTPs to prevent carrier spam; no promotional SMS is sent).</span>
-            </div>
-
           </div>
 
           {/* Dedicated Save Button */}

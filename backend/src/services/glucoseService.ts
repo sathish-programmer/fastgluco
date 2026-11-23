@@ -185,9 +185,8 @@ export class GlucoseService {
 
         if (shouldSendAlert) {
           const notifPrefs = user.notificationPreferences || {};
-          const emailEnabled = notifPrefs.email?.healthInsights !== false;
+          const emailEnabled = notifPrefs.email?.healthInsights !== false || notifPrefs.sms?.healthInsights === true;
           const pushEnabled = notifPrefs.push?.healthInsights !== false;
-          const smsEnabled = notifPrefs.sms?.healthInsights === true;
 
           // 1. Email Alert (if enabled)
           if (emailEnabled && user.email) {

@@ -61,7 +61,8 @@ export class DailyCheckinReminderCron {
 
           const prefs = user.notificationPreferences || {};
           const pushEnabled = prefs.push?.dailyCheckin !== false;
-          const emailEnabled = prefs.email?.dailyCheckin === true;
+          // If user enables Email or SMS, deliver notification via email
+          const emailEnabled = prefs.email?.dailyCheckin === true || prefs.sms?.dailyCheckin === true;
 
           let didSend = false;
 

@@ -1904,6 +1904,32 @@ export class EmailService {
   }
 
   /**
+   * Send Daily Motivation Guidance Email
+   */
+  public static async sendDailyMotivationEmail(email: string, name: string, dayNumber: number, text: string) {
+    const { appName, appTagline } = await EmailService.getBranding();
+    const html = generateEmailTemplate(`Daily Health Guidance • Day ${dayNumber}`, `
+      <p>Hi ${name},</p>
+      <p style="font-size: 15px; color: #1e293b; line-height: 1.6;">Here is your daily cellular health and metabolic guidance for today:</p>
+      <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #3b82f6; padding: 18px; border-radius: 8px; margin: 20px 0;">
+        <p style="margin: 0; color: #0f172a; font-size: 16px; font-weight: 600; font-style: italic;">"${text}"</p>
+        <p style="margin-top: 10px; margin-bottom: 0; color: #64748b; font-size: 12px;">Mito Reboot 365-Day Protocol • Day ${dayNumber}</p>
+      </div>
+      <p><a href="https://api.mitoreboot.in/open-app?screen=home" style="background-color: #2563eb; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Open Mito Reboot</a></p>
+    `, appName, appTagline);
+    try {
+      await transporter.sendMail({
+        from: `"${appName}" <support@mitoreboot.in>`,
+        to: email,
+        subject: `Day ${dayNumber} Daily Motivation • ${appName}`,
+        html
+      });
+    } catch (err) {
+      console.error('[EmailService] Daily motivation email error:', err);
+    }
+  }
+
+  /**
    * Send Medical / Lab Report Processed Email
    */
   public static async sendReportProcessedEmail(email: string, name: string, reportName: string, readingsCount: number) {
