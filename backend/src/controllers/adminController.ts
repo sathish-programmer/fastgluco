@@ -2433,7 +2433,7 @@ export class AdminController {
           effectiveVerificationStatus: effectiveStatus,
           verifiedVia: resolvedVerifiedVia,
           apnsStatus: log.apnsStatus || (log.platform === 'ios' && log.fallbackReason ? 'TIMEOUT_OR_UNAVAILABLE' : null),
-          recaptchaStatus: log.recaptchaStatus || (log.fallbackReason === 'FIREBASE_VERIFICATION_FAILED' ? 'SDK_NOT_LINKED_OR_FAILED' : null)
+          recaptchaStatus: log.recaptchaStatus || (log.failureCategory ? log.failureCategory : (log.fallbackReason === 'FIREBASE_VERIFICATION_FAILED' ? 'FAILED' : null))
         };
       });
 

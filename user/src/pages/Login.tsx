@@ -248,13 +248,40 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
         console.warn('[Firebase Auth] Code was already sent or fallback already dispatched. Skipping duplicate.');
         return;
       }
+
+      const isIOS = Capacitor.getPlatform() === 'ios';
+      const e164 = buildE164(mobileNumberRef.current);
+
+      // On iOS: Before giving up on Firebase and falling back to backend SMS gateway,
+      // attempt in-app Web Firebase with RecaptchaVerifier
+      if (isIOS && e164) {
+        try {
+          console.log('[Firebase Auth] iOS Native phoneVerificationFailed, attempting in-app Web Firebase Recaptcha...');
+          const verifier = getRecaptchaVerifier();
+          const confirmation = await signInWithPhoneNumber(auth, e164, verifier);
+          codeSentRef.current = true;
+          userInitiatedSendRef.current = false;
+          otpProviderRef.current = 'FIREBASE';
+          setOtpProvider('FIREBASE');
+          setConfirmationResult(confirmation);
+          window.confirmationResult = confirmation;
+          setDeliveryMethod('sms_and_email');
+          setScreen('otp');
+          setTimer(60);
+          setLoading(false);
+          showToast(t('auth.codeSentToBoth', 'Verification code sent to your Mobile & Email'), 'success');
+          setTimeout(() => otpInputRef.current?.focus(), 100);
+          return;
+        } catch (webFbErr: any) {
+          console.warn('[Firebase Auth] iOS in-app Web Firebase reCAPTCHA also failed:', webFbErr);
+        }
+      }
+
       fallbackTriggeredRef.current = true;
 
       // Seamless fallback to Backend OTP (Fast2SMS on iOS, Email on Android)
-      const isIOS = Capacitor.getPlatform() === 'ios';
       console.log(`[Firebase Auth] ${isIOS ? 'iOS' : 'Android'} phoneVerificationFailed: Triggering backup OTP fallback...`);
       try {
-        const e164 = buildE164(mobileNumberRef.current);
         if (e164 && emailRef.current) {
           otpProviderRef.current = 'FAST2SMS';
           setOtpProvider('FAST2SMS');
