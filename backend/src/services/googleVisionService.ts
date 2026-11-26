@@ -73,6 +73,16 @@ const FOOD_LABEL_MAP: Record<string, string> = {
   'parantha': 'Paratha',
   'naan': 'Naan',
 
+  // Sauces & Dips
+  'marinara sauce': 'Marinara Sauce',
+  'marinara': 'Marinara Sauce',
+  'tomato sauce': 'Tomato Sauce',
+  'pasta sauce': 'Marinara Sauce',
+  'dipping sauce': 'Marinara Sauce',
+  'dip': 'Marinara Sauce',
+  'tomato salsa': 'Tomato Salsa',
+  'salsa': 'Tomato Salsa',
+
   // Curries & Sides
   'sambar': 'Sambar',
   'dal': 'Dal',
@@ -192,9 +202,10 @@ const IGNORED_LABELS = new Set([
 // Food families for parent-child / competing synonym suppression
 const FOOD_FAMILIES = [
   ['bread', 'toast', 'garlic bread', 'cheese garlic bread', 'cheeze garlic bread', 'cheesy garlic bread', 'sandwich', 'bruschetta', 'crostini', 'cicchetti', 'bun', 'bagel', 'roti', 'naan', 'paratha', 'chapati', 'kulcha', 'phulka', 'rye', 'cheese', 'roll', 'rolls', 'dinner rolls', 'herb dinner rolls'],
+  ['marinara sauce', 'marinara', 'tomato sauce', 'pasta sauce', 'dipping sauce', 'salsa', 'dip', 'chutney', 'sambar', 'raita', 'hummus', 'guacamole'],
   ['rice', 'biryani', 'pulao', 'pilaf', 'fried rice'],
   ['dosa', 'dosai', 'idli', 'idly', 'uttapam', 'appam', 'vada', 'medu vada'],
-  ['curry', 'gravy', 'dal', 'sambar', 'korma', 'masala', 'paneer', 'chutney'],
+  ['curry', 'gravy', 'dal', 'sambar', 'korma', 'masala', 'paneer'],
   ['chicken', 'poultry', 'mutton', 'lamb', 'beef', 'pork'],
   ['fish', 'prawn', 'shrimp', 'crab', 'seafood'],
   ['egg', 'omelette'],
@@ -215,7 +226,8 @@ const FOOD_KEYWORDS = [
   'tea', 'coffee', 'juice', 'smoothie', 'shake', 'upma', 'poha', 'vada',
   'uttapam', 'puri', 'chapati', 'naan', 'gravy', 'kebab', 'tikka', 'steak',
   'fries', 'potato', 'cheese', 'beans', 'lentil', 'wrap', 'roll', 'oats',
-  'corn', 'mushroom', 'beef', 'pork', 'taco', 'burrito', 'pie', 'pasta'
+  'corn', 'mushroom', 'beef', 'pork', 'taco', 'burrito', 'pie', 'pasta',
+  'marinara', 'sauce', 'dip', 'salsa'
 ];
 
 export class GoogleVisionService {

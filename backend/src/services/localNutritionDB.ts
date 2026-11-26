@@ -110,7 +110,13 @@ const NUTRITION_DB: Record<string, NutritionData> = {
   'black coffee':{ calories: 5,  carbs: 1,  protein: 0, fat: 0, fiber: 0, servingSize: 240, servingUnit: 'ml', category: 'Beverages' },
   'fruit juice': { calories: 46, carbs: 11, protein: 1, fat: 0, fiber: 0, servingSize: 200, servingUnit: 'ml', category: 'Beverages' },
 
-  // ─── Vegetables & Salads ───────────────────────────────────
+  // ─── Vegetables, Salads & Sauces ───────────────────────────
+  'marinara sauce': { calories: 65, carbs: 10, protein: 2, fat: 2, fiber: 2, servingSize: 60,  servingUnit: 'g',  category: 'Vegetables' },
+  'marinara':       { calories: 65, carbs: 10, protein: 2, fat: 2, fiber: 2, servingSize: 60,  servingUnit: 'g',  category: 'Vegetables' },
+  'tomato sauce':   { calories: 60, carbs: 9,  protein: 2, fat: 2, fiber: 2, servingSize: 60,  servingUnit: 'g',  category: 'Vegetables' },
+  'pasta sauce':    { calories: 70, carbs: 11, protein: 2, fat: 2, fiber: 2, servingSize: 60,  servingUnit: 'g',  category: 'Vegetables' },
+  'tomato salsa':   { calories: 36, carbs: 7,  protein: 1, fat: 0, fiber: 2, servingSize: 60,  servingUnit: 'g',  category: 'Vegetables' },
+  'salsa':          { calories: 36, carbs: 7,  protein: 1, fat: 0, fiber: 2, servingSize: 60,  servingUnit: 'g',  category: 'Vegetables' },
   'garden salad':   { calories: 15, carbs: 3, protein: 1, fat: 0, fiber: 1, servingSize: 100, servingUnit: 'g',  category: 'Vegetables' },
   'vegetable soup': { calories: 42, carbs: 8, protein: 2, fat: 1, fiber: 2, servingSize: 250, servingUnit: 'ml', category: 'Vegetables' },
 };

@@ -96,25 +96,25 @@ const appHealthConfigSchema = new Schema<IAppHealthConfig>(
     androidVersionRules: {
       type: versionRuleSchema,
       default: () => ({
-        latestReleasedVersion: '6.3.9',
-        latestBuildNumber: '131',
+        latestReleasedVersion: '6.4.1',
+        latestBuildNumber: '133',
         minSupportedVersion: '5.20.0',
-        recommendedVersion: '6.3.9',
+        recommendedVersion: '6.4.1',
         forceUpdate: false,
         updateUrl: 'https://play.google.com/store/apps/details?id=com.mitoreboot.app',
-        releaseNotes: 'Gentle reminder alerts, customizable check-in timings, habit notification enhancements, and performance optimizations.'
+        releaseNotes: 'Enhanced AI food scanner with composite dish and sauce detection, uncropped meal photo views, and modernized nutrition details.'
       })
     },
     iosVersionRules: {
       type: versionRuleSchema,
       default: () => ({
-        latestReleasedVersion: '6.3.9',
-        latestBuildNumber: '131',
+        latestReleasedVersion: '6.4.1',
+        latestBuildNumber: '133',
         minSupportedVersion: '5.20.0',
-        recommendedVersion: '6.3.9',
+        recommendedVersion: '6.4.1',
         forceUpdate: false,
         updateUrl: 'https://apps.apple.com/app/mitoreboot/id6783705985',
-        releaseNotes: 'Gentle reminder alerts, customizable check-in timings, habit notification enhancements, and performance optimizations.'
+        releaseNotes: 'Enhanced AI food scanner with composite dish and sauce detection, uncropped meal photo views, and modernized nutrition details.'
       })
     },
 
