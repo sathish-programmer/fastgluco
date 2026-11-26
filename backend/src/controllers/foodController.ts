@@ -104,6 +104,7 @@ export class FoodController {
         quantity,
         unit,
         loggedAt,
+        imageUrl,
         isExternal,
         userConfirmed,
         baseCalories,
@@ -161,7 +162,8 @@ export class FoodController {
         fiber: fiber || 0,
         quantity,
         unit,
-        loggedAt: logTime
+        loggedAt: logTime,
+        imageUrl: imageUrl ? imageUrl.trim() : undefined
       });
 
       await log.save();
@@ -228,7 +230,7 @@ export class FoodController {
     try {
       const userId = req.user?.id;
       const { id } = req.params;
-      const { name, category, mealType, calories, carbs, protein, fat, fiber, quantity, unit, loggedAt } = req.body;
+      const { name, category, mealType, calories, carbs, protein, fat, fiber, quantity, unit, loggedAt, imageUrl } = req.body;
 
       if (!name || !category || !mealType || calories === undefined || carbs === undefined || protein === undefined || fat === undefined || !quantity || !unit) {
         return res.status(400).json({ message: 'Missing required fields for meal updating.' });
@@ -249,6 +251,9 @@ export class FoodController {
       log.fiber = fiber !== undefined ? fiber : 0;
       log.quantity = quantity;
       log.unit = unit;
+      if (imageUrl !== undefined) {
+        log.imageUrl = imageUrl ? imageUrl.trim() : undefined;
+      }
       if (loggedAt) {
         log.loggedAt = new Date(loggedAt);
       }

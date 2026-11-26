@@ -549,7 +549,8 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
       fiber: editBaseFiber,
       quantity: parseFloat(editQuantity as any) || 1,
       unit: editUnit,
-      loggedAt: loggedAtStr
+      loggedAt: loggedAtStr,
+      imageUrl: editingLog.imageUrl
     };
 
     try {
@@ -749,14 +750,21 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
           data.items.forEach((item: any, idx: number) => {
             const isCount = item.portionType === 'count';
             initialStates[idx] = {
-              enabled: true,
+              enabled: idx === 0, // Default: only check the primary detected food item
               portionType: isCount ? '1' : '100',
               customGrams: isCount ? 1 : 100
             };
           });
         }
         setScannedItemsState(initialStates);
-        showToast(`AI successfully detected ${data.items ? data.items.length : 0} items!`, 'success');
+        const detectedCount = data.items ? data.items.length : 0;
+        if (detectedCount === 1) {
+          showToast(`AI identified: ${data.items[0]?.foodName || 'Food Item'}!`, 'success');
+        } else if (detectedCount > 1) {
+          showToast(`AI detected ${detectedCount} items (primary selected).`, 'success');
+        } else {
+          showToast('No distinct items detected.', 'error');
+        }
       } else {
         setScanError(data.message || 'AI scanning failed. Please try another image.');
       }
@@ -825,7 +833,8 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
           fiber: (item.fiber || 0) / baseServingSize,
           quantity: grams,
           unit: item.servingUnit === 'ml' ? 'ml' : 'g',
-          loggedAt: new Date(scanLoggedAt).toISOString()
+          loggedAt: new Date(scanLoggedAt).toISOString(),
+          imageUrl: scanResult.imageUrl
         };
 
         // FatSecret items: send confirmation signal to backend so it saves to FoodMaster
@@ -1474,9 +1483,23 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                   className="bg-white dark:bg-slate-900 p-4 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-[0_12px_24px_rgba(0,0,0,0.02)] flex items-center justify-between transition-all hover:shadow-md"
                 >
                   <div className="flex items-center space-x-3.5 max-w-[82%]">
-                    <div className={`p-3 border rounded-2xl shrink-0 ${getCategoryIconContainerClass(log.category)}`}>
-                      {getCategoryIcon(log.category)}
-                    </div>
+                    {log.imageUrl ? (
+                      <div className="w-12 h-12 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 shrink-0 bg-slate-100 dark:bg-slate-800">
+                        <img
+                          src={log.imageUrl.startsWith('http') ? log.imageUrl : `${apiUrl.replace(/\/api\/?$/, '')}${log.imageUrl}`}
+                          alt={log.name}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            // Fallback to category icon container on load error
+                            (e.target as HTMLElement).style.display = 'none';
+                          }}
+                        />
+                      </div>
+                    ) : (
+                      <div className={`p-3 border rounded-2xl shrink-0 ${getCategoryIconContainerClass(log.category)}`}>
+                        {getCategoryIcon(log.category)}
+                      </div>
+                    )}
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
                         <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100 tracking-tight leading-tight">{log.name}</h4>
@@ -1549,7 +1572,20 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                 </button>
               </div>
 
-              <form onSubmit={handleEditSubmit} className="p-6 space-y-4">
+              <form onSubmit={handleEditSubmit} className="p-6 space-y-4 max-h-[85vh] overflow-y-auto">
+                {editingLog.imageUrl && (
+                  <div className="relative w-full h-44 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 shadow-inner group">
+                    <img
+                      src={editingLog.imageUrl.startsWith('http') ? editingLog.imageUrl : `${apiUrl.replace(/\/api\/?$/, '')}${editingLog.imageUrl}`}
+                      alt={editingLog.name}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute bottom-2 left-2 px-2.5 py-1 bg-slate-900/70 backdrop-blur-md rounded-xl text-[10px] font-bold text-white flex items-center gap-1.5 shadow-sm">
+                      <Camera className="w-3.5 h-3.5 text-white" />
+                      <span>{t('foodLog.scannedMealPhoto', 'Scanned Meal Photo')}</span>
+                    </div>
+                  </div>
+                )}
                 <div>
                   <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">{t('foodLog.mealName', 'Meal Name')}</label>
                   <input

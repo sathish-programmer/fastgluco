@@ -4,109 +4,269 @@ import axios from 'axios';
 /**
  * Direct Vision label → specific food name mapping.
  * Covers common food labels Google Vision returns for Indian + global foods.
- * ANY label not in this map that sounds food-like will still pass through as-is.
  */
 const FOOD_LABEL_MAP: Record<string, string> = {
-  // Breads
-  'bread toast': 'Bread Toast', 'toast': 'Bread Toast',
-  'sandwich': 'Grilled Sandwich', 'grilled sandwich': 'Grilled Sandwich',
-  'bread': 'Bread', 'whole wheat bread': 'Whole Wheat Bread',
-  'potato bread': 'Bread', 'white bread': 'Bread',
-  'hamburger': 'Burger', 'burger': 'Burger',
+  // Breads & Bakery
+  'garlic bread': 'Garlic Bread',
+  'garlic toast': 'Garlic Bread',
+  'bread toast': 'Bread Toast',
+  'toast': 'Bread Toast',
+  'bruschetta': 'Garlic Bread',
+  'crostini': 'Garlic Bread',
+  'sandwich': 'Grilled Sandwich',
+  'grilled sandwich': 'Grilled Sandwich',
+  'bread': 'Bread',
+  'whole wheat bread': 'Whole Wheat Bread',
+  'potato bread': 'Bread',
+  'white bread': 'Bread',
+  'hamburger': 'Burger',
+  'burger': 'Burger',
   'pizza': 'Pizza',
+
   // Rice & Biryani
-  'rice': 'Cooked Rice', 'cooked rice': 'Cooked Rice', 'steamed rice': 'Cooked Rice',
-  'white rice': 'Cooked Rice', 'basmati rice': 'Cooked Rice',
+  'rice': 'Cooked Rice',
+  'cooked rice': 'Cooked Rice',
+  'steamed rice': 'Cooked Rice',
+  'white rice': 'Cooked Rice',
+  'basmati rice': 'Cooked Rice',
   'fried rice': 'Fried Rice',
-  'biryani': 'Chicken Biryani', 'chicken biryani': 'Chicken Biryani',
-  'mutton biryani': 'Chicken Biryani', 'veg biryani': 'Chicken Biryani',
+  'biryani': 'Chicken Biryani',
+  'chicken biryani': 'Chicken Biryani',
+  'mutton biryani': 'Chicken Biryani',
+  'veg biryani': 'Chicken Biryani',
+
   // Indian Breakfast
-  'idli': 'Idli', 'idly': 'Idli', 'rice cake': 'Idli', 'steamed rice cake': 'Idli',
-  'dosa': 'Plain Dosa', 'dosai': 'Plain Dosa', 'masala dosa': 'Masala Dosa',
-  'upma': 'Upma', 'poha': 'Poha', 'puffed rice': 'Poha',
-  'vada': 'Medu Vada', 'medu vada': 'Medu Vada', 'vadai': 'Medu Vada',
+  'idli': 'Idli',
+  'idly': 'Idli',
+  'rice cake': 'Idli',
+  'steamed rice cake': 'Idli',
+  'dosa': 'Plain Dosa',
+  'dosai': 'Plain Dosa',
+  'masala dosa': 'Masala Dosa',
+  'upma': 'Upma',
+  'poha': 'Poha',
+  'puffed rice': 'Poha',
+  'vada': 'Medu Vada',
+  'medu vada': 'Medu Vada',
+  'vadai': 'Medu Vada',
   'uttapam': 'Uttapam',
-  'puri': 'Puri', 'poori': 'Puri',
+  'puri': 'Puri',
+  'poori': 'Puri',
+
   // Flatbreads
-  'roti': 'Roti', 'chapati': 'Chapati', 'chapathi': 'Chapati',
-  'paratha': 'Paratha', 'parantha': 'Paratha',
+  'roti': 'Roti',
+  'chapati': 'Chapati',
+  'chapathi': 'Chapati',
+  'paratha': 'Paratha',
+  'parantha': 'Paratha',
   'naan': 'Naan',
+
   // Curries & Sides
-  'sambar': 'Sambar', 'dal': 'Dal', 'lentil soup': 'Dal',
-  'curry': 'Vegetable Curry', 'gravy': 'Vegetable Curry',
-  'chutney': 'Coconut Chutney', 'coconut chutney': 'Coconut Chutney',
+  'sambar': 'Sambar',
+  'dal': 'Dal',
+  'lentil soup': 'Dal',
+  'curry': 'Vegetable Curry',
+  'gravy': 'Vegetable Curry',
+  'chutney': 'Coconut Chutney',
+  'coconut chutney': 'Coconut Chutney',
   'tomato chutney': 'Coconut Chutney',
-  'raita': 'Curd', 'raitha': 'Curd',
-  'paneer': 'Paneer Curry', 'paneer butter masala': 'Paneer Curry',
+  'raita': 'Curd',
+  'raitha': 'Curd',
+  'paneer': 'Paneer Curry',
+  'paneer butter masala': 'Paneer Curry',
   'palak paneer': 'Paneer Curry',
+
   // Chicken & Meat
-  'chicken': 'Chicken Curry', 'grilled chicken': 'Grilled Chicken',
-  'chicken curry': 'Chicken Curry', 'chicken tikka': 'Grilled Chicken',
-  'chicken masala': 'Chicken Curry', 'butter chicken': 'Chicken Curry',
-  'mutton': 'Chicken Curry', 'meat': 'Chicken Curry',
+  'chicken': 'Chicken Curry',
+  'grilled chicken': 'Grilled Chicken',
+  'chicken curry': 'Chicken Curry',
+  'chicken tikka': 'Grilled Chicken',
+  'chicken masala': 'Chicken Curry',
+  'butter chicken': 'Chicken Curry',
+  'mutton': 'Chicken Curry',
+  'meat': 'Chicken Curry',
+
   // Fish & Seafood
-  'fish': 'Fish Curry', 'fish curry': 'Fish Curry',
-  'fried fish': 'Fried Fish', 'fish fry': 'Fried Fish',
-  'grilled fish': 'Fried Fish', 'roasted fish': 'Fried Fish',
-  'seafood': 'Fish Curry', 'prawn': 'Prawns Curry',
-  'shrimp': 'Prawns Curry', 'crab': 'Fish Curry',
+  'fish': 'Fish Curry',
+  'fish curry': 'Fish Curry',
+  'fried fish': 'Fried Fish',
+  'fish fry': 'Fried Fish',
+  'grilled fish': 'Fried Fish',
+  'roasted fish': 'Fried Fish',
+  'seafood': 'Fish Curry',
+  'prawn': 'Prawns Curry',
+  'shrimp': 'Prawns Curry',
+  'crab': 'Fish Curry',
+
   // Eggs
-  'egg': 'Boiled Egg', 'boiled egg': 'Boiled Egg', 'fried egg': 'Egg Omelette',
-  'omelette': 'Egg Omelette', 'scrambled egg': 'Egg Omelette',
+  'egg': 'Boiled Egg',
+  'boiled egg': 'Boiled Egg',
+  'fried egg': 'Egg Omelette',
+  'omelette': 'Egg Omelette',
+  'scrambled egg': 'Egg Omelette',
+
   // Noodles & Pasta
-  'noodles': 'Noodles', 'noodle': 'Noodles',
-  'pasta': 'Pasta', 'spaghetti': 'Pasta',
-  // Snacks
-  'samosa': 'Samosa', 'pakora': 'Pakora', 'bhaji': 'Pakora',
-  'chips': 'Mixed Snacks', 'biscuit': 'Cookies', 'cookie': 'Cookies',
-  'cake': 'Cake', 'chocolate': 'Chocolate', 'ice cream': 'Ice Cream',
+  'noodles': 'Noodles',
+  'noodle': 'Noodles',
+  'pasta': 'Pasta',
+  'spaghetti': 'Pasta',
+
+  // Snacks & Sweets
+  'samosa': 'Samosa',
+  'pakora': 'Pakora',
+  'bhaji': 'Pakora',
+  'chips': 'Mixed Snacks',
+  'biscuit': 'Cookies',
+  'cookie': 'Cookies',
+  'cake': 'Cake',
+  'chocolate': 'Chocolate',
+  'ice cream': 'Ice Cream',
+
   // Fruits
-  'apple': 'Apple', 'banana': 'Banana', 'orange': 'Orange',
-  'mango': 'Mango', 'grapes': 'Fresh Fruit', 'fruit': 'Fresh Fruit',
-  'watermelon': 'Fresh Fruit', 'papaya': 'Fresh Fruit',
+  'apple': 'Apple',
+  'banana': 'Banana',
+  'orange': 'Orange',
+  'mango': 'Mango',
+  'grapes': 'Fresh Fruit',
+  'fruit': 'Fresh Fruit',
+  'watermelon': 'Fresh Fruit',
+  'papaya': 'Fresh Fruit',
+
   // Dairy & Drinks
-  'milk': 'Whole Milk', 'curd': 'Curd', 'yogurt': 'Curd',
-  'buttermilk': 'Curd', 'lassi': 'Curd',
-  'tea': 'Chai Tea', 'chai': 'Chai Tea', 'coffee': 'Black Coffee',
-  'juice': 'Fruit Juice', 'coconut water': 'Fruit Juice',
+  'milk': 'Whole Milk',
+  'curd': 'Curd',
+  'yogurt': 'Curd',
+  'buttermilk': 'Curd',
+  'lassi': 'Curd',
+  'tea': 'Chai Tea',
+  'chai': 'Chai Tea',
+  'coffee': 'Black Coffee',
+  'juice': 'Fruit Juice',
+  'coconut water': 'Fruit Juice',
+
   // Salads & Soups
-  'salad': 'Garden Salad', 'soup': 'Vegetable Soup',
+  'salad': 'Garden Salad',
+  'soup': 'Vegetable Soup',
 };
 
-// Labels to completely ignore (non-food items)
-const IGNORED_LABELS = [
+// Labels to completely ignore (non-food items, generic descriptors, noise)
+const IGNORED_LABELS = new Set([
   // Kitchen appliances & equipment
   'barbecue', 'toaster', 'home appliance', 'small appliance', 'kitchen appliance',
   'cooking', 'cookware', 'kitchen utensil', 'frying pan', 'appliance',
-  // Containers
+  // Containers & Tableware
   'plate', 'spoon', 'bowl', 'table', 'kitchen', 'dish', 'cutlery', 'tableware',
-  'container', 'pan', 'pot', 'wok', 'vessel', 'steel',
-  // Generic / abstract (these give false FatSecret results)
+  'container', 'pan', 'pot', 'wok', 'vessel', 'steel', 'serveware', 'platter',
+  'tray', 'saucer', 'cup', 'glass', 'fork', 'knife', 'chopsticks',
+  // Generic / abstract categories that cause false FatSecret lookups
   'food', 'ingredient', 'cuisine', 'recipe', 'meal', 'produce', 'plant', 'junk food',
-  'staple food', 'comfort food', 'street food', 'fast food',
-  // Non-food
+  'staple food', 'comfort food', 'street food', 'fast food', 'finger food',
+  'side dish', 'side', 'dessert', 'snack', 'sweet', 'sweets', 'gluten',
+  'baking', 'breakfast', 'lunch', 'dinner', 'appetizer', 'starter',
+  'vegetarian cuisine', 'meat',
+  // Non-food materials & objects
   'furniture', 'wood', 'metal', 'plastic', 'room', 'floor', 'wall', 'counter',
-  'surface', 'textile', 'cloth', 'leaf', 'banana leaf', 'person', 'hand',
+  'countertop', 'surface', 'textile', 'cloth', 'leaf', 'banana leaf', 'person', 'hand',
   'bottle', 'can', 'packaging', 'wrapper', 'bag', 'box',
+  // UI & Technology noise (screenshots/photos of screens)
+  'gadget', 'screenshot', 'software', 'multimedia', 'mobile phone', 'communication device',
+  'electronic device', 'device', 'display device', 'smartphone', 'take-out food', 'take out',
+  'takeaway',
   // Alcoholic
   'alcoholic', 'wine', 'beer', 'spirits', 'liquor',
+]);
+
+// Food families for parent-child / competing synonym suppression
+const FOOD_FAMILIES = [
+  ['bread', 'toast', 'garlic bread', 'sandwich', 'bruschetta', 'crostini', 'cicchetti', 'bun', 'bagel', 'roti', 'naan', 'paratha', 'chapati', 'kulcha', 'phulka', 'rye'],
+  ['rice', 'biryani', 'pulao', 'pilaf', 'fried rice'],
+  ['dosa', 'dosai', 'idli', 'idly', 'uttapam', 'appam', 'vada', 'medu vada'],
+  ['curry', 'gravy', 'dal', 'sambar', 'korma', 'masala', 'paneer', 'chutney'],
+  ['chicken', 'poultry', 'mutton', 'lamb', 'beef', 'pork'],
+  ['fish', 'prawn', 'shrimp', 'crab', 'seafood'],
+  ['egg', 'omelette'],
+  ['salad'],
+  ['soup'],
+  ['pasta', 'spaghetti', 'noodle', 'noodles', 'macaroni'],
+  ['pizza'],
+  ['burger', 'hamburger']
 ];
 
-// Words that indicate food-related labels we should include even if not in map
+// Common food keywords to ensure only authentic food items pass through
 const FOOD_KEYWORDS = [
-  'rice', 'bread', 'curry', 'chicken', 'fish', 'egg', 'dal', 'dosa', 'idli',
+  'bread', 'toast', 'rice', 'curry', 'chicken', 'fish', 'egg', 'dal', 'dosa', 'idli',
   'biryani', 'roti', 'paratha', 'sambar', 'chutney', 'paneer', 'mutton',
   'noodle', 'pasta', 'pizza', 'burger', 'sandwich', 'salad', 'soup',
   'fruit', 'vegetable', 'meat', 'seafood', 'prawn', 'shrimp',
-  'cake', 'cookie', 'chocolate', 'snack', 'sweet', 'dessert',
-  'milk', 'yogurt', 'curd', 'tea', 'coffee', 'juice',
-  'upma', 'poha', 'vada', 'uttapam', 'puri', 'chapati',
+  'cake', 'cookie', 'cookies', 'biscuit', 'chocolate', 'yogurt', 'curd', 'milk',
+  'tea', 'coffee', 'juice', 'smoothie', 'shake', 'upma', 'poha', 'vada',
+  'uttapam', 'puri', 'chapati', 'naan', 'gravy', 'kebab', 'tikka', 'steak',
+  'fries', 'potato', 'cheese', 'beans', 'lentil', 'wrap', 'roll', 'oats',
+  'corn', 'mushroom', 'beef', 'pork', 'taco', 'burrito', 'pie', 'pasta'
 ];
 
 export class GoogleVisionService {
   /**
+   * Check if text is non-food noise or generic category
+   */
+  private static isNoise(text: string): boolean {
+    const t = text.toLowerCase().trim();
+    if (IGNORED_LABELS.has(t)) return true;
+    if (t.startsWith('/m/')) return true;
+    if (t.endsWith(' cuisine')) return true;
+    if (t.length < 3) return true;
+    return false;
+  }
+
+  /**
+   * Strictly verify if a candidate string is an authentic food item
+   */
+  private static isFoodCandidate(text: string): boolean {
+    const lower = text.toLowerCase().trim();
+    if (this.isNoise(lower)) return false;
+    if (FOOD_LABEL_MAP[lower]) return true;
+    for (const key of Object.keys(FOOD_LABEL_MAP)) {
+      if (lower.includes(key)) return true;
+    }
+    for (const kw of FOOD_KEYWORDS) {
+      if (lower.includes(kw)) return true;
+    }
+    for (const family of FOOD_FAMILIES) {
+      if (family.some(term => lower.includes(term))) return true;
+    }
+    return false;
+  }
+
+  /**
+   * Normalize food name via FOOD_LABEL_MAP or title case
+   */
+  private static normalizeName(text: string): string {
+    const lower = text.toLowerCase().trim();
+    if (FOOD_LABEL_MAP[lower]) return FOOD_LABEL_MAP[lower];
+    for (const [key, val] of Object.entries(FOOD_LABEL_MAP)) {
+      if (lower === key || lower.includes(key)) return val;
+    }
+    return text.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  }
+
+  /**
+   * Determine if two food candidate strings belong to the same food family
+   */
+  private static shareFamily(a: string, b: string): boolean {
+    const al = a.toLowerCase();
+    const bl = b.toLowerCase();
+    for (const family of FOOD_FAMILIES) {
+      if (family.some(term => al.includes(term)) && family.some(term => bl.includes(term))) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
    * Detect food labels from a local image path using the Google Cloud Vision API.
-   * Returns all detected food items — no hardcoded combination logic.
+   * Utilizes bestGuessLabels for pinpoint single-dish recognition, and groups/suppresses
+   * competing synonym guesses so a plate never produces 4-5 overlapping bread/rice variations.
    */
   public static async detectFoodLabels(imagePath: string): Promise<Array<{ name: string; confidence: number }>> {
     try {
@@ -131,85 +291,104 @@ export class GoogleVisionService {
             image: { content: base64Image },
             features: [
               { type: 'LABEL_DETECTION', maxResults: 20 },
-              { type: 'WEB_DETECTION', maxResults: 10 }
+              { type: 'WEB_DETECTION', maxResults: 15 }
             ]
           }]
         }
       );
 
       const responseItem = response.data?.responses?.[0];
-      const labelAnnotations = responseItem?.labelAnnotations || [];
+      const bestGuess = responseItem?.webDetection?.bestGuessLabels?.[0]?.label;
       const webEntities = responseItem?.webDetection?.webEntities || [];
+      const labelAnnotations = responseItem?.labelAnnotations || [];
 
-      // Gather all raw labels
-      const rawLabels: Array<{ name: string; confidence: number }> = [
-        ...labelAnnotations.map((l: any) => ({
-          name: (l.description || '').toLowerCase().trim(),
-          confidence: (l.score || 0) * 100
-        })),
-        ...webEntities
-          .filter((e: any) => e.score > 0.4 && e.description)
-          .map((e: any) => ({
-            name: (e.description || '').toLowerCase().trim(),
-            confidence: e.score * 100
-          }))
-      ];
+      interface Candidate {
+        name: string;
+        rawName: string;
+        confidence: number;
+        priority: number; // 1 = bestGuess, 2 = webEntity, 3 = label
+      }
 
-      if (rawLabels.length === 0) {
-        console.warn('No labels returned from Google Vision API.');
+      const rawCandidates: Candidate[] = [];
+
+      // 1. Highest Priority: Google Vision Best Guess (pinpoint dish identification)
+      if (bestGuess && this.isFoodCandidate(bestGuess)) {
+        rawCandidates.push({
+          name: this.normalizeName(bestGuess),
+          rawName: bestGuess.toLowerCase().trim(),
+          confidence: 95,
+          priority: 1
+        });
+      }
+
+      // 2. High Priority: Web Entities (specific dish concepts)
+      for (const w of webEntities) {
+        if (!w.description || !this.isFoodCandidate(w.description)) continue;
+        if (w.score && w.score >= 0.5) {
+          rawCandidates.push({
+            name: this.normalizeName(w.description),
+            rawName: w.description.toLowerCase().trim(),
+            confidence: Math.round(w.score * 100),
+            priority: 2
+          });
+        }
+      }
+
+      // 3. Medium Priority: Label Annotations (general taxonomy tags)
+      for (const l of labelAnnotations) {
+        if (!l.description || !this.isFoodCandidate(l.description)) continue;
+        if (l.score && l.score >= 0.55) {
+          rawCandidates.push({
+            name: this.normalizeName(l.description),
+            rawName: l.description.toLowerCase().trim(),
+            confidence: Math.round(l.score * 100),
+            priority: 3
+          });
+        }
+      }
+
+      if (rawCandidates.length === 0) {
+        console.warn('No food candidates found in Google Vision output.');
         return [];
       }
 
-      // Process ALL labels independently — no break, accumulate all matches
-      const results: Array<{ name: string; confidence: number }> = [];
-      const seenNames = new Set<string>();
+      // 4. Smart Sibling & Parent Suppression:
+      // If candidates belong to the same food family or have substring overlap,
+      // retain ONLY the most specific / highest priority item.
+      const finalItems: Candidate[] = [];
 
-      for (const item of rawLabels) {
-        const nameLower = item.name;
+      for (const c of rawCandidates) {
+        const existingIndex = finalItems.findIndex(existing => {
+          const eName = existing.name.toLowerCase();
+          const cName = c.name.toLowerCase();
+          if (eName === cName) return true;
+          if (eName.includes(cName) || cName.includes(eName)) return true;
+          if (this.shareFamily(eName, cName)) return true;
+          return false;
+        });
 
-        // Skip if confidence too low
-        if (item.confidence < 55) continue;
+        if (existingIndex === -1) {
+          finalItems.push(c);
+        } else {
+          const existing = finalItems[existingIndex];
+          // Determine if current candidate is more specific or higher priority
+          const isCurrentBetter =
+            (c.priority < existing.priority) ||
+            (c.priority === existing.priority && c.name.split(' ').length > existing.name.split(' ').length) ||
+            (c.priority === existing.priority && c.confidence > existing.confidence);
 
-        // Skip non-food / ignored labels
-        if (IGNORED_LABELS.some(ignored => nameLower.includes(ignored))) continue;
-
-        // Check direct map first (most specific)
-        const mappedName = FOOD_LABEL_MAP[nameLower];
-        if (mappedName) {
-          if (!seenNames.has(mappedName)) {
-            seenNames.add(mappedName);
-            results.push({ name: mappedName, confidence: item.confidence });
-          }
-          continue;
-        }
-
-        // Check partial map match (e.g. "south indian idli" → find "idli" key)
-        let partialMatch: string | null = null;
-        for (const [key, value] of Object.entries(FOOD_LABEL_MAP)) {
-          if (nameLower.includes(key) || key.includes(nameLower)) {
-            partialMatch = value;
-            break;
-          }
-        }
-        if (partialMatch && !seenNames.has(partialMatch)) {
-          seenNames.add(partialMatch);
-          results.push({ name: partialMatch, confidence: item.confidence });
-          continue;
-        }
-
-        // Pass through if contains a food keyword (capitalize for display)
-        const hasFoodKeyword = FOOD_KEYWORDS.some(kw => nameLower.includes(kw));
-        if (hasFoodKeyword) {
-          const displayName = this.capitalize(nameLower);
-          if (!seenNames.has(displayName)) {
-            seenNames.add(displayName);
-            results.push({ name: displayName, confidence: item.confidence });
+          if (isCurrentBetter) {
+            finalItems[existingIndex] = c;
           }
         }
       }
 
-      // Sort by confidence, return top 5
-      const sorted = results.sort((a, b) => b.confidence - a.confidence).slice(0, 5);
+      // Sort by confidence, return top distinct food items (max 3 distinct items)
+      const sorted = finalItems
+        .sort((a, b) => b.confidence - a.confidence)
+        .slice(0, 3)
+        .map(i => ({ name: i.name, confidence: i.confidence }));
+
       console.log('GoogleVisionService detected food labels:', sorted.map(u => `${u.name} (${u.confidence.toFixed(0)}%)`));
       return sorted;
 
@@ -217,9 +396,5 @@ export class GoogleVisionService {
       console.error('Error in GoogleVisionService.detectFoodLabels:', error.message || error);
       return [];
     }
-  }
-
-  private static capitalize(str: string): string {
-    return str.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
   }
 }

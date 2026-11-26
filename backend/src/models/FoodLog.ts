@@ -13,6 +13,7 @@ export interface IFoodLog extends Document {
   quantity: number;
   unit: string;
   loggedAt: Date;
+  imageUrl?: string;
   notes?: string;
   feedback?: {
     isAccurate: boolean;
@@ -52,6 +53,7 @@ const foodLogSchema = new Schema<IFoodLog>(
     quantity: { type: Number, required: true, min: 0.1 },
     unit: { type: String, required: true },
     loggedAt: { type: Date, required: true, index: true },
+    imageUrl: { type: String, trim: true },
     notes: { type: String },
     feedback: {
       isAccurate: { type: Boolean },
