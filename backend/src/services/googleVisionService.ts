@@ -7,6 +7,11 @@ import axios from 'axios';
  */
 const FOOD_LABEL_MAP: Record<string, string> = {
   // Breads & Bakery
+  'cheese garlic bread': 'Cheese Garlic Bread',
+  'cheeze garlic bread': 'Cheese Garlic Bread',
+  'cheesy garlic bread': 'Cheese Garlic Bread',
+  'garlic cheese bread': 'Cheese Garlic Bread',
+  'cheese bread': 'Cheese Garlic Bread',
   'garlic bread': 'Garlic Bread',
   'garlic toast': 'Garlic Bread',
   'bread toast': 'Bread Toast',
@@ -22,6 +27,13 @@ const FOOD_LABEL_MAP: Record<string, string> = {
   'hamburger': 'Burger',
   'burger': 'Burger',
   'pizza': 'Pizza',
+
+  // Dairy & Cheese
+  'cheese': 'Cheese',
+  'cheddar cheese': 'Cheese',
+  'mozzarella cheese': 'Cheese',
+  'parmesan cheese': 'Cheese',
+  'cottage cheese': 'Paneer',
 
   // Rice & Biryani
   'rice': 'Cooked Rice',
@@ -163,7 +175,8 @@ const IGNORED_LABELS = new Set([
   'staple food', 'comfort food', 'street food', 'fast food', 'finger food',
   'side dish', 'side', 'dessert', 'snack', 'sweet', 'sweets', 'gluten',
   'baking', 'breakfast', 'lunch', 'dinner', 'appetizer', 'starter',
-  'vegetarian cuisine', 'meat',
+  'vegetarian cuisine', 'meat', 'vegetable', 'vegetables', 'condiment', 'spread',
+  'herb', 'herbs', 'butter', 'oil', 'garlic butter',
   // Non-food materials & objects
   'furniture', 'wood', 'metal', 'plastic', 'room', 'floor', 'wall', 'counter',
   'countertop', 'surface', 'textile', 'cloth', 'leaf', 'banana leaf', 'person', 'hand',
@@ -178,7 +191,7 @@ const IGNORED_LABELS = new Set([
 
 // Food families for parent-child / competing synonym suppression
 const FOOD_FAMILIES = [
-  ['bread', 'toast', 'garlic bread', 'sandwich', 'bruschetta', 'crostini', 'cicchetti', 'bun', 'bagel', 'roti', 'naan', 'paratha', 'chapati', 'kulcha', 'phulka', 'rye'],
+  ['bread', 'toast', 'garlic bread', 'cheese garlic bread', 'cheeze garlic bread', 'cheesy garlic bread', 'sandwich', 'bruschetta', 'crostini', 'cicchetti', 'bun', 'bagel', 'roti', 'naan', 'paratha', 'chapati', 'kulcha', 'phulka', 'rye', 'cheese', 'roll', 'rolls', 'dinner rolls', 'herb dinner rolls'],
   ['rice', 'biryani', 'pulao', 'pilaf', 'fried rice'],
   ['dosa', 'dosai', 'idli', 'idly', 'uttapam', 'appam', 'vada', 'medu vada'],
   ['curry', 'gravy', 'dal', 'sambar', 'korma', 'masala', 'paneer', 'chutney'],
@@ -243,8 +256,10 @@ export class GoogleVisionService {
   private static normalizeName(text: string): string {
     const lower = text.toLowerCase().trim();
     if (FOOD_LABEL_MAP[lower]) return FOOD_LABEL_MAP[lower];
-    for (const [key, val] of Object.entries(FOOD_LABEL_MAP)) {
-      if (lower === key || lower.includes(key)) return val;
+    // Sort keys by descending length so "cheese garlic bread" matches before "bread"
+    const sortedKeys = Object.keys(FOOD_LABEL_MAP).sort((a, b) => b.length - a.length);
+    for (const key of sortedKeys) {
+      if (lower === key || lower.includes(key)) return FOOD_LABEL_MAP[key];
     }
     return text.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
   }

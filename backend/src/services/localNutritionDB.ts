@@ -21,6 +21,10 @@ export interface NutritionData {
 
 const NUTRITION_DB: Record<string, NutritionData> = {
   // ─── Breads & Toasts ───────────────────────────────────────
+  'cheese garlic bread': { calories: 310, carbs: 35, protein: 12, fat: 14, fiber: 2, servingSize: 1, servingUnit: 'slice', category: 'Snacks' },
+  'cheesy garlic bread': { calories: 310, carbs: 35, protein: 12, fat: 14, fiber: 2, servingSize: 1, servingUnit: 'slice', category: 'Snacks' },
+  'garlic bread':        { calories: 265, carbs: 38, protein: 7,  fat: 9,  fiber: 2, servingSize: 1, servingUnit: 'slice', category: 'Snacks' },
+  'garlic toast':        { calories: 265, carbs: 38, protein: 7,  fat: 9,  fiber: 2, servingSize: 1, servingUnit: 'slice', category: 'Snacks' },
   'grilled sandwich': { calories: 250, carbs: 28, protein: 10, fat: 11, fiber: 2, servingSize: 100, servingUnit: 'g', category: 'Snacks' },
   'bread toast':      { calories: 270, carbs: 50, protein: 9,  fat: 4,  fiber: 2, servingSize: 1,   servingUnit: 'slice', category: 'Snacks' },
   'sandwich':         { calories: 250, carbs: 28, protein: 10, fat: 11, fiber: 2, servingSize: 100, servingUnit: 'g', category: 'Snacks' },
@@ -92,7 +96,12 @@ const NUTRITION_DB: Record<string, NutritionData> = {
   'mango':       { calories: 60, carbs: 15, protein: 1, fat: 0, fiber: 2, servingSize: 100, servingUnit: 'g',      category: 'Fruits' },
 
   // ─── Dairy ─────────────────────────────────────────────────
-  'whole milk': { calories: 61, carbs: 5, protein: 3,  fat: 3, fiber: 0, servingSize: 200, servingUnit: 'ml', category: 'Dairy' },
+  'cheese':            { calories: 350, carbs: 4.7, protein: 22.2, fat: 26.9, fiber: 0, servingSize: 100, servingUnit: 'g',  category: 'Dairy' },
+  'cheddar cheese':    { calories: 403, carbs: 1.3, protein: 24.9, fat: 33.1, fiber: 0, servingSize: 100, servingUnit: 'g',  category: 'Dairy' },
+  'mozzarella cheese': { calories: 254, carbs: 2.8, protein: 24.3, fat: 15.9, fiber: 0, servingSize: 100, servingUnit: 'g',  category: 'Dairy' },
+  'paneer':            { calories: 265, carbs: 3,   protein: 18,   fat: 21,   fiber: 0, servingSize: 100, servingUnit: 'g',  category: 'Dairy' },
+  'butter':            { calories: 717, carbs: 0.1, protein: 0.9,  fat: 81,   fiber: 0, servingSize: 10,  servingUnit: 'g',  category: 'Dairy' },
+  'whole milk':        { calories: 61,  carbs: 5,   protein: 3,    fat: 3,    fiber: 0, servingSize: 200, servingUnit: 'ml', category: 'Dairy' },
   'curd':       { calories: 98, carbs: 4, protein: 11, fat: 4, fiber: 0, servingSize: 100, servingUnit: 'g',  category: 'Dairy' },
   'yogurt':     { calories: 98, carbs: 4, protein: 11, fat: 4, fiber: 0, servingSize: 100, servingUnit: 'g',  category: 'Dairy' },
 
@@ -116,8 +125,9 @@ export function lookupNutrition(foodName: string): NutritionData | null {
   // 1. Exact match
   if (NUTRITION_DB[key]) return NUTRITION_DB[key];
 
-  // 2. Partial match (input contains a key or key contains input)
-  for (const [dbKey, data] of Object.entries(NUTRITION_DB)) {
+  // 2. Longest key partial match first (prevents "cheese garlic bread" from prematurely matching "bread")
+  const sortedEntries = Object.entries(NUTRITION_DB).sort((a, b) => b[0].length - a[0].length);
+  for (const [dbKey, data] of sortedEntries) {
     if (key.includes(dbKey) || dbKey.includes(key)) {
       return data;
     }
